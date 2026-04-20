@@ -1,0 +1,189 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "nginx-gateway-cr values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "commonLabels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "commonAnnotations": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "gatewayClassName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "listenerDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "http": { "$ref": "#/$defs/httpListener" },
+        "https": { "$ref": "#/$defs/httpsListener" }
+      }
+    },
+    "proxy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "replicas": { "type": "integer", "minimum": 0 },
+        "resources": { "type": "object" },
+        "nodeSelector": { "type": "object", "additionalProperties": { "type": "string" } },
+        "tolerations": { "type": "array" },
+        "affinity": { "type": "object" },
+        "podAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "podLabels": { "type": "object", "additionalProperties": { "type": "string" } },
+        "service": { "$ref": "#/$defs/proxyService" },
+        "logging": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "errorLevel": {
+              "type": "string",
+              "enum": ["", "debug", "info", "notice", "warn", "error", "crit", "alert", "emerg"]
+            }
+          }
+        },
+        "metrics": { "type": "object" },
+        "rewriteClientIP": { "type": "object" },
+        "telemetry": { "type": "object" },
+        "disableHTTP2": { "type": "boolean" },
+        "ipFamily": {
+          "type": "string",
+          "enum": ["", "ipv4", "ipv6", "dual"]
+        },
+        "kubernetesExtra": { "type": "object" },
+        "specExtra": { "type": "object" }
+      }
+    },
+    "gateways": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/gateway" }
+    },
+    "referenceGrants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/referenceGrant" }
+    },
+    "serviceMonitor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": { "type": "string" },
+        "releaseLabel": { "type": "string" },
+        "interval": { "type": "string" },
+        "scrapeTimeout": { "type": "string" },
+        "additionalLabels": { "type": "object", "additionalProperties": { "type": "string" } },
+        "controller": { "$ref": "#/$defs/serviceMonitorTarget" },
+        "dataplane": { "$ref": "#/$defs/serviceMonitorTarget" }
+      }
+    }
+  },
+  "$defs": {
+    "httpListener": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "allowedRoutes": { "type": "object" }
+      }
+    },
+    "httpsListener": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "hostname": { "type": "string" },
+        "tlsSecretName": { "type": "string" },
+        "allowedRoutes": { "type": "object" }
+      }
+    },
+    "proxyService": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["LoadBalancer", "ClusterIP", "NodePort"]
+        },
+        "externalTrafficPolicy": {
+          "type": "string",
+          "enum": ["Cluster", "Local"]
+        },
+        "loadBalancerClass": { "type": "string" },
+        "loadBalancerSourceRanges": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "gateway": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "loadBalancerIP": { "type": "string" },
+        "gatewayClassName": { "type": "string" },
+        "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "http": { "$ref": "#/$defs/httpListener" },
+        "https": { "$ref": "#/$defs/httpsListener" },
+        "listeners": { "type": "array" },
+        "proxy": { "type": "object" }
+      }
+    },
+    "referenceGrant": {
+      "type": "object",
+      "required": ["name", "namespace", "from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "namespace": { "type": "string", "minLength": 1 },
+        "from": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["group", "kind", "namespace"],
+            "properties": {
+              "group": { "type": "string" },
+              "kind": { "type": "string" },
+              "namespace": { "type": "string" }
+            }
+          }
+        },
+        "to": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["group", "kind"],
+            "properties": {
+              "group": { "type": "string" },
+              "kind": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "serviceMonitorTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "path": { "type": "string" },
+        "port": { "type": "string" },
+        "selector": { "type": "object" },
+        "namespaceSelector": { "type": "object" },
+        "additionalEndpoints": { "type": "array" }
+      }
+    }
+  }
+}

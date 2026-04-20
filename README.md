@@ -11,7 +11,7 @@ Charts are published to:
 
 | Chart | Version | Description |
 |---|---|---|
-| [nginx-gateway-cr](charts/nginx-gateway-cr) | `0.1.0` | Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric |
+| [nginx-gateway-cr](charts/nginx-gateway-cr) | `0.2.0` | Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric |
 
 ## Install
 

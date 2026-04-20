@@ -27,7 +27,7 @@ The upstream chart installs the controller and CRDs, but does **not** create the
 
 ```bash
 helm install ngf-cr oci://ghcr.io/somaz94/charts/nginx-gateway-cr \
-  --version 0.1.0 \
+  --version 0.2.0 \
   --namespace nginx-gateway \
   -f my-values.yaml
 ```
