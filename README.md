@@ -4,7 +4,7 @@ A collection of Helm charts maintained by [@somaz94](https://github.com/somaz94)
 
 Charts are published to:
 
-- **GitHub Pages** (classic Helm repo): `https://somaz94.github.io/helm-charts`
+- **Helm repo** (classic): `https://charts.somaz.blog`
 - **GHCR** (OCI registry): `oci://ghcr.io/somaz94/charts/<chart-name>`
 
 ## Charts
@@ -18,7 +18,7 @@ Charts are published to:
 ### Classic Helm repo
 
 ```bash
-helm repo add somaz94 https://somaz94.github.io/helm-charts
+helm repo add somaz94 https://charts.somaz.blog
 helm repo update
 helm search repo somaz94
 helm install <release> somaz94/<chart-name>

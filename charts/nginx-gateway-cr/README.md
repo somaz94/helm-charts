@@ -35,7 +35,7 @@ helm install ngf-cr oci://ghcr.io/somaz94/charts/nginx-gateway-cr \
 ### Classic Helm repo
 
 ```bash
-helm repo add somaz94 https://somaz94.github.io/helm-charts
+helm repo add somaz94 https://charts.somaz.blog
 helm repo update
 helm install ngf-cr somaz94/nginx-gateway-cr \
   --namespace nginx-gateway \
