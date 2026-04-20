@@ -6,6 +6,12 @@ on:
       - main
     paths:
       - 'charts/**'
+  workflow_dispatch:
+    inputs:
+      charts:
+        description: "Comma-separated chart paths to push to OCI (e.g. charts/foo,charts/bar). Leave empty to skip OCI step."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -56,16 +62,43 @@ jobs:
       - name: Push released charts to GHCR (OCI)
         if: steps.cr.outputs.changed_charts != ''
         env:
+          # chart-releaser-action emits comma-separated paths (NOT space-separated).
+          # Pass through unchanged; the loop below splits on comma.
           CHANGED_CHARTS: ${{ steps.cr.outputs.changed_charts }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/charts
-          for chart_path in $CHANGED_CHARTS; do
+          IFS=',' read -ra CHART_PATHS <<< "$CHANGED_CHARTS"
+          for chart_path in "${CHART_PATHS[@]}"; do
+            chart_path="${chart_path#"${chart_path%%[![:space:]]*}"}"   # trim leading whitespace
+            chart_path="${chart_path%"${chart_path##*[![:space:]]}"}"   # trim trailing whitespace
+            [[ -z "$chart_path" ]] && continue
             chart_name=$(basename "$chart_path")
             chart_version=$(helm show chart "$chart_path" | awk '/^version:/ {print $2}' | tr -d '"')
             echo "==> Packaging $chart_name $chart_version"
             helm package "$chart_path" -d /tmp/charts
             echo "==> Pushing to oci://ghcr.io/${{ github.repository_owner }}/charts"
+            helm push "/tmp/charts/${chart_name}-${chart_version}.tgz" \
+              "oci://ghcr.io/${{ github.repository_owner }}/charts"
+          done
+
+      - name: Push manually-specified charts to GHCR (OCI) [workflow_dispatch only]
+        if: github.event_name == 'workflow_dispatch' && inputs.charts != ''
+        env:
+          MANUAL_CHARTS: ${{ inputs.charts }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/charts
+          IFS=',' read -ra CHART_PATHS <<< "$MANUAL_CHARTS"
+          for chart_path in "${CHART_PATHS[@]}"; do
+            chart_path="${chart_path#"${chart_path%%[![:space:]]*}"}"
+            chart_path="${chart_path%"${chart_path##*[![:space:]]}"}"
+            [[ -z "$chart_path" ]] && continue
+            chart_name=$(basename "$chart_path")
+            chart_version=$(helm show chart "$chart_path" | awk '/^version:/ {print $2}' | tr -d '"')
+            echo "==> [manual] Packaging $chart_name $chart_version"
+            helm package "$chart_path" -d /tmp/charts
+            echo "==> [manual] Pushing to oci://ghcr.io/${{ github.repository_owner }}/charts"
             helm push "/tmp/charts/${chart_name}-${chart_version}.tgz" \
               "oci://ghcr.io/${{ github.repository_owner }}/charts"
           done
