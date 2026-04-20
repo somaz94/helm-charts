@@ -1,0 +1,26 @@
+{{- $top := . -}}
+{{- range $i := .Values.clusterIssuers -}}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ $i.name }}
+  labels:
+    {{- include "certmanager-letsencrypt.labels" $top | nindent 4 }}
+    {{- with $i.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "certmanager-letsencrypt.annotations" (dict "top" $top "extra" $i.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  acme:
+    email: {{ $i.email }}
+    server: {{ $i.server }}
+    privateKeySecretRef:
+      name: {{ default (printf "%s-account-key" $i.name) $i.privateKeySecretRef }}
+    solvers:
+      {{- toYaml $i.solvers | nindent 6 }}
+---
+{{ end -}}

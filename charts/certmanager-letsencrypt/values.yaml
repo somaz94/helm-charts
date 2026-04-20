@@ -1,0 +1,116 @@
+# Default values for certmanager-letsencrypt.
+# Empty defaults — `helm install` with no values is a no-op (creates no resources).
+# This chart manages cert-manager CRs only; cert-manager itself must be installed first.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+# Labels and annotations applied to EVERY resource created by this chart.
+commonLabels: {}
+commonAnnotations: {}
+
+# ---------------------------------------------------------------------------
+# ACME server presets (helper constants)
+# ---------------------------------------------------------------------------
+# Use these in clusterIssuers[].server / issuers[].server to avoid memorizing URLs.
+# Override only if you point at a non-Let's Encrypt ACME endpoint.
+acmeServers:
+  letsencryptProd: https://acme-v02.api.letsencrypt.org/directory
+  letsencryptStaging: https://acme-staging-v02.api.letsencrypt.org/directory
+
+# ---------------------------------------------------------------------------
+# Credential Secrets for DNS-01 solvers
+# ---------------------------------------------------------------------------
+# Most DNS providers need an API token / service account stored in a Secret
+# referenced by the cert-manager solver.
+secrets: []
+# Example:
+#   secrets:
+#     - name: cloudflare-api-token
+#       namespace: cert-manager
+#       type: Opaque
+#       stringData:
+#         api-token: "<your-cloudflare-api-token>"
+#
+#     - name: route53-credentials
+#       namespace: cert-manager
+#       type: Opaque
+#       stringData:
+#         secret-access-key: "<aws-secret-access-key>"
+#
+#     - name: clouddns-credentials
+#       namespace: cert-manager
+#       type: Opaque
+#       data:
+#         key.json: "<base64-encoded-service-account-json>"
+
+# ---------------------------------------------------------------------------
+# ClusterIssuers (cluster-wide)
+# ---------------------------------------------------------------------------
+# Most users want at least:
+#   - one production issuer (real certificates, rate-limited)
+#   - one staging issuer (test certificates, generous rate limits)
+# Use staging while iterating on values to avoid hitting LE rate limits.
+clusterIssuers: []
+# Example:
+#   clusterIssuers:
+#     - name: letsencrypt-prod
+#       email: ops@example.com
+#       server: https://acme-v02.api.letsencrypt.org/directory
+#       privateKeySecretRef: letsencrypt-prod-account-key
+#       solvers:
+#         - dns01:
+#             cloudflare:
+#               apiTokenSecretRef:
+#                 name: cloudflare-api-token
+#                 key: api-token
+#
+#     - name: letsencrypt-staging
+#       email: ops@example.com
+#       server: https://acme-staging-v02.api.letsencrypt.org/directory
+#       privateKeySecretRef: letsencrypt-staging-account-key
+#       solvers:
+#         - dns01:
+#             cloudflare:
+#               apiTokenSecretRef:
+#                 name: cloudflare-api-token
+#                 key: api-token
+
+# ---------------------------------------------------------------------------
+# Issuers (namespace-scoped)
+# ---------------------------------------------------------------------------
+# Same shape as clusterIssuers but scoped to a single namespace.
+# Use when you want stricter tenant isolation.
+issuers: []
+# Example:
+#   issuers:
+#     - name: letsencrypt-prod
+#       namespace: production
+#       email: ops@example.com
+#       server: https://acme-v02.api.letsencrypt.org/directory
+#       privateKeySecretRef: letsencrypt-prod-account-key
+#       solvers:
+#         - dns01: { ... }
+
+# ---------------------------------------------------------------------------
+# Certificates
+# ---------------------------------------------------------------------------
+# Each entry creates a Certificate CR. cert-manager will provision and renew
+# the actual TLS Secret based on the referenced Issuer / ClusterIssuer.
+certificates: []
+# Example:
+#   certificates:
+#     - name: example-com-tls
+#       namespace: default
+#       secretName: example-com-tls
+#       issuerRef:
+#         name: letsencrypt-prod
+#         kind: ClusterIssuer
+#       commonName: example.com
+#       dnsNames:
+#         - example.com
+#         - "*.example.com"
+#       duration: 2160h        # 90d (default)
+#       renewBefore: 720h      # 30d (default)
+#       privateKey: {}         # optional: { algorithm: RSA, size: 4096, ... }
+#       usages: []             # optional: [server auth, client auth, ...]

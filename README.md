@@ -14,6 +14,7 @@ Charts are published to:
 | Chart | Version | Description |
 |---|---|---|
 | [nginx-gateway-cr](charts/nginx-gateway-cr) | `0.3.0` | Custom resources for NGINX Gateway Fabric — Gateway, NginxProxy, ReferenceGrant, plus ServiceMonitor / PodMonitor for Prometheus |
+| [certmanager-letsencrypt](charts/certmanager-letsencrypt) | `0.1.0` | Let's Encrypt resources for cert-manager — multi-issuer / multi-certificate / multi-secret with DNS-01 (Cloudflare, Route53, Cloud DNS, ...) |
 
 <br/>
 

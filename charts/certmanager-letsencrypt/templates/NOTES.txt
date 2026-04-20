@@ -1,0 +1,48 @@
+{{ if or .Values.secrets .Values.clusterIssuers .Values.issuers .Values.certificates -}}
+cert-manager Let's Encrypt resources installed by release "{{ .Release.Name }}":
+
+{{- with .Values.secrets }}
+
+Secrets ({{ len . }}):
+{{- range . }}
+  - {{ .namespace }}/{{ .name }}
+{{- end }}
+{{- end }}
+
+{{- with .Values.clusterIssuers }}
+
+ClusterIssuers ({{ len . }}):
+{{- range . }}
+  - {{ .name }} (server: {{ .server }})
+{{- end }}
+{{- end }}
+
+{{- with .Values.issuers }}
+
+Issuers ({{ len . }}):
+{{- range . }}
+  - {{ .namespace }}/{{ .name }} (server: {{ .server }})
+{{- end }}
+{{- end }}
+
+{{- with .Values.certificates }}
+
+Certificates ({{ len . }}):
+{{- range . }}
+  - {{ .namespace }}/{{ .name }} -> Secret: {{ .secretName }}
+{{- end }}
+{{- end }}
+
+Verify resources:
+  kubectl get clusterissuer,issuer,certificate -A | grep -E "{{ .Release.Name }}|cert-manager"
+
+Watch a Certificate become Ready (replace <ns>/<name>):
+  kubectl describe certificate <ns>/<name>
+  kubectl get certificate -A -w
+
+If Certificate stays NotReady, check Order/Challenge events:
+  kubectl get order,challenge -A
+{{- else -}}
+No resources defined yet. Populate `secrets`, `clusterIssuers` (or `issuers`),
+and `certificates` in your values file. See `helm show values <chart>` for the schema.
+{{- end }}

@@ -1,0 +1,39 @@
+apiVersion: v2
+name: certmanager-letsencrypt
+description: Helm chart for Let's Encrypt certificates with cert-manager — manages ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place. Requires cert-manager already installed.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - cert-manager
+  - letsencrypt
+  - acme
+  - tls
+  - certificates
+  - dns-01
+  - kubernetes
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: cert-manager
+      url: https://cert-manager.io/
+    - name: Let's Encrypt
+      url: https://letsencrypt.org/
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release. Multi-issuer / multi-certificate / multi-secret support.
+    - kind: added
+      description: Built-in Let's Encrypt prod / staging ACME server presets.
+    - kind: added
+      description: Supports DNS-01 solvers for Cloudflare, Route53, Cloud DNS, and any other cert-manager-supported provider via passthrough.
+  artifacthub.io/prerelease: "false"

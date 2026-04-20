@@ -1,0 +1,63 @@
+{{- $top := . -}}
+{{- range $c := .Values.certificates -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $c.name }}
+  namespace: {{ $c.namespace }}
+  labels:
+    {{- include "certmanager-letsencrypt.labels" $top | nindent 4 }}
+    {{- with $c.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "certmanager-letsencrypt.annotations" (dict "top" $top "extra" $c.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  secretName: {{ $c.secretName }}
+  issuerRef:
+    name: {{ $c.issuerRef.name }}
+    kind: {{ $c.issuerRef.kind }}
+    {{- with $c.issuerRef.group }}
+    group: {{ . }}
+    {{- end }}
+  {{- with $c.commonName }}
+  commonName: {{ . | quote }}
+  {{- end }}
+  {{- with $c.dnsNames }}
+  dnsNames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $c.uris }}
+  uris:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $c.ipAddresses }}
+  ipAddresses:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $c.emailAddresses }}
+  emailAddresses:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  duration: {{ $c.duration | default "2160h" }}
+  renewBefore: {{ $c.renewBefore | default "720h" }}
+  {{- with $c.privateKey }}
+  privateKey:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $c.usages }}
+  usages:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if $c.isCA }}
+  isCA: true
+  {{- end }}
+  {{- with $c.secretTemplate }}
+  secretTemplate:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+{{ end -}}
