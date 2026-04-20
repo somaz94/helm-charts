@@ -34,23 +34,28 @@ Each chart is independently versioned via its own `Chart.yaml` and is released t
 
 ## Local Development
 
+The repository ships a `Makefile` that wraps the common operations. Run `make help` to see all targets.
+
 ### Verify a chart
 
 ```bash
-# Lint
+# Run everything CI runs (lint + ct lint + template + kubeconform)
+make ci
+
+# Or individually (CHART=<name> limits to one chart, otherwise all)
+make lint                              # helm lint
+make ct-lint                           # chart-testing lint
+make template                          # helm template smoke render
+make validate                          # kubeconform schema validation
+make lint CHART=nginx-gateway-cr       # limit to one chart
+```
+
+Raw equivalents (without the Makefile):
+
+```bash
 helm lint charts/<chart-name>
-ct lint --target-branch main --check-version-increment=false
-
-# Render templates (smoke test)
-helm template ci charts/<chart-name>
-
-# Render with example values
-helm template ci charts/<chart-name> -f charts/<chart-name>/ci/example-values.yaml
-
-# Validate generated manifests against k8s + CRD schemas
-helm template ci charts/<chart-name> | kubeconform \
-  -strict \
-  -ignore-missing-schemas \
+helm template ci charts/<chart-name> > /dev/null
+helm template ci charts/<chart-name> | kubeconform -strict -ignore-missing-schemas \
   -schema-location default \
   -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 ```
@@ -60,7 +65,7 @@ helm template ci charts/<chart-name> | kubeconform \
 ```bash
 mkdir -p charts/<new-chart>/templates
 # Create Chart.yaml, values.yaml, values.schema.json, README.md, templates/...
-helm lint charts/<new-chart>
+make lint CHART=<new-chart>
 ```
 
 Required files:
@@ -68,6 +73,16 @@ Required files:
 - `values.yaml` — sensible defaults; default install should be a safe no-op when applicable
 - `values.schema.json` — JSON Schema (draft-07) for input validation
 - `README.md` — purpose, prerequisites, install, values reference table
+
+### Bump a chart's version
+
+```bash
+make bump CHART=<chart-name> LEVEL=patch    # 0.1.0 -> 0.1.1
+make bump CHART=<chart-name> LEVEL=minor    # 0.1.0 -> 0.2.0
+make bump CHART=<chart-name> LEVEL=major    # 0.1.0 -> 1.0.0
+```
+
+The target updates `Chart.yaml` and prints the next steps (annotation, README, commit, push).
 
 <br/>
 
