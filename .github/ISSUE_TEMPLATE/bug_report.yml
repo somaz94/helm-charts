@@ -1,0 +1,86 @@
+name: Bug report
+description: Report a problem with one of the charts
+title: "[bug] <chart-name>: <short summary>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. The more detail you provide, the faster we can help.
+
+  - type: input
+    id: chart
+    attributes:
+      label: Chart
+      description: Which chart is affected? (e.g. `nginx-gateway-cr`)
+      placeholder: nginx-gateway-cr
+    validations:
+      required: true
+
+  - type: input
+    id: chart_version
+    attributes:
+      label: Chart version
+      description: Output of `helm list -n <namespace>` or the version installed.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: helm_version
+    attributes:
+      label: Helm version
+      description: Output of `helm version --short`.
+      placeholder: v3.16.4
+    validations:
+      required: true
+
+  - type: input
+    id: k8s_version
+    attributes:
+      label: Kubernetes version
+      description: Output of `kubectl version --short` (server version).
+      placeholder: v1.30.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: values
+    attributes:
+      label: Values used
+      description: The values file (or `--set` overrides) you used. Sanitize secrets before pasting.
+      render: yaml
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include `kubectl describe` / `kubectl logs` output where relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. helm install ...
+        2. kubectl apply ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Cluster type (kind/EKS/GKE/etc.), CNI, anything else relevant.

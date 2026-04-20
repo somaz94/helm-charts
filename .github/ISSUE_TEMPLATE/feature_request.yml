@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest an enhancement or new functionality
+title: "[feat] <chart-name>: <short summary>"
+labels: ["enhancement"]
+body:
+  - type: input
+    id: chart
+    attributes:
+      label: Chart (or "new chart")
+      description: Which chart should the feature be added to? Or propose a new chart name.
+      placeholder: nginx-gateway-cr
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What are you trying to accomplish? Why is the current chart insufficient?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How would you like the chart to support this? Include example values if possible.
+      render: yaml
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered and why this one is preferred.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Links, references, related projects, NGF/Gateway API documentation, etc.
