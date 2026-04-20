@@ -96,6 +96,26 @@ The target updates `Chart.yaml` and prints the next steps (annotation, README, c
 
 <br/>
 
+### Upstream version tracking (`upgrade.sh`)
+
+Some charts wrap a third-party component whose image tag evolves on its own release cadence (e.g. `elasticsearch-eck`, `kibana-eck`). These charts ship a local `upgrade.sh` that queries the component's upstream version feed (e.g. `artifacts-api.elastic.co`), verifies the container image is published, backs up the current state, and rewrites the chart's `Chart.yaml` `appVersion` plus `values.yaml` `version` in one shot.
+
+```bash
+cd charts/<chart-name>
+./upgrade.sh --dry-run              # preview without changes
+./upgrade.sh                        # bump to latest GA
+./upgrade.sh --version 9.1.2        # pin to a specific version
+./upgrade.sh --rollback             # restore files from backup/
+./upgrade.sh --list-backups
+./upgrade.sh --cleanup-backups      # keep last 5 (override via KEEP_BACKUPS=N)
+```
+
+`upgrade.sh` **does not touch any cluster**. It only rewrites local files and places the previous versions in `backup/<timestamp>/`. The chart's own SemVer (`Chart.yaml` `version`) is **not** auto-mirrored — bump it afterwards via `make bump CHART=<chart-name> LEVEL=minor`.
+
+Charts with sibling-version constraints (e.g. `kibana-eck` requires version ≤ `elasticsearch-eck`) enforce that by reading the sibling's `values.yaml` directly — no kubectl access is needed.
+
+<br/>
+
 ## PR Process
 
 1. **Bump the chart version** in `Chart.yaml` for any change to chart contents (`templates/`, `values.yaml`, `values.schema.json`, `Chart.yaml` itself).

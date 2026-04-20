@@ -1,0 +1,35 @@
+kibana-eck {{ .Chart.Version }} (Kibana {{ .Values.version }}) installed.
+
+Release name: {{ .Release.Name }}
+Namespace:    {{ .Release.Namespace }}
+CR name:      {{ include "kibana-eck.fullname" . }}
+ES ref:       {{ .Values.elasticsearchRef.name }}{{ if .Values.elasticsearchRef.namespace }} (ns: {{ .Values.elasticsearchRef.namespace }}){{ end }}
+
+Track Kibana rollout:
+  kubectl -n {{ .Release.Namespace }} get kibana {{ include "kibana-eck.fullname" . }} -w
+
+Port-forward to access Kibana locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kibana-eck.httpServiceName" . }} 5601:5601
+  # Open http://localhost:5601 (or https:// if tls is enabled)
+
+Retrieve the `elastic` superuser password (from the linked Elasticsearch CR):
+  kubectl -n {{ .Release.Namespace }} get secret {{ .Values.elasticsearchRef.name }}-es-elastic-user \
+    -o jsonpath='{.data.elastic}' | base64 -d; echo
+
+{{- if .Values.httproute.enabled }}
+
+HTTPRoute is enabled. External hostname(s):
+{{- range .Values.httproute.hostnames }}
+  - {{ . }}
+{{- end }}
+{{- end }}
+{{- if .Values.ingress.enabled }}
+
+Ingress is enabled{{ with .Values.ingress.host }} at host: {{ . }}{{ end }}.
+{{- end }}
+
+{{- if eq (int .Values.replicas) 1 }}
+
+NOTE: Single-replica Kibana. Scale to 2+ and enable podDisruptionBudget
+for HA / rolling updates. See the chart README for details.
+{{- end }}

@@ -15,6 +15,8 @@ Charts are published to:
 |---|---|---|
 | [nginx-gateway-cr](charts/nginx-gateway-cr) | `0.3.0` | Custom resources for NGINX Gateway Fabric — Gateway, NginxProxy, ReferenceGrant, plus ServiceMonitor / PodMonitor for Prometheus |
 | [certmanager-letsencrypt](charts/certmanager-letsencrypt) | `0.2.0` | Let's Encrypt resources for cert-manager — multi-issuer / multi-certificate / multi-secret / optional Ingress, DNS-01 (Cloudflare, Route53, Cloud DNS, ...) |
+| [elasticsearch-eck](charts/elasticsearch-eck) | `0.1.0` | Elasticsearch CR for ECK (Elastic Cloud on Kubernetes) — nodeSets[] array, HTTPRoute, Ingress, BackendTLSPolicy, PDB (native/external), ServiceMonitor, NetworkPolicy, ReferenceGrant, sysctl init container. Single-node default, HA opt-in. |
+| [kibana-eck](charts/kibana-eck) | `0.1.0` | Kibana CR for ECK — auto-wired to an Elasticsearch CR via elasticsearchRef, HTTPRoute, Ingress, BackendTLSPolicy, PDB, ServiceMonitor, NetworkPolicy, ReferenceGrant. Sibling-version check in upgrade.sh. |
 
 <br/>
 

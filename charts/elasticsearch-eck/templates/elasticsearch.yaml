@@ -1,0 +1,152 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: {{ include "elasticsearch-eck.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "elasticsearch-eck.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.elasticsearch.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "elasticsearch-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.elasticsearch.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  version: {{ .Values.version | quote }}
+  {{- with .Values.image }}
+  image: {{ . | quote }}
+  {{- end }}
+  {{- $sa := .Values.serviceAccountName }}
+  {{- if and (not $sa) .Values.serviceAccount.create }}
+  {{- $sa = (.Values.serviceAccount.name | default (printf "%s-es" (include "elasticsearch-eck.fullname" .))) }}
+  {{- end }}
+  {{- if $sa }}
+  serviceAccountName: {{ $sa }}
+  {{- end }}
+  {{- with .Values.http }}
+  http:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.transport }}
+  transport:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.secureSettings }}
+  secureSettings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.auth }}
+  auth:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.remoteClusters }}
+  remoteClusters:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.monitoring }}
+  monitoring:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.updateStrategy }}
+  updateStrategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.podDisruptionBudget.native }}
+  podDisruptionBudget:
+    spec:
+      {{- if .Values.podDisruptionBudget.minAvailable }}
+      minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+      {{- else }}
+      maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+      {{- end }}
+      selector:
+        matchLabels:
+          elasticsearch.k8s.elastic.co/cluster-name: {{ include "elasticsearch-eck.fullname" . }}
+  {{- end }}
+  nodeSets:
+    {{- range $idx, $ns := .Values.nodeSets }}
+    - name: {{ $ns.name }}
+      count: {{ $ns.count }}
+      {{- /* elasticsearch.yml — merge node.roles into config */}}
+      {{- $cfg := deepCopy (default (dict) $ns.config) }}
+      {{- if $ns.roles }}
+      {{- $_ := set $cfg "node.roles" $ns.roles }}
+      {{- end }}
+      {{- if $cfg }}
+      config:
+        {{- toYaml $cfg | nindent 8 }}
+      {{- end }}
+      podTemplate:
+        {{- /* Start from user-supplied podTemplateExtra so chart defaults win on conflict */}}
+        {{- $pt := deepCopy (default (dict) $ns.podTemplateExtra) }}
+        {{- $ptSpec := default (dict) (get $pt "spec") }}
+
+        {{- /* Top-level pod scheduling */}}
+        {{- if $ns.nodeSelector }}{{- $_ := set $ptSpec "nodeSelector" $ns.nodeSelector }}{{- end }}
+        {{- if $ns.tolerations }}{{- $_ := set $ptSpec "tolerations" $ns.tolerations }}{{- end }}
+        {{- if $ns.affinity }}{{- $_ := set $ptSpec "affinity" $ns.affinity }}{{- end }}
+        {{- if $ns.topologySpreadConstraints }}{{- $_ := set $ptSpec "topologySpreadConstraints" $ns.topologySpreadConstraints }}{{- end }}
+        {{- if $ns.priorityClassName }}{{- $_ := set $ptSpec "priorityClassName" $ns.priorityClassName }}{{- end }}
+        {{- if $ns.serviceAccountName }}{{- $_ := set $ptSpec "serviceAccountName" $ns.serviceAccountName }}{{- end }}
+        {{- if $ns.podSecurityContext }}{{- $_ := set $ptSpec "securityContext" $ns.podSecurityContext }}{{- end }}
+        {{- if $ns.volumes }}{{- $_ := set $ptSpec "volumes" $ns.volumes }}{{- end }}
+
+        {{- /* initContainers: built-in sysctl + user-supplied */}}
+        {{- $initContainers := list }}
+        {{- if $.Values.sysctlInitContainer.enabled }}
+        {{- $sysctl := dict "name" "sysctl" "securityContext" (dict "privileged" true "runAsUser" (int 0)) "command" (list "sh" "-c" "sysctl -w vm.max_map_count=262144") }}
+        {{- $initContainers = append $initContainers $sysctl }}
+        {{- end }}
+        {{- range $ic := $ns.initContainers }}
+        {{- $initContainers = append $initContainers $ic }}
+        {{- end }}
+        {{- if $initContainers }}{{- $_ := set $ptSpec "initContainers" $initContainers }}{{- end }}
+
+        {{- /* Main elasticsearch container: build from explicit fields + containerExtra */}}
+        {{- $mainContainer := deepCopy (default (dict) $ns.containerExtra) }}
+        {{- $_ := set $mainContainer "name" "elasticsearch" }}
+        {{- if $ns.resources }}{{- $_ := set $mainContainer "resources" $ns.resources }}{{- end }}
+        {{- if $ns.env }}{{- $_ := set $mainContainer "env" $ns.env }}{{- end }}
+        {{- if $ns.envFrom }}{{- $_ := set $mainContainer "envFrom" $ns.envFrom }}{{- end }}
+        {{- if $ns.volumeMounts }}{{- $_ := set $mainContainer "volumeMounts" $ns.volumeMounts }}{{- end }}
+        {{- if $ns.livenessProbe }}{{- $_ := set $mainContainer "livenessProbe" $ns.livenessProbe }}{{- end }}
+        {{- if $ns.readinessProbe }}{{- $_ := set $mainContainer "readinessProbe" $ns.readinessProbe }}{{- end }}
+        {{- if $ns.startupProbe }}{{- $_ := set $mainContainer "startupProbe" $ns.startupProbe }}{{- end }}
+        {{- if $ns.lifecycle }}{{- $_ := set $mainContainer "lifecycle" $ns.lifecycle }}{{- end }}
+        {{- if $ns.securityContext }}{{- $_ := set $mainContainer "securityContext" $ns.securityContext }}{{- end }}
+
+        {{- /* containers: main + sidecars */}}
+        {{- $containers := list $mainContainer }}
+        {{- range $sc := $ns.sidecars }}
+        {{- $containers = append $containers $sc }}
+        {{- end }}
+        {{- $_ := set $ptSpec "containers" $containers }}
+
+        {{- $_ := set $pt "spec" $ptSpec }}
+        {{- toYaml $pt | nindent 8 }}
+
+      {{- /* volumeClaimTemplates: default `elasticsearch-data` + any user-supplied extras */}}
+      volumeClaimTemplates:
+        {{- $defaultVCT := dict "metadata" (dict "name" "elasticsearch-data") "spec" (dict
+              "accessModes" (default (list "ReadWriteOnce") (get (default (dict) $ns.storage) "accessModes"))
+              "resources" (dict "requests" (dict "storage" (default "30Gi" (get (default (dict) $ns.storage) "size"))))) }}
+        {{- if and $ns.storage $ns.storage.storageClass }}
+        {{- $_ := set $defaultVCT.spec "storageClassName" $ns.storage.storageClass }}
+        {{- end }}
+        - {{- toYaml $defaultVCT | nindent 10 }}
+        {{- range $vct := $ns.volumeClaimTemplates }}
+        - {{- toYaml $vct | nindent 10 }}
+        {{- end }}
+
+      {{- /* Escape hatch at nodeSet level */}}
+      {{- with $ns.nodeSetExtra }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+    {{- end }}
+
+  {{- /* Final escape hatch — merged into spec */}}
+  {{- with .Values.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

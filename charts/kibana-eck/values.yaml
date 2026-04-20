@@ -1,0 +1,293 @@
+# Default values for kibana-eck.
+#
+# The chart renders a single Kibana Custom Resource (plus optional Ingress,
+# HTTPRoute, and PodDisruptionBudget). Kibana connects to an Elasticsearch CR
+# via elasticsearchRef; ECK auto-injects hosts, credentials and CA.
+#
+# Prerequisites: the ECK operator must be running in the cluster, and an
+# Elasticsearch CR (typically deployed via the sibling elasticsearch-eck chart)
+# must exist in the referenced namespace.
+#
+# Defaults match a single-replica dev/staging topology. Production HA is opt-in
+# by increasing `replicas` and enabling `podDisruptionBudget`.
+#
+# Extensibility: every ECK CR field is reachable via a named values path or
+# via the `specExtra` / `podTemplateExtra` / `containerExtra` escape hatches.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+commonLabels: {}
+commonAnnotations: {}
+
+# Per-resource metadata override.
+resourceMetadata:
+  kibana:
+    labels: {}
+    annotations: {}
+  serviceAccount:
+    labels: {}
+    annotations: {}
+  podDisruptionBudget:
+    labels: {}
+    annotations: {}
+  httproute:
+    labels: {}
+    annotations: {}
+  ingress:
+    labels: {}
+    annotations: {}
+  backendTLSPolicy:
+    labels: {}
+    annotations: {}
+  serviceMonitor:
+    labels: {}
+    annotations: {}
+  networkPolicy:
+    labels: {}
+    annotations: {}
+  referenceGrant:
+    labels: {}
+    annotations: {}
+
+# ---------------------------------------------------------------------------
+# Kibana Custom Resource — top-level spec fields
+# ---------------------------------------------------------------------------
+# CR name. Downstream resources derived from it:
+#   Service:    <name>-kb-http          (port 5601)
+#   Deployment: <name>-kb
+#   Secret:     <name>-kb-http-certs-public
+#   ConfigMap:  <name>-kb-config
+# Empty → Helm release name.
+name: ""
+
+# Kibana version. Must match or be compatible with the linked Elasticsearch.
+# Bump via upgrade.sh (sibling elasticsearch-eck version check built in).
+version: "9.3.3"
+
+# Optional image override for private mirrors / air-gapped registries.
+image: ""
+
+# Number of Kibana pods. 1 for dev/staging; 2+ for HA behind a PDB.
+replicas: 1
+
+# Link to the Elasticsearch CR. ECK reads this and auto-injects:
+#   - elasticsearch.hosts
+#   - elasticsearch.username / password
+#   - elasticsearch.ssl.certificateAuthorities
+elasticsearchRef:
+  name: elasticsearch
+  # namespace: ""      # cross-namespace requires a ReferenceGrant (not shipped)
+  # serviceName: ""    # override the ES Service target
+
+# Link to an Enterprise Search CR (optional).
+enterpriseSearchRef: {}
+
+# spec.http: TLS and Service customization for Kibana's HTTP endpoint.
+# NOTE: ECK's default is self-signed TLS on :5601. Disable the self-signed
+# cert when routing via an ingress that terminates TLS and forwards plain HTTP.
+http:
+  tls:
+    # By default the ECK self-signed cert is DISABLED so the pod serves plain
+    # HTTP on :5601. This matches the common ingress pattern (TLS terminated at
+    # the ingress, plain HTTP to the backend). Set `selfSignedCertificate: {}`
+    # or provide `certificate.secretName` to turn TLS back on.
+    selfSignedCertificate:
+      disabled: true
+    # certificate:
+    #   secretName: kibana-tls
+  # service:
+  #   metadata:
+  #     annotations: {}
+  #   spec:
+  #     type: ClusterIP
+
+# spec.config: free-form kibana.yml content. Merged with session-cookie defaults
+# below when HTTP mode is active (tls disabled).
+config: {}
+# config:
+#   server.publicBaseUrl: https://kibana.example.com
+#   logging.root.level: info
+
+# NODE_OPTIONS passed to the kibana process. Joined with spaces into a single
+# env var. Empty list → no NODE_OPTIONS env.
+nodeOptions:
+  - "--max-old-space-size=1800"
+
+# Resource requests/limits for the kibana container.
+resources:
+  requests:
+    cpu: "100m"
+    memory: "2Gi"
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+
+# spec.secureSettings: Secret sources mounted into Kibana's keystore.
+secureSettings: []
+
+# spec.monitoring: Stack Monitoring (ship Kibana metrics/logs to another ES).
+monitoring: {}
+
+# spec.serviceAccountName — e.g. for IRSA.
+serviceAccountName: ""
+
+# spec.revisionHistoryLimit — optional Deployment revisionHistoryLimit.
+revisionHistoryLimit: null
+
+# ---------------------------------------------------------------------------
+# podTemplate — structured passthrough to spec.podTemplate.spec
+# ---------------------------------------------------------------------------
+podTemplate:
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+  priorityClassName: ""
+  initContainers: []      # extra init containers (full spec)
+  sidecars: []            # extra sidecar containers (full container spec)
+  volumes: []             # pod-level volumes
+  podSecurityContext: {}
+
+# Extensions to the kibana container specifically.
+container:
+  env: []
+  envFrom: []
+  volumeMounts: []
+  livenessProbe: {}
+  readinessProbe: {}
+  startupProbe: {}
+  lifecycle: {}
+  securityContext: {}
+
+# Escape hatches.
+# specExtra        : merged into Kibana CR spec.
+# podTemplateExtra : merged into spec.podTemplate (on top of the above blocks).
+# containerExtra   : merged into the kibana container (on top of `container.*`).
+specExtra: {}
+podTemplateExtra: {}
+containerExtra: {}
+
+# ---------------------------------------------------------------------------
+# ServiceAccount
+# ---------------------------------------------------------------------------
+serviceAccount:
+  create: false
+  name: ""                # empty → <fullname>-kb
+  annotations: {}
+  imagePullSecrets: []
+  automountServiceAccountToken: true
+
+# ---------------------------------------------------------------------------
+# PodDisruptionBudget
+# ---------------------------------------------------------------------------
+# External PDB (policy/v1). Kibana is a stateless Deployment, so the standard
+# Kubernetes PDB is the correct path. Defaults off (single-replica clusters
+# can't benefit from a PDB).
+podDisruptionBudget:
+  enabled: false
+  maxUnavailable: 1
+  minAvailable: null
+
+# ---------------------------------------------------------------------------
+# HTTPRoute (Gateway API)
+# ---------------------------------------------------------------------------
+httproute:
+  enabled: false
+  parentRefs: []
+  # parentRefs:
+  #   - name: ngf
+  #     namespace: nginx-gateway
+  hostnames: []
+  # hostnames:
+  #   - kibana.example.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        # name omitted → defaults to <name>-kb-http
+        # port omitted → defaults to 5601
+        - port: 5601
+  httpsRedirect:
+    enabled: false
+    statusCode: 301
+    port: null
+    parentRefs: []
+
+# ---------------------------------------------------------------------------
+# Ingress (legacy, kept for migration)
+# ---------------------------------------------------------------------------
+# Prefer httproute on new deployments. When both are enabled the Ingress acts
+# as a parallel path (use during ingress-nginx → Gateway API migration).
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+  # host: kibana.example.com
+  annotations: {}
+  # annotations:
+  #   nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+  tls: []
+  # tls:
+  #   - hosts: [kibana.example.com]
+  #     secretName: kibana-tls
+  # Optional extra paths; default is "/" → <name>-kb-http:5601.
+  path: /
+  pathType: Prefix
+  # Override backend service name/port (defaults to <fullname>-kb-http:5601).
+  backend:
+    serviceName: ""
+    servicePort: 5601
+  extraPaths: []
+
+# ---------------------------------------------------------------------------
+# BackendTLSPolicy (Gateway API)
+# ---------------------------------------------------------------------------
+# Auto-generates a BackendTLSPolicy + CA ConfigMap pointing at the ECK self-
+# signed cert. Use only when Kibana serves HTTPS on :5601 (http.tls.enabled)
+# AND you expose it through a Gateway that validates TLS to the backend.
+backendTLSPolicy:
+  enabled: false
+
+# ---------------------------------------------------------------------------
+# ServiceMonitor (Prometheus Operator)
+# ---------------------------------------------------------------------------
+# Scrape Kibana's `/api/status` JSON endpoint (requires an exporter/sidecar)
+# or its native Prometheus endpoint on 8.x+. Defaults to a simple endpoint
+# shape; override via `endpoints` for custom exporters.
+serviceMonitor:
+  enabled: false
+  namespace: ""
+  releaseLabel: ""
+  interval: 30s
+  scrapeTimeout: 10s
+  selector: {}
+  endpoints: []
+
+# ---------------------------------------------------------------------------
+# NetworkPolicy
+# ---------------------------------------------------------------------------
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+  podSelector: {}
+
+# ---------------------------------------------------------------------------
+# ReferenceGrant (Gateway API cross-namespace)
+# ---------------------------------------------------------------------------
+referenceGrants: []
+# referenceGrants:
+#   - name: from-httproute
+#     from:
+#       - group: gateway.networking.k8s.io
+#         kind: HTTPRoute
+#         namespace: gateway-system
+#     to:
+#       - group: ""
+#         kind: Service

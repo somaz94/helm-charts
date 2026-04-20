@@ -1,0 +1,22 @@
+# Patterns to ignore when building Helm packages.
+.DS_Store
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.project
+.idea/
+*.tmproj
+.vscode/
+
+# upgrade.sh bookkeeping — chart-maintainer tooling, not shipped in tarballs.
+upgrade.sh
+backup/

@@ -1,0 +1,124 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: {{ include "kibana-eck.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kibana-eck.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.kibana.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "kibana-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.kibana.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  version: {{ .Values.version | quote }}
+  {{- with .Values.image }}
+  image: {{ . | quote }}
+  {{- end }}
+  count: {{ .Values.replicas }}
+  elasticsearchRef:
+    name: {{ .Values.elasticsearchRef.name }}
+    {{- with .Values.elasticsearchRef.namespace }}
+    namespace: {{ . }}
+    {{- end }}
+    {{- with .Values.elasticsearchRef.serviceName }}
+    serviceName: {{ . }}
+    {{- end }}
+  {{- with .Values.enterpriseSearchRef }}
+  enterpriseSearchRef:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.http }}
+  http:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- /* Compose spec.config: explicit config values + session-cookie defaults
+         when TLS is disabled at the pod level (so cookies aren't Secure over
+         plain HTTP from an ingress). */}}
+  {{- $cfg := deepCopy (default (dict) .Values.config) }}
+  {{- $tlsDisabled := false }}
+  {{- $sscBlock := (dig "tls" "selfSignedCertificate" (dict) .Values.http) }}
+  {{- if and (kindIs "map" $sscBlock) ($sscBlock.disabled) }}{{- $tlsDisabled = true }}{{- end }}
+  {{- if $tlsDisabled }}
+  {{- if not (hasKey $cfg "xpack.security.secureCookies") }}
+  {{- $_ := set $cfg "xpack.security.secureCookies" false }}
+  {{- end }}
+  {{- if not (hasKey $cfg "xpack.security.sameSiteCookies") }}
+  {{- $_ := set $cfg "xpack.security.sameSiteCookies" "Lax" }}
+  {{- end }}
+  {{- end }}
+  {{- if $cfg }}
+  config:
+    {{- toYaml $cfg | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.secureSettings }}
+  secureSettings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.monitoring }}
+  monitoring:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- $sa := .Values.serviceAccountName }}
+  {{- if and (not $sa) .Values.serviceAccount.create }}
+  {{- $sa = (.Values.serviceAccount.name | default (printf "%s-kb" (include "kibana-eck.fullname" .))) }}
+  {{- end }}
+  {{- if $sa }}
+  serviceAccountName: {{ $sa }}
+  {{- end }}
+  {{- with .Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ . }}
+  {{- end }}
+
+  podTemplate:
+    {{- /* Start from podTemplateExtra so chart-owned fields win on overlap */}}
+    {{- $pt := deepCopy (default (dict) .Values.podTemplateExtra) }}
+    {{- $ptSpec := default (dict) (get $pt "spec") }}
+
+    {{- /* Top-level pod scheduling */}}
+    {{- with .Values.podTemplate.nodeSelector }}{{- $_ := set $ptSpec "nodeSelector" . }}{{- end }}
+    {{- with .Values.podTemplate.tolerations }}{{- $_ := set $ptSpec "tolerations" . }}{{- end }}
+    {{- with .Values.podTemplate.affinity }}{{- $_ := set $ptSpec "affinity" . }}{{- end }}
+    {{- with .Values.podTemplate.topologySpreadConstraints }}{{- $_ := set $ptSpec "topologySpreadConstraints" . }}{{- end }}
+    {{- with .Values.podTemplate.priorityClassName }}{{- $_ := set $ptSpec "priorityClassName" . }}{{- end }}
+    {{- with .Values.podTemplate.volumes }}{{- $_ := set $ptSpec "volumes" . }}{{- end }}
+    {{- with .Values.podTemplate.podSecurityContext }}{{- $_ := set $ptSpec "securityContext" . }}{{- end }}
+    {{- with .Values.podTemplate.initContainers }}{{- $_ := set $ptSpec "initContainers" . }}{{- end }}
+
+    {{- /* Build the main kibana container */}}
+    {{- $mainContainer := deepCopy (default (dict) .Values.containerExtra) }}
+    {{- $_ := set $mainContainer "name" "kibana" }}
+    {{- with .Values.resources }}{{- $_ := set $mainContainer "resources" . }}{{- end }}
+
+    {{- /* NODE_OPTIONS env var */}}
+    {{- $env := default (list) .Values.container.env }}
+    {{- if .Values.nodeOptions }}
+    {{- $env = prepend $env (dict "name" "NODE_OPTIONS" "value" (join " " .Values.nodeOptions)) }}
+    {{- end }}
+    {{- if $env }}{{- $_ := set $mainContainer "env" $env }}{{- end }}
+    {{- with .Values.container.envFrom }}{{- $_ := set $mainContainer "envFrom" . }}{{- end }}
+    {{- with .Values.container.volumeMounts }}{{- $_ := set $mainContainer "volumeMounts" . }}{{- end }}
+    {{- with .Values.container.livenessProbe }}{{- $_ := set $mainContainer "livenessProbe" . }}{{- end }}
+    {{- with .Values.container.readinessProbe }}{{- $_ := set $mainContainer "readinessProbe" . }}{{- end }}
+    {{- with .Values.container.startupProbe }}{{- $_ := set $mainContainer "startupProbe" . }}{{- end }}
+    {{- with .Values.container.lifecycle }}{{- $_ := set $mainContainer "lifecycle" . }}{{- end }}
+    {{- with .Values.container.securityContext }}{{- $_ := set $mainContainer "securityContext" . }}{{- end }}
+
+    {{- /* containers: main + sidecars */}}
+    {{- $containers := list $mainContainer }}
+    {{- range $sc := .Values.podTemplate.sidecars }}
+    {{- $containers = append $containers $sc }}
+    {{- end }}
+    {{- $_ := set $ptSpec "containers" $containers }}
+    {{- $_ := set $pt "spec" $ptSpec }}
+    {{- toYaml $pt | nindent 4 }}
+
+  {{- /* Final escape hatch — merged into spec */}}
+  {{- with .Values.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

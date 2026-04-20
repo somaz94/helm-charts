@@ -1,0 +1,419 @@
+# Default values for elasticsearch-eck.
+#
+# The chart renders a single Elasticsearch Custom Resource (plus optional
+# elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and
+# ServiceMonitor). The ECK operator must be installed separately (prerequisite):
+#   helm repo add elastic https://helm.elastic.co
+#   helm install eck-operator elastic/eck-operator -n elastic-system --create-namespace
+#
+# Defaults match a single-node dev/staging cluster. Production HA is opt-in by
+# expanding nodeSets[] (e.g. 3 master + 3 data) and enabling podDisruptionBudget.
+#
+# Extensibility: every ECK CR field is reachable either via a named values path
+# or via the `specExtra` / `podTemplateExtra` / `nodeSets[].nodeSetExtra` escape
+# hatches. You should never need to fork this chart.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+# Labels / annotations applied to every resource in this chart.
+commonLabels: {}
+commonAnnotations: {}
+
+# Per-resource metadata override. Shape mirrors the template filenames so you
+# can attach (e.g.) a Prometheus scrape annotation only to the ServiceMonitor
+# without polluting the Elasticsearch CR.
+resourceMetadata:
+  elasticsearch:
+    labels: {}
+    annotations: {}
+  elasticUserSecret:
+    labels: {}
+    annotations: {}
+  serviceAccount:
+    labels: {}
+    annotations: {}
+  podDisruptionBudget:
+    labels: {}
+    annotations: {}
+  httproute:
+    labels: {}
+    annotations: {}
+  ingress:
+    labels: {}
+    annotations: {}
+  backendTLSPolicy:
+    labels: {}
+    annotations: {}
+  serviceMonitor:
+    labels: {}
+    annotations: {}
+  networkPolicy:
+    labels: {}
+    annotations: {}
+  referenceGrant:
+    labels: {}
+    annotations: {}
+
+# ---------------------------------------------------------------------------
+# Elasticsearch Custom Resource — top-level spec fields
+# ---------------------------------------------------------------------------
+# CR name. Downstream ECK-managed resources are derived from this:
+#   Service:     <name>-es-http            (port 9200)
+#   Service:     <name>-es-internal-http
+#   Service:     <name>-es-transport
+#   Secret:      <name>-es-elastic-user
+#   Secret:      <name>-es-http-certs-public
+#   Secret:      <name>-es-http-certs-internal
+#   StatefulSet: <name>-es-<nodeSetName>
+# Leave empty to default to the Helm release name.
+name: ""
+
+# Elastic Stack version. Bump with upgrade.sh to stay in sync with Elastic's
+# latest GA. Kept in the CR spec.version field.
+version: "9.3.3"
+
+# Optional override for the Elasticsearch container image. ECK defaults to
+# docker.elastic.co/elasticsearch/elasticsearch:<version>. Override for
+# private mirrors / air-gapped registries.
+image: ""
+
+# Password for the built-in `elastic` superuser.
+# - Empty string ("") → ECK auto-generates a random password; retrieve with
+#     kubectl -n <ns> get secret <name>-es-elastic-user -o jsonpath='{.data.elastic}' | base64 -d
+# - Non-empty → chart renders a Secret `<name>-es-elastic-user` that ECK picks up.
+# For production, prefer external-secrets / Vault injection over values.
+elasticPassword: ""
+
+# spec.serviceAccountName — set if using IRSA or restricted service accounts.
+serviceAccountName: ""
+
+# spec.http: TLS and Service customization of the Elasticsearch HTTP endpoint.
+# Structured passthrough — provide the shape ECK expects.
+http:
+  tls:
+    # ECK self-signed cert by default. Disable if terminating TLS upstream
+    # (HTTPRoute+BackendTLSPolicy, service mesh, etc.) or supplying your own
+    # cert via http.tls.certificate.secretName.
+    selfSignedCertificate: {}
+    # certificate:
+    #   secretName: elasticsearch-tls
+  # service:
+  #   metadata:
+  #     annotations: {}
+  #   spec:
+  #     type: ClusterIP
+
+# spec.transport: internal node-to-node TLS and Service customization.
+transport: {}
+# transport:
+#   tls:
+#     certificate:
+#       secretName: elasticsearch-transport-tls
+#   service:
+#     spec:
+#       type: ClusterIP
+
+# spec.secureSettings: Secret sources mounted into the Elasticsearch keystore.
+# See https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-es-secure-settings.html
+secureSettings: []
+# secureSettings:
+#   - secretName: s3-snapshot-creds
+
+# spec.auth: declarative roles and fileRealm users.
+auth: {}
+# auth:
+#   roles:
+#     - secretName: custom-roles
+#   fileRealm:
+#     - secretName: custom-users
+
+# spec.remoteClusters: CCR/CCS connections.
+remoteClusters: []
+
+# spec.monitoring: Stack Monitoring (ship metrics/logs to another ES cluster).
+monitoring: {}
+# monitoring:
+#   metrics:
+#     elasticsearchRefs:
+#       - name: monitoring-es
+#         namespace: observability
+#   logs:
+#     elasticsearchRefs:
+#       - name: monitoring-es
+#         namespace: observability
+
+# spec.updateStrategy.changeBudget: controls rolling updates.
+# maxSurge/maxUnavailable tune how many nodes ECK may replace concurrently.
+# Leave empty to use ECK defaults (maxUnavailable=1, maxSurge=-1 unlimited).
+updateStrategy: {}
+# updateStrategy:
+#   changeBudget:
+#     maxSurge: 1
+#     maxUnavailable: 1
+
+# Escape hatch: arbitrary fields merged into spec at render time.
+# Use for fields not explicitly surfaced above.
+specExtra: {}
+
+# ---------------------------------------------------------------------------
+# Node sets — array of one or more StatefulSets
+# ---------------------------------------------------------------------------
+# Default is a single all-roles node set (matches the mgmt dev/staging
+# topology). For HA, split into dedicated master + data node sets; see
+# README "Production HA" example.
+nodeSets:
+  - name: default
+    count: 1
+    roles:
+      - master
+      - data
+      - data_content
+      - data_hot
+      - data_warm
+      - data_cold
+      - ingest
+      - ml
+      - remote_cluster_client
+      - transform
+    # elasticsearch.yml config. Free-form; merged with node.roles above.
+    config:
+      # NFS + hugepages: disable mmap (use niofs). Safe default; remove for
+      # block storage.
+      node.store.allow_mmap: false
+    # Resource requests/limits for the elasticsearch container.
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "2Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+    # Persistent storage for data.
+    storage:
+      storageClass: ""        # empty → cluster default StorageClass
+      size: 30Gi
+      accessModes:
+        - ReadWriteOnce
+    # Extra VolumeClaimTemplates (beyond the default `elasticsearch-data`).
+    # Full ECK shape (metadata + spec). Merged after the auto-generated one.
+    volumeClaimTemplates: []
+    # Pod-level scheduling & runtime config.
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    topologySpreadConstraints: []
+    priorityClassName: ""
+    # Extra initContainers (beyond the built-in sysctl one). Full container spec.
+    initContainers: []
+    # Sidecar containers (full container spec). Appended after the main
+    # elasticsearch container.
+    sidecars: []
+    # Extra env / envFrom / volumes / volumeMounts on the elasticsearch container.
+    env: []
+    envFrom: []
+    volumes: []
+    volumeMounts: []
+    # Probes — ECK ships sensible defaults; override only when needed.
+    livenessProbe: {}
+    readinessProbe: {}
+    startupProbe: {}
+    lifecycle: {}
+    # PodSecurityContext / container securityContext.
+    podSecurityContext: {}
+    securityContext: {}
+    # serviceAccountName override per node set (rare).
+    serviceAccountName: ""
+    # Extra container-level fields merged into the elasticsearch container.
+    containerExtra: {}
+    # Extra fields merged into spec.podTemplate.
+    podTemplateExtra: {}
+    # Extra fields merged into the nodeSet spec (sibling of `name`, `count`,
+    # `config`, `podTemplate`, `volumeClaimTemplates`).
+    nodeSetExtra: {}
+
+# Enables the privileged init container that sets vm.max_map_count=262144.
+# Required on most kernels for production ES. Safe default = on.
+sysctlInitContainer:
+  enabled: true
+
+# ---------------------------------------------------------------------------
+# PodDisruptionBudget
+# ---------------------------------------------------------------------------
+# Two mutually compatible modes:
+#  - native=true  → renders spec.podDisruptionBudget inside the Elasticsearch
+#                   CR (ECK reconciles the PDB itself — recommended).
+#  - external=true → renders a separate policy/v1 PodDisruptionBudget object
+#                   targeting the Elasticsearch pods by label. Use only when
+#                   ECK native is insufficient (custom selector, etc.).
+# Default off: single-node clusters cannot benefit from a PDB.
+podDisruptionBudget:
+  native: false
+  external: false
+  # Applies to both native and external modes.
+  maxUnavailable: 1
+  # external-only:
+  minAvailable: null
+  # Additional labels/annotations already covered by resourceMetadata.podDisruptionBudget.
+
+# ---------------------------------------------------------------------------
+# ServiceAccount
+# ---------------------------------------------------------------------------
+# Optional: render a dedicated ServiceAccount and wire it to the Elasticsearch
+# pods via serviceAccountName. Useful for IRSA / Workload Identity / image
+# pull secret scoping. Leave `create: false` to reuse the default SA.
+serviceAccount:
+  create: false
+  name: ""                # empty → <fullname>-es
+  annotations: {}
+  # annotations:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::123:role/es
+  imagePullSecrets: []
+  automountServiceAccountToken: true
+
+# ---------------------------------------------------------------------------
+# HTTPRoute (Gateway API)
+# ---------------------------------------------------------------------------
+# Exposes the Elasticsearch HTTP endpoint through a Gateway. Disabled by
+# default — enable and set parentRefs/hostnames to expose externally.
+httproute:
+  enabled: false
+  parentRefs: []
+  # parentRefs:
+  #   - name: ngf
+  #     namespace: nginx-gateway
+  hostnames: []
+  # hostnames:
+  #   - elasticsearch.example.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        # name omitted → defaults to <name>-es-http
+        # port omitted → defaults to 9200
+        - port: 9200
+  # Optional sibling HTTPRoute that 301-redirects HTTP → HTTPS.
+  httpsRedirect:
+    enabled: false
+    statusCode: 301
+    port: null
+    parentRefs: []
+
+# ---------------------------------------------------------------------------
+# Ingress (legacy, for non-Gateway-API clusters)
+# ---------------------------------------------------------------------------
+# Prefer `httproute` on new deployments. Ingress kept for compatibility with
+# ingress-nginx / Traefik / GKE / AKS-style setups. Works alongside httproute
+# during migration — disable once cutover is complete.
+ingress:
+  enabled: false
+  className: ""           # e.g. "nginx", "traefik", "gce"
+  host: ""                # e.g. elasticsearch.example.com
+  annotations: {}
+  # annotations:
+  #   nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  #   nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+  #   nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+  tls: []
+  # tls:
+  #   - hosts: [elasticsearch.example.com]
+  #     secretName: elasticsearch-tls
+  path: /
+  pathType: Prefix
+  # Override backend service name/port (defaults to <fullname>-es-http:9200).
+  backend:
+    serviceName: ""
+    servicePort: 9200
+  # Extra paths appended after the default "/" rule (e.g. redirect paths).
+  extraPaths: []
+
+# ---------------------------------------------------------------------------
+# BackendTLSPolicy (Gateway API)
+# ---------------------------------------------------------------------------
+# Auto-generates a BackendTLSPolicy + CA ConfigMap referencing ECK's
+# self-signed cert. Required when httproute is enabled and Elasticsearch
+# serves HTTPS (default). Uses `lookup` so it is skipped during first-time
+# `helm install --dry-run` when the ECK secret does not exist yet.
+backendTLSPolicy:
+  enabled: false
+
+# ---------------------------------------------------------------------------
+# ReferenceGrant (Gateway API cross-namespace)
+# ---------------------------------------------------------------------------
+# Allows resources in other namespaces (e.g. an HTTPRoute in ns=routes, or a
+# Kibana CR in ns=kibana) to reference the Elasticsearch Service / Secret in
+# this namespace. Shipped as a list; each entry renders one ReferenceGrant.
+referenceGrants: []
+# referenceGrants:
+#   - name: from-kibana
+#     from:
+#       - group: kibana.k8s.elastic.co
+#         kind: Kibana
+#         namespace: observability
+#     to:
+#       - group: ""
+#         kind: Service
+#         name: ""               # empty → <fullname>-es-http
+#   - name: from-gateway
+#     from:
+#       - group: gateway.networking.k8s.io
+#         kind: HTTPRoute
+#         namespace: gateway-system
+#     to:
+#       - group: ""
+#         kind: Service
+
+# ---------------------------------------------------------------------------
+# NetworkPolicy
+# ---------------------------------------------------------------------------
+# Lock down traffic to/from the Elasticsearch pods. Opt-in — renders a
+# single networking.k8s.io/v1 NetworkPolicy when enabled. Provide `ingress`
+# and `egress` as native NetworkPolicy shapes (arrays of rules).
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  # Empty ingress/egress with policyTypes set = deny all of that direction.
+  ingress: []
+  # ingress:
+  #   - from:
+  #       - podSelector:
+  #           matchLabels:
+  #             common.k8s.elastic.co/type: kibana
+  #     ports:
+  #       - protocol: TCP
+  #         port: 9200
+  egress: []
+  # egress:
+  #   - to:
+  #       - namespaceSelector:
+  #           matchLabels:
+  #             kubernetes.io/metadata.name: kube-system
+  #     ports:
+  #       - protocol: UDP
+  #         port: 53
+  # Override the pod selector; defaults to all ES pods for this release.
+  podSelector: {}
+
+# ---------------------------------------------------------------------------
+# ServiceMonitor (Prometheus Operator)
+# ---------------------------------------------------------------------------
+# Prometheus scrape config for the ECK-managed Elasticsearch Service.
+# Requires a sidecar exporter (e.g. elasticsearch_exporter) or ES 8.x+
+# Prometheus endpoint. Disabled by default.
+serviceMonitor:
+  enabled: false
+  # namespace defaults to Release.Namespace when empty.
+  namespace: ""
+  # Label selector to pick up by the Prometheus instance.
+  releaseLabel: ""
+  interval: 30s
+  scrapeTimeout: 10s
+  # Override the service selector if you run a non-default exporter.
+  selector: {}
+  # Full endpoints[] shape. Leave empty to let the template render a minimal
+  # endpoint hitting /_prometheus/metrics on port 9200.
+  endpoints: []

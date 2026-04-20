@@ -1,0 +1,52 @@
+{{- if .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "elasticsearch-eck.fullname" . }}
+  namespace: {{ .Values.serviceMonitor.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "elasticsearch-eck.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.releaseLabel }}
+    release: {{ . }}
+    {{- end }}
+    {{- with .Values.resourceMetadata.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "elasticsearch-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.serviceMonitor.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.serviceMonitor.selector }}
+  selector:
+    {{- toYaml .Values.serviceMonitor.selector | nindent 4 }}
+  {{- else }}
+  selector:
+    matchLabels:
+      common.k8s.elastic.co/type: elasticsearch
+      elasticsearch.k8s.elastic.co/cluster-name: {{ include "elasticsearch-eck.fullname" . }}
+  {{- end }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    {{- if .Values.serviceMonitor.endpoints }}
+    {{- toYaml .Values.serviceMonitor.endpoints | nindent 4 }}
+    {{- else }}
+    - port: https
+      path: /_prometheus/metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+      basicAuth:
+        username:
+          name: {{ include "elasticsearch-eck.fullname" . }}-es-elastic-user
+          key: elastic
+        password:
+          name: {{ include "elasticsearch-eck.fullname" . }}-es-elastic-user
+          key: elastic
+    {{- end }}
+{{- end }}

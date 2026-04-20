@@ -1,0 +1,38 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "kibana-eck.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kibana-eck.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.ingress.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $mergedAnn := merge (deepCopy (default (dict) .Values.ingress.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.ingress.annotations)) (deepCopy (default (dict) .Values.commonAnnotations)) }}
+  {{- if $mergedAnn }}
+  annotations:
+    {{- toYaml $mergedAnn | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - {{- with .Values.ingress.host }}
+      host: {{ . | quote }}
+      {{- end }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.path | default "/" }}
+            pathType: {{ .Values.ingress.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ include "kibana-eck.httpServiceName" . }}
+                port:
+                  number: 5601
+{{- end }}

@@ -1,0 +1,32 @@
+{{- /*
+External PodDisruptionBudget — only rendered when podDisruptionBudget.external=true.
+Prefer podDisruptionBudget.native=true (rendered inside the Elasticsearch CR);
+this template exists for cases where native ECK handling is insufficient (e.g.
+custom selector spanning multiple ES clusters).
+*/ -}}
+{{- if .Values.podDisruptionBudget.external }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "elasticsearch-eck.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "elasticsearch-eck.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.podDisruptionBudget.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "elasticsearch-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.podDisruptionBudget.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      elasticsearch.k8s.elastic.co/cluster-name: {{ include "elasticsearch-eck.fullname" . }}
+{{- end }}

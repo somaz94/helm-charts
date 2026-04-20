@@ -1,0 +1,58 @@
+{{- /*
+BackendTLSPolicy + CA ConfigMap for Kibana — only when Kibana serves HTTPS on
+:5601 AND is exposed through a Gateway HTTPRoute. ECK provisions the HTTPS
+cert; we copy the CA out of the ECK-managed Secret using `lookup`. On first
+install the Secret does not exist yet, so the resource silently no-ops. Re-run
+`helm upgrade` after Kibana is Ready to render it.
+*/ -}}
+{{- if and .Values.httproute.enabled .Values.backendTLSPolicy.enabled }}
+{{- $secretName := printf "%s-kb-http-certs-public" (include "kibana-eck.fullname" .) }}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $secretName }}
+{{- if $secret }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kibana-eck.fullname" . }}-ca
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kibana-eck.labels" . | nindent 4 }}
+    kibana.k8s.elastic.co/source-secret: {{ $secretName }}
+    {{- with .Values.resourceMetadata.backendTLSPolicy.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "kibana-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.backendTLSPolicy.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+data:
+  ca.crt: |
+{{ index $secret.data "ca.crt" | b64dec | indent 4 }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: {{ include "kibana-eck.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kibana-eck.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.backendTLSPolicy.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: {{ include "kibana-eck.httpServiceName" . }}
+  validation:
+    caCertificateRefs:
+      - group: ""
+        kind: ConfigMap
+        name: {{ include "kibana-eck.fullname" . }}-ca
+    hostname: {{ include "kibana-eck.httpServiceName" . }}
+{{- end }}
+{{- end }}
