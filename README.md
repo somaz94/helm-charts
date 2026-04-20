@@ -7,13 +7,19 @@ Charts are published to:
 - **Helm repo** (classic): `https://charts.somaz.blog`
 - **GHCR** (OCI registry): `oci://ghcr.io/somaz94/charts/<chart-name>`
 
+<br/>
+
 ## Charts
 
 | Chart | Version | Description |
 |---|---|---|
 | [nginx-gateway-cr](charts/nginx-gateway-cr) | `0.2.0` | Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric |
 
+<br/>
+
 ## Install
+
+<br/>
 
 ### Classic Helm repo
 
@@ -24,11 +30,15 @@ helm search repo somaz94
 helm install <release> somaz94/<chart-name>
 ```
 
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install <release> oci://ghcr.io/somaz94/charts/<chart-name> --version <version>
 ```
+
+<br/>
 
 ## Releasing
 
@@ -38,6 +48,8 @@ Charts are released automatically when a `Chart.yaml` `version` bump is merged t
 2. Open a PR. CI runs `helm lint` and `chart-testing` on changed charts.
 3. After merge, [chart-releaser-action](https://github.com/helm/chart-releaser-action) packages the chart, creates a GitHub Release tagged `<chart>-<version>`, and updates the `gh-pages` index. The same tarball is also pushed to GHCR as an OCI artifact.
 
+<br/>
+
 ## Contributing
 
 PRs welcome. Please:
@@ -45,6 +57,8 @@ PRs welcome. Please:
 - Bump the chart `version` in `Chart.yaml` for any change to chart contents.
 - Update the chart's `README.md` if values or behavior change.
 - Verify locally with `helm lint charts/<chart>` and `helm template charts/<chart>`.
+
+<br/>
 
 ## License
 
