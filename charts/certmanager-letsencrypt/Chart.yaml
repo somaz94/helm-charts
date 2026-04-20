@@ -2,7 +2,7 @@ apiVersion: v2
 name: certmanager-letsencrypt
 description: Helm chart for Let's Encrypt certificates with cert-manager — manages ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place. Requires cert-manager already installed.
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "1.0.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -31,9 +31,7 @@ annotations:
       url: https://letsencrypt.org/
   artifacthub.io/changes: |
     - kind: added
-      description: Initial release. Multi-issuer / multi-certificate / multi-secret support.
+      description: Optional `ingresses[]` block — emits Ingress resources alongside the Certificate for the one-shot install pattern (cert-manager.io/cluster-issuer annotation already wired up).
     - kind: added
-      description: Built-in Let's Encrypt prod / staging ACME server presets.
-    - kind: added
-      description: Supports DNS-01 solvers for Cloudflare, Route53, Cloud DNS, and any other cert-manager-supported provider via passthrough.
+      description: Per-provider end-to-end examples (Cloudflare, AWS Route53, Google Cloud DNS) in README — secret + ClusterIssuer + Certificate + Ingress in one values file.
   artifacthub.io/prerelease: "false"

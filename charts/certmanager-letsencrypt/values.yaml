@@ -114,3 +114,38 @@ certificates: []
 #       renewBefore: 720h      # 30d (default)
 #       privateKey: {}         # optional: { algorithm: RSA, size: 4096, ... }
 #       usages: []             # optional: [server auth, client auth, ...]
+
+# ---------------------------------------------------------------------------
+# Ingresses (optional, for one-shot install)
+# ---------------------------------------------------------------------------
+# Optional: create one or more Ingress resources alongside the Certificate.
+# Most users prefer to keep Ingress in their app chart and just add the
+# `cert-manager.io/cluster-issuer` annotation themselves. This block exists
+# for the "single install bundles secret + issuer + cert + ingress" pattern.
+#
+# `rules` and `tls` are passed through verbatim to Ingress.spec — match the
+# standard Kubernetes Ingress v1 schema.
+ingresses: []
+# Example:
+#   ingresses:
+#     - name: example-com-ingress
+#       namespace: default
+#       ingressClassName: nginx
+#       annotations:
+#         cert-manager.io/cluster-issuer: letsencrypt-prod
+#         nginx.ingress.kubernetes.io/rewrite-target: /
+#       rules:
+#         - host: example.com
+#           http:
+#             paths:
+#               - path: /
+#                 pathType: Prefix
+#                 backend:
+#                   service:
+#                     name: my-app
+#                     port:
+#                       name: http       # OR: number: 80
+#       tls:
+#         - hosts:
+#             - example.com
+#           secretName: example-com-tls   # must match certificates[].secretName above

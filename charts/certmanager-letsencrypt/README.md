@@ -26,7 +26,7 @@ The upstream cert-manager chart installs the operator and CRDs, but does **not**
 
 ```bash
 helm install cert oci://ghcr.io/somaz94/charts/certmanager-letsencrypt \
-  --version 0.1.0 \
+  --version 0.2.0 \
   --namespace cert-manager \
   -f my-values.yaml
 ```
@@ -42,6 +42,10 @@ helm install cert somaz94/certmanager-letsencrypt \
 ```
 
 ## Quick examples
+
+Each per-provider example below is a **complete, end-to-end install**: credential `Secret` → `ClusterIssuer` (prod + staging) → `Certificate` → `Ingress` (with the cert-manager annotation pre-wired). Drop into a single values file and `helm install`.
+
+> Use the **staging** issuer (`letsencrypt-staging`) while iterating to avoid Let's Encrypt rate limits, then switch `issuerRef.name` to `letsencrypt-prod` once everything works.
 
 ### Cloudflare DNS-01
 
@@ -85,6 +89,29 @@ certificates:
     dnsNames:
       - example.com
       - "*.example.com"
+
+ingresses:
+  - name: example-com-ingress
+    namespace: default
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    rules:
+      - host: example.com
+        http:
+          paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: my-app
+                  port:
+                    name: http
+    tls:
+      - hosts:
+          - example.com
+        secretName: example-com-tls
 ```
 
 ### AWS Route53 DNS-01
@@ -110,6 +137,18 @@ clusterIssuers:
               name: route53-credentials
               key: secret-access-key
 
+  - name: letsencrypt-staging
+    email: ops@example.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    solvers:
+      - dns01:
+          route53:
+            region: us-east-1
+            accessKeyID: "<aws-access-key>"
+            secretAccessKeySecretRef:
+              name: route53-credentials
+              key: secret-access-key
+
 certificates:
   - name: example-com-tls
     namespace: default
@@ -119,7 +158,32 @@ certificates:
       kind: ClusterIssuer
     dnsNames:
       - example.com
+
+ingresses:
+  - name: example-com-ingress
+    namespace: default
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    rules:
+      - host: example.com
+        http:
+          paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: my-app
+                  port:
+                    name: http
+    tls:
+      - hosts:
+          - example.com
+        secretName: example-com-tls
 ```
+
+> For IRSA / IAM Roles for Service Accounts: omit `accessKeyID` and `secretAccessKeySecretRef`, use cert-manager's `serviceAccount` ServiceAccount referenced via `eks.amazonaws.com/role-arn` annotation. See [cert-manager Route53 docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/).
 
 ### Google Cloud DNS DNS-01
 
@@ -143,6 +207,17 @@ clusterIssuers:
               name: clouddns-credentials
               key: key.json
 
+  - name: letsencrypt-staging
+    email: ops@example.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    solvers:
+      - dns01:
+          cloudDNS:
+            project: "<gcp-project-id>"
+            serviceAccountSecretRef:
+              name: clouddns-credentials
+              key: key.json
+
 certificates:
   - name: example-com-tls
     namespace: default
@@ -152,7 +227,32 @@ certificates:
       kind: ClusterIssuer
     dnsNames:
       - example.com
+
+ingresses:
+  - name: example-com-ingress
+    namespace: default
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    rules:
+      - host: example.com
+        http:
+          paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: my-app
+                  port:
+                    name: http
+    tls:
+      - hosts:
+          - example.com
+        secretName: example-com-tls
 ```
+
+> For Workload Identity (recommended on GKE): omit the JSON Secret, use `serviceAccountSecretRef`-less form with cert-manager pod's `iam.gke.io/gcp-service-account` annotation. See [cert-manager Cloud DNS docs](https://cert-manager.io/docs/configuration/acme/dns01/google/).
 
 ## Values reference
 
@@ -205,11 +305,25 @@ certificates:
 | `isCA` | bool | no | Mark cert as a CA. |
 | `secretTemplate` | object | no | Labels/annotations on the resulting Secret. |
 
+### `ingresses[]` (optional)
+
+Optional. Most users keep Ingress in their app chart and just add a `cert-manager.io/cluster-issuer` annotation; this block exists for the one-shot install pattern (issuer + cert + ingress in one values file).
+
+| Key | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | yes | Ingress name. |
+| `namespace` | string | yes | Ingress namespace (must match the Certificate's namespace if it shares the TLS Secret). |
+| `labels` | object | no | Extra labels. |
+| `annotations` | object | no | Extra annotations (typically `cert-manager.io/cluster-issuer: <issuer-name>`). |
+| `ingressClassName` | string | no | Ingress class (e.g. `nginx`). |
+| `rules` | list | no | Passthrough to `Ingress.spec.rules` (Kubernetes Ingress v1 schema). |
+| `tls` | list | no | Passthrough to `Ingress.spec.tls`. `secretName` should match `certificates[].secretName`. |
+
 ## Notes
 
 ### Ingress
 
-This chart **does not create Ingress resources** — that's intentional. Ingresses are app-specific. The recommended pattern is to add the cert-manager annotation on your existing Ingress:
+This chart can optionally create Ingress resources via the `ingresses[]` block (see examples above). It's **off by default** because most users keep Ingress in their app chart and only add the cert-manager annotation:
 
 ```yaml
 metadata:
@@ -222,7 +336,7 @@ spec:
       secretName: example-com-tls    # the secretName from your Certificate
 ```
 
-cert-manager will see the annotation, look up the matching Certificate, and ensure the TLS Secret is in place.
+cert-manager sees the annotation, looks up the matching Certificate, and ensures the TLS Secret is in place. Use the `ingresses[]` block only when you want the chart to bundle the Ingress alongside the cert.
 
 ### Use staging while iterating
 

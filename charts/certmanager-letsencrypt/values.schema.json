@@ -35,6 +35,10 @@
     "certificates": {
       "type": "array",
       "items": { "$ref": "#/$defs/certificate" }
+    },
+    "ingresses": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ingress" }
     }
   },
   "$defs": {
@@ -83,6 +87,20 @@
         "server": { "type": "string", "format": "uri" },
         "privateKeySecretRef": { "type": "string", "minLength": 1 },
         "solvers": { "type": "array", "minItems": 1 }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "required": ["name", "namespace"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "namespace": { "type": "string", "minLength": 1 },
+        "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "ingressClassName": { "type": "string" },
+        "rules": { "type": "array" },
+        "tls": { "type": "array" }
       }
     },
     "certificate": {
