@@ -5,6 +5,45 @@ entries:
       artifacthub.io/category: networking
       artifacthub.io/changes: |
         - kind: added
+          description: PodMonitor templates (controller + dataplane) — recommended for NGF 2.x where the controller exposes /metrics on the Pod, not the Service
+        - kind: added
+          description: podMonitor.controller / podMonitor.dataplane values blocks (mirror serviceMonitor.* shape)
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: NGINX Gateway Fabric
+          url: https://github.com/nginx/nginx-gateway-fabric
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-04-20T03:49:38.762624287Z"
+    description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX
+      Gateway Fabric, deployed alongside the upstream NGF controller chart.
+    digest: 9a5b3f5b91cbfd7a7d0e512a3d85f0144c8d221c1009c924043f078a5f89fa7d
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - nginx
+    - nginx-gateway-fabric
+    - ngf
+    - gateway-api
+    - kubernetes
+    - networking
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: nginx-gateway-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.3.0/nginx-gateway-cr-0.3.0.tgz
+    version: 0.3.0
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: added
           description: values.schema.json (JSON Schema draft-07) for input validation and ArtifactHub form rendering
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
@@ -71,4 +110,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.1.0/nginx-gateway-cr-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-20T02:51:38.872423108Z"
+generated: "2026-04-20T03:49:38.762635346Z"
