@@ -48,10 +48,6 @@ jobs:
         with:
           charts_dir: charts
           skip_existing: true
-          # In a multi-chart monorepo, marking each release as "Latest" is misleading
-          # because the concept of "latest" applies per-chart, not repo-wide. Each
-          # chart has its own version line.
-          make_release_latest: false
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
