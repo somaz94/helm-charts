@@ -62,6 +62,16 @@ helm template ci charts/<chart-name> | kubeconform -strict -ignore-missing-schem
 
 ### Add a new chart
 
+The fastest path is to copy an existing chart and adapt it:
+
+```bash
+make scaffold CHART=<new-chart> FROM=<existing-chart>
+# Copies charts/<existing-chart>/ -> charts/<new-chart>/, renames in Chart.yaml,
+# resets version to 0.1.0. Then edit description/keywords/values/templates.
+```
+
+Or scaffold manually:
+
 ```bash
 mkdir -p charts/<new-chart>/templates
 # Create Chart.yaml, values.yaml, values.schema.json, README.md, templates/...

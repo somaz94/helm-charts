@@ -45,6 +45,24 @@ version: ## Show CHART current version. Usage: make version CHART=<name>
 
 ##@ Development
 
+.PHONY: scaffold
+scaffold: ## Copy an existing chart as starting point. Usage: make scaffold CHART=<new> FROM=<existing>
+	@if [ -z "$(CHART)" ] || [ -z "$(FROM)" ]; then echo "Usage: make scaffold CHART=<new> FROM=<existing>"; exit 1; fi
+	@if [ -d "$(CHARTS_DIR)/$(CHART)" ]; then echo "ERROR: chart already exists: $(CHARTS_DIR)/$(CHART)"; exit 1; fi
+	@if [ ! -d "$(CHARTS_DIR)/$(FROM)" ]; then echo "ERROR: source chart not found: $(CHARTS_DIR)/$(FROM)"; exit 1; fi
+	cp -r $(CHARTS_DIR)/$(FROM) $(CHARTS_DIR)/$(CHART)
+	@sed -i.bak "s/^name:.*/name: $(CHART)/" $(CHARTS_DIR)/$(CHART)/Chart.yaml
+	@sed -i.bak "s/^version:.*/version: 0.1.0/" $(CHARTS_DIR)/$(CHART)/Chart.yaml
+	@rm $(CHARTS_DIR)/$(CHART)/Chart.yaml.bak
+	@echo "Scaffolded: $(CHARTS_DIR)/$(CHART) (copied from $(FROM), name renamed, version reset to 0.1.0)"
+	@echo ""
+	@echo "NEXT STEPS:"
+	@echo "  1. Edit $(CHARTS_DIR)/$(CHART)/Chart.yaml — description, keywords, artifacthub.io/changes"
+	@echo "  2. Replace $(CHARTS_DIR)/$(CHART)/values.yaml and values.schema.json with the new chart's schema"
+	@echo "  3. Replace templates/ with the new chart's manifests"
+	@echo "  4. Rewrite $(CHARTS_DIR)/$(CHART)/README.md"
+	@echo "  5. make lint CHART=$(CHART) && make template CHART=$(CHART)"
+
 .PHONY: lint
 lint: ## helm lint each chart (CHART=name to limit).
 	@for c in $(TARGET_CHARTS); do \
