@@ -1,0 +1,50 @@
+name: Generate Contributors
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_run:
+    workflows: ["Release"]
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update_contributors:
+    name: Update Contributors
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin main
+
+      - name: Generate Contributors
+        uses: somaz94/contributors-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          output_file: CONTRIBUTORS.md
+          format: table
+          columns: 6
+          exclude: 'github-actions[bot],actions-user,dependabot[bot]'
+
+      - name: Commit changes
+        uses: somaz94/go-git-commit-action@v1
+        with:
+          user_email: actions@github.com
+          user_name: GitHub Actions
+          commit_message: "docs: update CONTRIBUTORS.md"
+          branch: main
+          file_pattern: "CONTRIBUTORS.md"
+          github_token: ${{ secrets.PAT_TOKEN }}

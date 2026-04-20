@@ -1,0 +1,16 @@
+{{- $top := . -}}
+{{- range $rg := .Values.referenceGrants -}}
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: {{ $rg.name }}
+  namespace: {{ $rg.namespace }}
+  labels:
+    {{- include "nginx-gateway-cr.labels" $top | nindent 4 }}
+spec:
+  from:
+    {{- toYaml $rg.from | nindent 4 }}
+  to:
+    {{- toYaml $rg.to | nindent 4 }}
+---
+{{ end -}}

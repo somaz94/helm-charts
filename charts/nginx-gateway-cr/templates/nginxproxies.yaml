@@ -1,0 +1,103 @@
+{{- $top := . -}}
+{{- $defaultProxy := .Values.proxy -}}
+{{- range $gw := .Values.gateways -}}
+{{- $p := mergeOverwrite (deepCopy $defaultProxy) (default dict $gw.proxy) -}}
+{{- $svc := $p.service -}}
+apiVersion: gateway.nginx.org/v1alpha2
+kind: NginxProxy
+metadata:
+  name: {{ $gw.name }}-proxy
+  namespace: {{ $top.Release.Namespace }}
+  labels:
+    {{- include "nginx-gateway-cr.labels" $top | nindent 4 }}
+    {{- with $gw.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "nginx-gateway-cr.annotations" (dict "top" $top "extra" $gw.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $p.logging.errorLevel }}
+  logging:
+    errorLevel: {{ . }}
+  {{- end }}
+  {{- with $p.metrics }}
+  metrics:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if and $p.rewriteClientIP $p.rewriteClientIP.mode }}
+  rewriteClientIP:
+    {{- toYaml $p.rewriteClientIP | nindent 4 }}
+  {{- end }}
+  {{- with $p.telemetry }}
+  telemetry:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if $p.disableHTTP2 }}
+  disableHTTP2: true
+  {{- end }}
+  {{- with $p.ipFamily }}
+  ipFamily: {{ . }}
+  {{- end }}
+  kubernetes:
+    deployment:
+      replicas: {{ $p.replicas }}
+      {{- if or $p.podAnnotations $p.podLabels $p.nodeSelector $p.tolerations $p.affinity }}
+      pod:
+        {{- with $p.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with $p.podLabels }}
+        labels:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with $p.nodeSelector }}
+        nodeSelector:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with $p.tolerations }}
+        tolerations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with $p.affinity }}
+        affinity:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- with $p.resources }}
+      container:
+        resources:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+    service:
+      type: {{ $svc.type }}
+      externalTrafficPolicy: {{ $svc.externalTrafficPolicy }}
+      {{- if $gw.loadBalancerIP }}
+      loadBalancerIP: {{ $gw.loadBalancerIP | quote }}
+      {{- end }}
+      {{- with $svc.loadBalancerClass }}
+      loadBalancerClass: {{ . }}
+      {{- end }}
+      {{- with $svc.loadBalancerSourceRanges }}
+      loadBalancerSourceRanges:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $svc.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $svc.labels }}
+      labels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with $p.kubernetesExtra }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $p.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{ end -}}

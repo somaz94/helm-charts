@@ -1,0 +1,180 @@
+# Default values for nginx-gateway-cr.
+# All sections below are extensively configurable. The chart ships with safe
+# empty defaults so that an unconfigured `helm install` is a no-op (creates no
+# Gateways, no NginxProxies, no ServiceMonitors).
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+# Labels and annotations applied to EVERY resource created by this chart.
+# Useful for org-wide ownership labels, cost-allocation tags, etc.
+commonLabels: {}
+commonAnnotations: {}
+
+# ---------------------------------------------------------------------------
+# Gateway defaults
+# ---------------------------------------------------------------------------
+# Default GatewayClassName used for every Gateway unless overridden per-gateway.
+gatewayClassName: ngf
+
+# Shorthand listener config used when a Gateway entry does not set `listeners`
+# explicitly. Override per-gateway via `http:` / `https:` blocks. For multi /
+# non-standard listeners (TLS passthrough, TCP, gRPC, ...), set `listeners`
+# directly under the gateway entry — the shorthand is then ignored.
+listenerDefaults:
+  http:
+    enabled: true
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: All
+  https:
+    enabled: false
+    port: 443
+    hostname: ""
+    tlsSecretName: ""
+    allowedRoutes:
+      namespaces:
+        from: All
+
+# ---------------------------------------------------------------------------
+# NginxProxy defaults
+# ---------------------------------------------------------------------------
+# Defaults applied to every NginxProxy. Each gateway entry may override any
+# top-level field under its own `proxy:` block (deep-merged).
+proxy:
+  # --- Deployment ---
+  replicas: 1
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+
+  # --- Service ---
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Cluster
+    loadBalancerClass: ""
+    loadBalancerSourceRanges: []
+    annotations: {}
+    labels: {}
+
+  # --- NGINX-level config (NginxProxy.spec fields) ---
+  logging:
+    errorLevel: ""              # debug | info | notice | warn | error | crit | alert | emerg
+  metrics: {}                   # e.g. { disable: false, port: 9113 }
+  rewriteClientIP: {}           # e.g. { mode: ProxyProtocol, trustedAddresses: [...], setIPRecursively: true }
+  telemetry: {}                 # passthrough into spec.telemetry
+  disableHTTP2: false
+  ipFamily: ""                  # ipv4 | ipv6 | dual
+
+  # --- Escape hatches ---
+  # Arbitrary YAML merged into the rendered NginxProxy spec for fields this
+  # chart does not surface explicitly. Use sparingly and avoid redefining
+  # fields the chart already manages.
+  kubernetesExtra: {}           # merged into spec.kubernetes
+  specExtra: {}                 # merged into spec (top level)
+
+# ---------------------------------------------------------------------------
+# Gateways
+# ---------------------------------------------------------------------------
+# List of Gateway / NginxProxy pairs. Each entry creates one Gateway plus an
+# NginxProxy named "<name>-proxy".
+#
+# Per-entry fields:
+#   name                (required) Gateway name. NginxProxy is "<name>-proxy".
+#   loadBalancerIP      (optional) Static IP for the dataplane Service.
+#   gatewayClassName    (optional) Override the top-level gatewayClassName.
+#   labels              (optional) Extra labels on Gateway + NginxProxy.
+#   annotations         (optional) Extra annotations on Gateway + NginxProxy.
+#   http / https        (optional) Listener shorthand (see listenerDefaults).
+#   listeners           (optional) Full listener list. If set, shorthand ignored.
+#   proxy               (optional) Per-gateway NginxProxy overrides (deep merge).
+gateways: []
+# Example:
+#   gateways:
+#     # Simple HTTPS gateway, default proxy settings
+#     - name: app
+#       loadBalancerIP: 10.0.0.10
+#       https:
+#         enabled: true
+#         hostname: "*.example.com"
+#         tlsSecretName: wildcard-example-tls
+#
+#     # HTTP-only with custom service annotations (e.g. MetalLB pool selection)
+#     - name: public
+#       loadBalancerIP: 10.0.0.11
+#       proxy:
+#         replicas: 2
+#         service:
+#           annotations:
+#             metallb.universe.tf/address-pool: prod-pool
+#
+#     # TLS passthrough on a non-default port via explicit listeners
+#     - name: tcp
+#       loadBalancerIP: 10.0.0.12
+#       listeners:
+#         - name: tls-passthrough
+#           protocol: TLS
+#           port: 8443
+#           tls:
+#             mode: Passthrough
+#           allowedRoutes:
+#             kinds:
+#               - kind: TLSRoute
+
+# ---------------------------------------------------------------------------
+# ReferenceGrants
+# ---------------------------------------------------------------------------
+# ReferenceGrant resources for cross-namespace references (e.g. a Gateway in
+# namespace A referencing a TLS Secret in namespace B). A ReferenceGrant lives
+# in the TARGET namespace (the one being granted access TO).
+referenceGrants: []
+# Example:
+#   referenceGrants:
+#     - name: gateway-to-wildcard-tls
+#       namespace: tls
+#       from:
+#         - group: gateway.networking.k8s.io
+#           kind: Gateway
+#           namespace: default
+#       to:
+#         - group: ""
+#           kind: Secret
+#           name: wildcard-example-tls
+
+# ---------------------------------------------------------------------------
+# ServiceMonitors (Prometheus Operator / kube-prometheus-stack)
+# ---------------------------------------------------------------------------
+# The upstream NGF chart does not create ServiceMonitors. This chart provides
+# both:
+#   - controller: scrapes the NGF control-plane metrics
+#   - dataplane:  scrapes nginx pod metrics from each NginxProxy
+serviceMonitor:
+  namespace: monitoring
+  releaseLabel: kube-prometheus-stack
+  interval: 30s
+  scrapeTimeout: ""
+  additionalLabels: {}
+
+  controller:
+    enabled: false
+    path: /metrics
+    port: metrics
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: nginx-gateway-fabric
+    namespaceSelector: {}      # empty -> matches Release.Namespace
+    additionalEndpoints: []
+
+  dataplane:
+    enabled: false
+    path: /metrics
+    port: metrics
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: nginx-gateway-fabric
+    namespaceSelector: {}
+    additionalEndpoints: []

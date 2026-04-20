@@ -1,0 +1,34 @@
+{{- $sm := .Values.serviceMonitor -}}
+{{- if $sm.dataplane.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-nginx-gateway-dataplane
+  namespace: {{ $sm.namespace }}
+  labels:
+    release: {{ $sm.releaseLabel }}
+    {{- include "nginx-gateway-cr.labels" . | nindent 4 }}
+    {{- with $sm.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  namespaceSelector:
+    {{- if $sm.dataplane.namespaceSelector }}
+    {{- toYaml $sm.dataplane.namespaceSelector | nindent 4 }}
+    {{- else }}
+    matchNames:
+      - {{ .Release.Namespace }}
+    {{- end }}
+  selector:
+    {{- toYaml $sm.dataplane.selector | nindent 4 }}
+  endpoints:
+    - port: {{ $sm.dataplane.port }}
+      interval: {{ $sm.interval }}
+      {{- with $sm.scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+      path: {{ $sm.dataplane.path }}
+    {{- with $sm.dataplane.additionalEndpoints }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

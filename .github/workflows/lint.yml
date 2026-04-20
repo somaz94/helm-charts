@@ -1,0 +1,100 @@
+name: Lint
+
+on:
+  pull_request:
+    paths:
+      - 'charts/**'
+      - '.github/workflows/lint.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint and validate charts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.7.0
+
+      - name: List changed charts
+        id: list-changed
+        run: |
+          set -euo pipefail
+          changed=$(ct list-changed --target-branch "${{ github.event.repository.default_branch }}")
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "charts<<EOF"
+              echo "$changed"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "Changed charts:"
+            echo "$changed"
+          else
+            echo "No chart changes detected."
+          fi
+
+      - name: Run chart-testing (lint)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          ct lint \
+            --target-branch "${{ github.event.repository.default_branch }}" \
+            --check-version-increment=true
+
+      - name: Render templates (helm template smoke)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          while read -r chart; do
+            [[ -z "$chart" ]] && continue
+            echo "==> helm template $chart"
+            helm template ci-render "$chart" > /dev/null
+          done <<< "${{ steps.list-changed.outputs.charts }}"
+
+      - name: Set up kubeconform
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          KUBECONFORM_VERSION=v0.6.7
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar xz -C /usr/local/bin kubeconform
+
+      - name: Validate manifests with kubeconform
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          # Use community CRD schemas for Gateway API + Prometheus Operator + NGF
+          SCHEMA_LOCATIONS=(
+            "default"
+            "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
+          )
+          while read -r chart; do
+            [[ -z "$chart" ]] && continue
+            echo "==> kubeconform $chart"
+            helm template ci-render "$chart" | kubeconform \
+              -strict \
+              -ignore-missing-schemas \
+              -schema-location "${SCHEMA_LOCATIONS[0]}" \
+              -schema-location "${SCHEMA_LOCATIONS[1]}" \
+              -summary
+          done <<< "${{ steps.list-changed.outputs.charts }}"

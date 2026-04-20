@@ -1,0 +1,34 @@
+NGINX Gateway Fabric custom resources installed in namespace "{{ .Release.Namespace }}".
+
+{{ if .Values.gateways -}}
+Gateways and NginxProxies created:
+{{- range .Values.gateways }}
+  - {{ .name }}{{ if .loadBalancerIP }} (LoadBalancer IP: {{ .loadBalancerIP }}){{ end }}
+{{- end }}
+
+Verify resources:
+  kubectl -n {{ .Release.Namespace }} get gateway,nginxproxy
+  kubectl -n {{ .Release.Namespace }} get svc -o wide
+{{- else -}}
+No Gateways defined yet. Set `gateways` in your values file to create
+Gateway/NginxProxy pairs. See `helm show values <chart>` for the schema.
+{{- end }}
+
+{{- if .Values.referenceGrants }}
+
+ReferenceGrants created:
+{{- range .Values.referenceGrants }}
+  - {{ .name }} (in namespace {{ .namespace }})
+{{- end }}
+{{- end }}
+
+{{- if .Values.serviceMonitor.controller.enabled }}
+
+Controller ServiceMonitor created in namespace "{{ .Values.serviceMonitor.namespace }}":
+  kubectl -n {{ .Values.serviceMonitor.namespace }} get servicemonitor {{ .Release.Name }}-nginx-gateway-controller
+{{- end }}
+{{- if .Values.serviceMonitor.dataplane.enabled }}
+
+Dataplane ServiceMonitor created in namespace "{{ .Values.serviceMonitor.namespace }}":
+  kubectl -n {{ .Values.serviceMonitor.namespace }} get servicemonitor {{ .Release.Name }}-nginx-gateway-dataplane
+{{- end }}

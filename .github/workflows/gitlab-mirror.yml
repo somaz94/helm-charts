@@ -1,0 +1,28 @@
+name: Backup GitHub to GitLab
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - .github/workflows/*
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Mirror to GitLab
+        uses: somaz94/multi-git-mirror@v1
+        with:
+          targets: |
+            gitlab::https://gitlab.com/backup6695808/helm-charts.git
+          gitlab_token: ${{ secrets.GITLAB_TOKEN }}
+          mirror_branches: 'all'
+          mirror_tags: 'true'
+          force_push: 'true'

@@ -1,0 +1,16 @@
+# Helm
+*.tgz
+.helm/
+charts/**/charts/
+
+# Local-only values files
+*.local.yaml
+*.local.yml
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

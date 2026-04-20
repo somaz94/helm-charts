@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+
+permissions:
+  contents: write
+  packages: write
+
+# Never cancel an in-flight release — partial publishes are worse than waiting.
+concurrency:
+  group: release-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package and publish charts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Run chart-releaser
+        id: cr
+        uses: helm/chart-releaser-action@v1.7.0
+        with:
+          charts_dir: charts
+          skip_existing: true
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GHCR
+        if: steps.cr.outputs.changed_charts != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push released charts to GHCR (OCI)
+        if: steps.cr.outputs.changed_charts != ''
+        env:
+          CHANGED_CHARTS: ${{ steps.cr.outputs.changed_charts }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/charts
+          for chart_path in $CHANGED_CHARTS; do
+            chart_name=$(basename "$chart_path")
+            chart_version=$(helm show chart "$chart_path" | awk '/^version:/ {print $2}' | tr -d '"')
+            echo "==> Packaging $chart_name $chart_version"
+            helm package "$chart_path" -d /tmp/charts
+            echo "==> Pushing to oci://ghcr.io/${{ github.repository_owner }}/charts"
+            helm push "/tmp/charts/${chart_name}-${chart_version}.tgz" \
+              "oci://ghcr.io/${{ github.repository_owner }}/charts"
+          done

@@ -1,0 +1,54 @@
+{{- $top := . -}}
+{{- $defaults := .Values.listenerDefaults -}}
+{{- range $gw := .Values.gateways -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ $gw.name }}
+  namespace: {{ $top.Release.Namespace }}
+  labels:
+    {{- include "nginx-gateway-cr.labels" $top | nindent 4 }}
+    {{- with $gw.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "nginx-gateway-cr.annotations" (dict "top" $top "extra" $gw.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  gatewayClassName: {{ default $top.Values.gatewayClassName $gw.gatewayClassName }}
+  infrastructure:
+    parametersRef:
+      group: gateway.nginx.org
+      kind: NginxProxy
+      name: {{ $gw.name }}-proxy
+  listeners:
+    {{- if $gw.listeners }}
+    {{- toYaml $gw.listeners | nindent 4 }}
+    {{- else }}
+    {{- $http := mergeOverwrite (deepCopy $defaults.http) (default dict $gw.http) }}
+    {{- $https := mergeOverwrite (deepCopy $defaults.https) (default dict $gw.https) }}
+    {{- if $http.enabled }}
+    - name: http
+      protocol: HTTP
+      port: {{ $http.port }}
+      allowedRoutes:
+        {{- toYaml $http.allowedRoutes | nindent 8 }}
+    {{- end }}
+    {{- if $https.enabled }}
+    - name: https
+      protocol: HTTPS
+      port: {{ $https.port }}
+      hostname: {{ $https.hostname | quote }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: {{ $https.tlsSecretName }}
+      allowedRoutes:
+        {{- toYaml $https.allowedRoutes | nindent 8 }}
+    {{- end }}
+    {{- end }}
+---
+{{ end -}}
