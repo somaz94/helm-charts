@@ -2,7 +2,7 @@ apiVersion: v2
 name: nginx-gateway-cr
 description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
 type: application
-version: 0.2.0
+version: 0.3.0
 appVersion: "0.1.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -28,5 +28,7 @@ annotations:
       url: https://github.com/nginx/nginx-gateway-fabric
   artifacthub.io/changes: |
     - kind: added
-      description: values.schema.json (JSON Schema draft-07) for input validation and ArtifactHub form rendering
+      description: PodMonitor templates (controller + dataplane) — recommended for NGF 2.x where the controller exposes /metrics on the Pod, not the Service
+    - kind: added
+      description: podMonitor.controller / podMonitor.dataplane values blocks (mirror serviceMonitor.* shape)
   artifacthub.io/prerelease: "false"

@@ -11,8 +11,10 @@ The upstream chart installs the controller and CRDs, but does **not** create the
 | `Gateway` | `gateway.networking.k8s.io/v1` | One per entry in `gateways[]`, with shorthand or fully custom listeners |
 | `NginxProxy` | `gateway.nginx.org/v1alpha2` | One per Gateway, configures the dataplane Service + nginx-level options |
 | `ReferenceGrant` | `gateway.networking.k8s.io/v1beta1` | Optional. Cross-namespace access (e.g. Gateway → TLS Secret in another ns) |
-| `ServiceMonitor` (controller) | `monitoring.coreos.com/v1` | Optional. Scrapes the NGF control-plane metrics |
-| `ServiceMonitor` (dataplane) | `monitoring.coreos.com/v1` | Optional. Scrapes nginx pod metrics from each NginxProxy |
+| `ServiceMonitor` (controller) | `monitoring.coreos.com/v1` | Optional. Scrapes the NGF control-plane metrics via the Service |
+| `ServiceMonitor` (dataplane) | `monitoring.coreos.com/v1` | Optional. Scrapes nginx pod metrics from the dataplane Service |
+| `PodMonitor` (controller) | `monitoring.coreos.com/v1` | Optional. Scrapes the NGF control-plane Pod directly. **Recommended for NGF 2.x** (controller `/metrics` is exposed on the Pod, not the Service) |
+| `PodMonitor` (dataplane) | `monitoring.coreos.com/v1` | Optional. Scrapes the dataplane (nginx) Pods directly |
 
 ## Prerequisites
 
@@ -124,8 +126,10 @@ referenceGrants:
 
 ### Prometheus scraping
 
+For NGF 2.x, prefer `PodMonitor` for the controller because the upstream chart exposes `/metrics:9113` only on the Pod, not on the controller Service:
+
 ```yaml
-serviceMonitor:
+podMonitor:
   namespace: monitoring
   releaseLabel: kube-prometheus-stack
   controller:
@@ -133,6 +137,8 @@ serviceMonitor:
   dataplane:
     enabled: true
 ```
+
+`ServiceMonitor` works only when a Service in the namespace exposes the metrics port (e.g. via custom port config). When in doubt, use `PodMonitor`.
 
 ## Values reference
 
@@ -208,22 +214,26 @@ Used when a Gateway entry does not set `listeners` directly.
 | `from` | list | yes | Passthrough into `spec.from`. |
 | `to` | list | yes | Passthrough into `spec.to`. |
 
-### `serviceMonitor`
+### `serviceMonitor` / `podMonitor`
+
+Both blocks share the same shape (a `controller` and a `dataplane` sub-block plus shared metadata).
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `namespace` | string | `monitoring` | Namespace where ServiceMonitors are created. |
+| `namespace` | string | `monitoring` | Namespace where the monitor objects are created. |
 | `releaseLabel` | string | `kube-prometheus-stack` | `release` label for kube-prometheus-stack discovery. |
-| `interval` | string | `30s` | Scrape interval (shared by both monitors). |
+| `interval` | string | `30s` | Scrape interval (shared by both `controller` and `dataplane`). |
 | `scrapeTimeout` | string | `""` | Optional scrape timeout. |
-| `additionalLabels` | object | `{}` | Extra labels on the ServiceMonitor metadata. |
-| `controller.enabled` | bool | `false` | Create the controller ServiceMonitor. |
+| `additionalLabels` | object | `{}` | Extra labels on the monitor metadata. |
+| `controller.enabled` | bool | `false` | Create the controller monitor. |
 | `controller.path` | string | `/metrics` | Scrape path. |
-| `controller.port` | string | `metrics` | Service port name. |
-| `controller.selector` | object | matches NGF | Service selector. |
+| `controller.port` | string | `metrics` | Service port name (ServiceMonitor) or container port name (PodMonitor). |
+| `controller.selector` | object | matches NGF | Selector applied to the Service (ServiceMonitor) or Pod (PodMonitor). |
 | `controller.namespaceSelector` | object | `{}` | Empty = `Release.Namespace` only. |
-| `controller.additionalEndpoints` | list | `[]` | Extra endpoint entries appended to `spec.endpoints`. |
+| `controller.additionalEndpoints` | list | `[]` | Extra endpoint entries appended to `spec.endpoints` / `spec.podMetricsEndpoints`. |
 | `dataplane.*` | — | — | Same shape as `controller.*`. |
+
+Use `podMonitor` for NGF 2.x controller (Pod port `metrics:9113` is not on the Service). Use `serviceMonitor` when a Service exposes the metrics port.
 
 ## Notes on `externalTrafficPolicy`
 

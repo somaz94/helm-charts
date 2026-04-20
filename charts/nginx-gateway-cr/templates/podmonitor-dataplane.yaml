@@ -1,0 +1,34 @@
+{{- $pm := .Values.podMonitor -}}
+{{- if $pm.dataplane.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ .Release.Name }}-nginx-gateway-dataplane
+  namespace: {{ $pm.namespace }}
+  labels:
+    release: {{ $pm.releaseLabel }}
+    {{- include "nginx-gateway-cr.labels" . | nindent 4 }}
+    {{- with $pm.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  namespaceSelector:
+    {{- if $pm.dataplane.namespaceSelector }}
+    {{- toYaml $pm.dataplane.namespaceSelector | nindent 4 }}
+    {{- else }}
+    matchNames:
+      - {{ .Release.Namespace }}
+    {{- end }}
+  selector:
+    {{- toYaml $pm.dataplane.selector | nindent 4 }}
+  podMetricsEndpoints:
+    - port: {{ $pm.dataplane.port }}
+      interval: {{ $pm.interval }}
+      {{- with $pm.scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+      path: {{ $pm.dataplane.path }}
+    {{- with $pm.dataplane.additionalEndpoints }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

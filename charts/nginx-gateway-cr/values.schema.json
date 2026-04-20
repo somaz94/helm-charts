@@ -75,8 +75,21 @@
         "interval": { "type": "string" },
         "scrapeTimeout": { "type": "string" },
         "additionalLabels": { "type": "object", "additionalProperties": { "type": "string" } },
-        "controller": { "$ref": "#/$defs/serviceMonitorTarget" },
-        "dataplane": { "$ref": "#/$defs/serviceMonitorTarget" }
+        "controller": { "$ref": "#/$defs/monitorTarget" },
+        "dataplane": { "$ref": "#/$defs/monitorTarget" }
+      }
+    },
+    "podMonitor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": { "type": "string" },
+        "releaseLabel": { "type": "string" },
+        "interval": { "type": "string" },
+        "scrapeTimeout": { "type": "string" },
+        "additionalLabels": { "type": "object", "additionalProperties": { "type": "string" } },
+        "controller": { "$ref": "#/$defs/monitorTarget" },
+        "dataplane": { "$ref": "#/$defs/monitorTarget" }
       }
     }
   },
@@ -173,7 +186,7 @@
         }
       }
     },
-    "serviceMonitorTarget": {
+    "monitorTarget": {
       "type": "object",
       "additionalProperties": false,
       "properties": {

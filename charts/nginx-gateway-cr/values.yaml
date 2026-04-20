@@ -152,6 +152,10 @@ referenceGrants: []
 # both:
 #   - controller: scrapes the NGF control-plane metrics
 #   - dataplane:  scrapes nginx pod metrics from each NginxProxy
+#
+# NOTE: NGF 2.x exposes the controller `/metrics:9113` only on the Pod, not on
+# the controller Service. ServiceMonitor will produce 0 active targets in that
+# scenario. Use `podMonitor` (below) instead when targeting NGF 2.x controllers.
 serviceMonitor:
   namespace: monitoring
   releaseLabel: kube-prometheus-stack
@@ -173,6 +177,41 @@ serviceMonitor:
     enabled: false
     path: /metrics
     port: metrics
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: nginx-gateway-fabric
+    namespaceSelector: {}
+    additionalEndpoints: []
+
+# ---------------------------------------------------------------------------
+# PodMonitors (Prometheus Operator / kube-prometheus-stack)
+# ---------------------------------------------------------------------------
+# Alternative to ServiceMonitor — selects Pods directly by label and scrapes
+# their named container ports without requiring a Service to expose them.
+#
+# Recommended for the NGF controller because NGF 2.x exposes `/metrics:9113`
+# only on the Pod, not on the controller Service.
+podMonitor:
+  namespace: monitoring
+  releaseLabel: kube-prometheus-stack
+  interval: 30s
+  scrapeTimeout: ""
+  additionalLabels: {}
+
+  controller:
+    enabled: false
+    path: /metrics
+    port: metrics              # named container port on the controller Pod
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: nginx-gateway-fabric
+    namespaceSelector: {}      # empty -> matches Release.Namespace
+    additionalEndpoints: []
+
+  dataplane:
+    enabled: false
+    path: /metrics
+    port: metrics              # named container port on the dataplane (nginx) Pod
     selector:
       matchLabels:
         app.kubernetes.io/name: nginx-gateway-fabric
