@@ -116,6 +116,21 @@ Charts with sibling-version constraints (e.g. `kibana-eck` requires version ≤ 
 
 <br/>
 
+### HA rolling-upgrade verification (stateful charts)
+
+Charts that claim zero-downtime rolling upgrade support (currently `elasticsearch-eck` and `kibana-eck`) **must re-run the HA verification** before a **major** chart bump (e.g. `0.x` → `1.0.0`). Procedure, load generator, and success criteria are documented in [`docs/ha-rolling-verification.md`](docs/ha-rolling-verification.md).
+
+Not required for:
+- patch bumps (0.1.1 → 0.1.2) that only touch `README.md` or `artifacthub.io/changes`
+- Stack image version bumps via `upgrade.sh` (image-only changes inherit the previously verified chart behavior)
+
+Required for:
+- major chart bumps
+- changes to `podTemplate.spec`, StatefulSet / Deployment definitions, or PDB defaults
+- ECK operator major-version bump
+
+<br/>
+
 ## PR Process
 
 1. **Bump the chart version** in `Chart.yaml` for any change to chart contents (`templates/`, `values.yaml`, `values.schema.json`, `Chart.yaml` itself).

@@ -43,6 +43,14 @@ helm install <release> oci://ghcr.io/somaz94/charts/<chart-name> --version <vers
 
 <br/>
 
+## Documentation
+
+| Document | Applies to |
+|---|---|
+| [HA Rolling Upgrade Verification](docs/ha-rolling-verification.md) | `elasticsearch-eck`, `kibana-eck` — evidence that rolling upgrades are zero-downtime in HA topology (chart 0.1.1 / Stack 9.3.3) |
+
+<br/>
+
 ## Releasing
 
 Charts are released automatically when a `Chart.yaml` `version` bump is merged to `main`.

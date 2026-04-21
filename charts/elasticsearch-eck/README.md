@@ -124,6 +124,8 @@ Omitting `storageClass` falls back to the cluster's default SC — only works if
 
 > **Pick block storage**, not NFS. NFS RWO works for single-node dev but causes data corruption risk with multiple writers. AWS: `gp3`/`io2`, GCP: `premium-rwo`, Ceph: `ceph-block`, vSphere: `vsphere-csi`.
 
+> Zero-downtime rolling upgrades in HA topology are verified against chart 0.1.1. See [../../docs/ha-rolling-verification.md](../../docs/ha-rolling-verification.md) for the test procedure, load generator, and result log.
+
 ```yaml
 nodeSets:
   - name: master

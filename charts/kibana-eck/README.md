@@ -86,6 +86,9 @@ elasticsearchRef:
 
 ### 2. HA (2+ replicas + PDB)
 
+> Zero-downtime rolling upgrades in HA topology are verified against chart 0.1.1. See [../../docs/ha-rolling-verification.md](../../docs/ha-rolling-verification.md).
+> **Minimum memory per replica: 1 GiB** — lower values OOMKill during startup.
+
 ```yaml
 replicas: 2
 
