@@ -7,8 +7,8 @@ Each chart is independently versioned. Only the **latest released version** of e
 | Chart | Latest |
 |---|---|
 | certmanager-letsencrypt | `0.2.0` |
-| elasticsearch-eck | `0.1.0` |
-| kibana-eck | `0.1.0` |
+| elasticsearch-eck | `0.1.1` |
+| kibana-eck | `0.1.1` |
 | nginx-gateway-cr | `0.3.0` |
 
 ## Reporting a Vulnerability

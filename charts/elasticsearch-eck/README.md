@@ -74,7 +74,7 @@ kubectl get storageclass
 
 ```bash
 helm install es oci://ghcr.io/somaz94/charts/elasticsearch-eck \
-  --version 0.1.0 \
+  --version 0.1.1 \
   --namespace logging --create-namespace \
   -f my-values.yaml
 ```

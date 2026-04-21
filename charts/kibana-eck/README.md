@@ -53,7 +53,7 @@ The chart renders the ECK `Kibana` Custom Resource plus optional siblings (Servi
 
 ```bash
 helm install kibana oci://ghcr.io/somaz94/charts/kibana-eck \
-  --version 0.1.0 \
+  --version 0.1.1 \
   --namespace logging \
   --set elasticsearchRef.name=elasticsearch \
   -f my-values.yaml
