@@ -97,6 +97,52 @@ entries:
           description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
         - kind: fixed
           description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: removed
+          description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-23T08:35:29.733312008Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 9998f50a66fc4abe82624b1710db0177b1e6b31e0b7987c901e66f535e22327a
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.2/elasticsearch-eck-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
         - name: Source
@@ -290,4 +336,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.1.0/nginx-gateway-cr-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-21T01:15:08.594472531Z"
+generated: "2026-04-23T08:35:29.941471847Z"
