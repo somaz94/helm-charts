@@ -24,20 +24,6 @@ app.kubernetes.io/version: {{ .Values.version | quote }}
 {{- end -}}
 
 {{/*
-Per-resource label overlay — merges commonLabels with a per-resource labels
-block from .Values.resourceMetadata.<resource>.labels.
-Usage: include "elasticsearch-eck.resourceLabels" (dict "top" $ "extra" .Values.resourceMetadata.httproute.labels)
-Returns empty when nothing to add (caller guards with `with`).
-*/}}
-{{- define "elasticsearch-eck.resourceLabels" -}}
-{{- $top := .top -}}
-{{- $extra := default dict .extra -}}
-{{- if $extra -}}
-{{ toYaml $extra }}
-{{- end -}}
-{{- end -}}
-
-{{/*
 Per-resource annotations: merge of commonAnnotations and per-resource extra.
 Usage: include "elasticsearch-eck.annotations" (dict "top" $top "extra" .Values.resourceMetadata.httproute.annotations)
 Returns empty when both are empty (caller should guard with `if`).

@@ -2,7 +2,7 @@ apiVersion: v2
 name: elasticsearch-eck
 description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: "9.3.3"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -36,3 +36,5 @@ annotations:
       description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
     - kind: fixed
       description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+    - kind: removed
+      description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
