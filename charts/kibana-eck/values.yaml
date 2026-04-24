@@ -245,11 +245,25 @@ ingress:
 # ---------------------------------------------------------------------------
 # BackendTLSPolicy (Gateway API)
 # ---------------------------------------------------------------------------
-# Auto-generates a BackendTLSPolicy + CA ConfigMap pointing at the ECK self-
-# signed cert. Use only when Kibana serves HTTPS on :5601 (http.tls.enabled)
-# AND you expose it through a Gateway that validates TLS to the backend.
+# Renders a BackendTLSPolicy so a Gateway HTTPRoute can verify Kibana's ECK
+# self-signed HTTPS cert on :5601. Use only when Kibana serves HTTPS AND the
+# Gateway validates backend TLS.
+#
+# `caCertificateRef` points at the CA bundle directly. Default is the ECK-
+# managed Secret `<name>-kb-http-certs-public` (contains `ca.crt`). Switch to
+# `kind: ConfigMap` and manage the ConfigMap out-of-band if your Gateway
+# implementation does not support the Secret kind for caCertificateRefs.
+#
+# Support matrix:
+#   - NGINX Gateway Fabric:  Secret + ConfigMap
+#   - Gateway API Core spec: ConfigMap only (Secret is implementation-specific)
 backendTLSPolicy:
   enabled: false
+  caCertificateRef:
+    kind: Secret        # Secret | ConfigMap
+    name: ""            # Empty = default:
+                        #   Secret    -> <fullname>-kb-http-certs-public
+                        #   ConfigMap -> <fullname>-ca (not rendered by this chart)
 
 # ---------------------------------------------------------------------------
 # ServiceMonitor (Prometheus Operator)

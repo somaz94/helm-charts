@@ -1,34 +1,22 @@
 {{- /*
-BackendTLSPolicy + CA ConfigMap for Kibana — only when Kibana serves HTTPS on
-:5601 AND is exposed through a Gateway HTTPRoute. ECK provisions the HTTPS
-cert; we copy the CA out of the ECK-managed Secret using `lookup`. On first
-install the Secret does not exist yet, so the resource silently no-ops. Re-run
-`helm upgrade` after Kibana is Ready to render it.
+BackendTLSPolicy for Kibana — points directly at the CA source (Secret or
+ConfigMap) so `helm diff` / `helmfile diff` render deterministically.
+
+Default is the ECK-managed Secret `<name>-kb-http-certs-public`, which already
+contains `ca.crt`. NGF supports Secret kind for caCertificateRefs; Gateway API
+Core only mandates ConfigMap, so switch to `kind: ConfigMap` and manage the
+ConfigMap out-of-band if your Gateway implementation requires it.
 */ -}}
 {{- if and .Values.httproute.enabled .Values.backendTLSPolicy.enabled }}
-{{- $secretName := printf "%s-kb-http-certs-public" (include "kibana-eck.fullname" .) }}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace $secretName }}
-{{- if $secret }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "kibana-eck.fullname" . }}-ca
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "kibana-eck.labels" . | nindent 4 }}
-    kibana.k8s.elastic.co/source-secret: {{ $secretName }}
-    {{- with .Values.resourceMetadata.backendTLSPolicy.labels }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-  {{- $ann := include "kibana-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.backendTLSPolicy.annotations) }}
-  {{- if $ann }}
-  annotations:
-    {{- $ann | nindent 4 }}
+{{- $refKind := .Values.backendTLSPolicy.caCertificateRef.kind | default "Secret" }}
+{{- $refName := .Values.backendTLSPolicy.caCertificateRef.name }}
+{{- if not $refName }}
+  {{- if eq $refKind "Secret" }}
+    {{- $refName = printf "%s-kb-http-certs-public" (include "kibana-eck.fullname" .) }}
+  {{- else }}
+    {{- $refName = printf "%s-ca" (include "kibana-eck.fullname" .) }}
   {{- end }}
-data:
-  ca.crt: |
-{{ index $secret.data "ca.crt" | b64dec | indent 4 }}
----
+{{- end }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
@@ -39,6 +27,7 @@ metadata:
     {{- with .Values.resourceMetadata.backendTLSPolicy.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  {{- $ann := include "kibana-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.backendTLSPolicy.annotations) }}
   {{- if $ann }}
   annotations:
     {{- $ann | nindent 4 }}
@@ -51,8 +40,7 @@ spec:
   validation:
     caCertificateRefs:
       - group: ""
-        kind: ConfigMap
-        name: {{ include "kibana-eck.fullname" . }}-ca
+        kind: {{ $refKind }}
+        name: {{ $refName }}
     hostname: {{ include "kibana-eck.httpServiceName" . }}
-{{- end }}
 {{- end }}

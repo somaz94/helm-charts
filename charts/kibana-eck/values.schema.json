@@ -157,7 +157,15 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean" }
+        "enabled": { "type": "boolean" },
+        "caCertificateRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "type": "string", "enum": ["Secret", "ConfigMap"] },
+            "name": { "type": "string" }
+          }
+        }
       }
     },
 
