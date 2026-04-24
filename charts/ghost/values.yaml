@@ -1,0 +1,436 @@
+# Default values for ghost.
+#
+# The chart renders a Ghost Deployment (+ PVC + Service) plus optional
+# bundled MySQL (ConfigMap + Secret + PVC + Deployment + Service), backup
+# CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric
+# ClientSettingsPolicy and Prometheus ServiceMonitor.
+#
+# Minimum required values:
+#   - `url`                            -> Ghost's public URL (e.g. https://blog.example.com)
+#   - `mysql.auth.*`                   -> when mysql.enabled is true (default)
+#     or `externalDatabase.*`         -> when mysql.enabled is false
+#
+# Extensibility: every resource has a `specExtra` / `podTemplateExtra`
+# escape hatch for fields not surfaced in this file.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+# Labels / annotations applied to every resource in this chart.
+commonLabels: {}
+commonAnnotations: {}
+
+# Per-resource metadata override. Shape mirrors the template filenames so you
+# can attach (e.g.) a Prometheus scrape annotation only to the ServiceMonitor
+# without polluting the Ghost Deployment.
+resourceMetadata:
+  ghostDeployment:
+    labels: {}
+    annotations: {}
+  ghostService:
+    labels: {}
+    annotations: {}
+  ghostPvc:
+    labels: {}
+    annotations: {}
+  mysqlDeployment:
+    labels: {}
+    annotations: {}
+  mysqlService:
+    labels: {}
+    annotations: {}
+  mysqlPvc:
+    labels: {}
+    annotations: {}
+  mysqlConfigMap:
+    labels: {}
+    annotations: {}
+  mysqlSecret:
+    labels: {}
+    annotations: {}
+  backupCronJob:
+    labels: {}
+    annotations: {}
+  backupPvc:
+    labels: {}
+    annotations: {}
+  httproute:
+    labels: {}
+    annotations: {}
+  ingress:
+    labels: {}
+    annotations: {}
+  clientSettingsPolicy:
+    labels: {}
+    annotations: {}
+  serviceMonitor:
+    labels: {}
+    annotations: {}
+  serviceAccount:
+    labels: {}
+    annotations: {}
+  networkPolicy:
+    labels: {}
+    annotations: {}
+
+# ---------------------------------------------------------------------------
+# Ghost application
+# ---------------------------------------------------------------------------
+# Release name used to derive resource names. Defaults to Helm release name.
+nameOverride: ""
+fullnameOverride: ""
+
+# Public Ghost URL (spec-required — config url in Ghost, also used by
+# HTTPRoute/Ingress when hostnames are not set explicitly). Include scheme.
+#   e.g. https://blog.example.com
+url: ""
+
+image:
+  repository: ghost
+  # Empty = default to `<Chart.AppVersion>-alpine` (e.g. "5.117.0-alpine").
+  # Override to pin a specific tag or switch variants (e.g. "5.117.0" for glibc).
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+# imagePullSecrets:
+#   - name: my-registry-secret
+
+replicaCount: 1
+
+# Ghost's HTTP port (containerPort).
+containerPort: 2368
+
+service:
+  type: ClusterIP
+  port: 80
+  # Optional — set to expose via NodePort/LoadBalancer on specific port.
+  nodePort: null
+  annotations: {}
+
+persistence:
+  enabled: true
+  # Empty = cluster default StorageClass.
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  # Optional — use a pre-existing PVC instead of rendering one.
+  existingClaim: ""
+  annotations: {}
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+# Extra env vars injected into the Ghost container.
+# Ghost reads config from `database__*`, `mail__*`, `url`, etc. The chart
+# already injects `url`, `database__*` (MySQL auto-wiring) and
+# `fileStorage__maxFileSize` when `uploads.maxFileSize` is set.
+env: []
+# env:
+#   - name: mail__transport
+#     value: SMTP
+#   - name: mail__options__host
+#     value: smtp.example.com
+
+# Max request body size in bytes for Ghost uploads.
+# When set, rendered as env `fileStorage__maxFileSize`.
+# Pair with `nginxGatewayFabric.clientSettings.bodyMaxSize` or Ingress
+# annotation `nginx.ingress.kubernetes.io/proxy-body-size` to propagate
+# the limit through the edge.
+uploads:
+  maxFileSize: 524288000   # 500 MiB
+
+# Node scheduling knobs.
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+
+podSecurityContext: {}
+securityContext: {}
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# Arbitrary fields merged into the Deployment spec / PodTemplate.
+specExtra: {}
+podTemplateExtra: {}
+
+# Free-form rendering of additional Kubernetes manifests (escape hatch).
+# Each key becomes a document in the rendered output.
+kubernetesExtra: {}
+
+# ---------------------------------------------------------------------------
+# Bundled MySQL
+# ---------------------------------------------------------------------------
+# When enabled (default), chart renders a single-node MySQL Deployment with a
+# Recreate strategy + dedicated PVC. For production HA prefer an external
+# managed DB (RDS/CloudSQL) — disable this block and set externalDatabase.*.
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0.40"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3306
+    nodePort: null
+
+  # Credentials rendered into a Secret. ALL four fields are required when
+  # mysql.enabled is true and existingSecret is empty.
+  auth:
+    user: ""
+    password: ""
+    database: ""
+    rootPassword: ""
+    # When set, chart skips rendering the Secret and Ghost reads from this
+    # Secret instead (must contain keys MYSQL_USER, MYSQL_PASSWORD,
+    # MYSQL_DATABASE, MYSQL_ROOT_PASSWORD).
+    existingSecret: ""
+
+  # Extra /etc/mysql/conf.d/custom.cnf entries. Default tuned for general
+  # workloads; NFS-backed installs should append
+  # `innodb_use_native_aio=0`, `innodb_flush_method=fsync`,
+  # `skip_external_locking=1` (see README "NFS notes").
+  customConfig: |
+    [mysqld]
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+    default-storage-engine=INNODB
+    max_allowed_packet=256M
+
+    sql_mode=STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION
+    max_connections=500
+
+    innodb_buffer_pool_size=512M
+    innodb_buffer_pool_instances=1
+    innodb_io_capacity=2000
+    innodb_lock_wait_timeout=120
+
+    thread_cache_size=100
+    back_log=1024
+    max_connect_errors=10000
+
+    wait_timeout=28800
+    interactive_timeout=28800
+    connect_timeout=15
+
+    log_error=/dev/stderr
+    slow_query_log=1
+    slow_query_log_file=/dev/stdout
+    long_query_time=2
+
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 20Gi
+    existingClaim: ""
+    annotations: {}
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podSecurityContext: {}
+  securityContext: {}
+
+  specExtra: {}
+  podTemplateExtra: {}
+
+# ---------------------------------------------------------------------------
+# External database (when mysql.enabled is false)
+# ---------------------------------------------------------------------------
+# Point Ghost at a pre-existing MySQL-compatible database. When `password` is
+# empty, `existingSecret` must contain keys MYSQL_USER, MYSQL_PASSWORD,
+# MYSQL_DATABASE.
+externalDatabase:
+  host: ""
+  port: 3306
+  database: ""
+  user: ""
+  password: ""
+  existingSecret: ""
+
+# ---------------------------------------------------------------------------
+# Backup CronJob
+# ---------------------------------------------------------------------------
+# Daily mysqldump + content tarball, with configurable retention. Disabled by
+# default — enable and set backup.persistence to retain backups. The CronJob
+# mounts both the Ghost content PVC (read-only) and a dedicated backup PVC.
+backup:
+  enabled: false
+  # CronJob schedule (cluster timezone). Default = 03:00 KST (UTC+9) = 18:00 UTC.
+  schedule: "0 18 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  retentionDays: 30
+  image:
+    # Reuses the MySQL image for `mysqldump`. Override to pin a specific client.
+    repository: mysql
+    tag: "8.0.40"
+    pullPolicy: IfNotPresent
+  resources: {}
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 20Gi
+    existingClaim: ""
+    annotations: {}
+  specExtra: {}
+  jobTemplateExtra: {}
+
+# ---------------------------------------------------------------------------
+# HTTPRoute (Gateway API)
+# ---------------------------------------------------------------------------
+# Exposes Ghost through a Gateway. Disabled by default — enable and set
+# parentRefs/hostnames to route external traffic.
+httproute:
+  enabled: false
+  parentRefs: []
+  # parentRefs:
+  #   - name: ngf
+  #     namespace: nginx-gateway
+  hostnames: []
+  # hostnames:
+  #   - blog.example.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        # name omitted → defaults to the Ghost Service
+        # port omitted → defaults to service.port
+        - {}
+
+# ---------------------------------------------------------------------------
+# Ingress (legacy)
+# ---------------------------------------------------------------------------
+# Prefer `httproute` on new deployments. Ingress kept for compatibility with
+# ingress-nginx / Traefik / cloud load balancers.
+ingress:
+  enabled: false
+  className: ""          # e.g. "nginx", "traefik"
+  host: ""               # e.g. blog.example.com
+  annotations: {}
+  # annotations:
+  #   nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls: []
+  # tls:
+  #   - hosts: [blog.example.com]
+  #     secretName: blog-tls
+  path: /
+  pathType: Prefix
+  backend:
+    serviceName: ""       # empty → chart default Ghost Service
+    servicePort: null     # empty → service.port
+  extraPaths: []
+
+# ---------------------------------------------------------------------------
+# NGINX Gateway Fabric policies (optional)
+# ---------------------------------------------------------------------------
+# Attached to the HTTPRoute above. Skip if using a non-NGF Gateway.
+nginxGatewayFabric:
+  # ClientSettingsPolicy — controls client-facing request limits (replaces
+  # legacy Ingress `nginx.ingress.kubernetes.io/proxy-body-size`).
+  clientSettings:
+    enabled: false
+    # Request body size limit (Ghost uploads). Size string, e.g. "500m", "1g".
+    bodyMaxSize: ""
+
+# ---------------------------------------------------------------------------
+# ServiceAccount
+# ---------------------------------------------------------------------------
+# Optional — render a dedicated SA and wire it to the Ghost pod via
+# serviceAccountName. Useful for IRSA / Workload Identity, or to scope
+# imagePullSecrets to this release. Default off: pods use the `default` SA.
+serviceAccount:
+  create: false
+  name: ""                # empty → <fullname>
+  annotations: {}
+  # annotations:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::123:role/ghost
+  imagePullSecrets: []
+  automountServiceAccountToken: true
+
+# ---------------------------------------------------------------------------
+# NetworkPolicy
+# ---------------------------------------------------------------------------
+# Lock down traffic to/from the Ghost pods. Opt-in; renders a single
+# networking.k8s.io/v1 NetworkPolicy when enabled. `ingress` and `egress`
+# take native NetworkPolicy shapes (arrays of rules). Empty with policyTypes
+# set = deny-all for that direction.
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  # ingress:
+  #   - from:
+  #       - namespaceSelector:
+  #           matchLabels:
+  #             kubernetes.io/metadata.name: nginx-gateway
+  #     ports:
+  #       - protocol: TCP
+  #         port: 2368
+  egress: []
+  # egress:
+  #   - to:
+  #       - namespaceSelector:
+  #           matchLabels:
+  #             kubernetes.io/metadata.name: kube-system
+  #     ports:
+  #       - protocol: UDP
+  #         port: 53
+  # Override the pod selector; defaults to this release's Ghost selectorLabels.
+  podSelector: {}
+
+# ---------------------------------------------------------------------------
+# ServiceMonitor (Prometheus Operator)
+# ---------------------------------------------------------------------------
+# Scrapes the bundled MySQL (requires a mysqld_exporter sidecar — out of
+# scope for this chart) or an external exporter Service you provide. Disabled
+# by default.
+serviceMonitor:
+  enabled: false
+  namespace: ""              # defaults to Release.Namespace
+  releaseLabel: ""
+  interval: 30s
+  scrapeTimeout: 10s
+  selector: {}
+  # Full endpoints[] shape. When empty, the template renders a minimal
+  # endpoint hitting the Ghost Service on service.port.
+  endpoints: []

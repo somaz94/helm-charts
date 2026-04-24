@@ -1,0 +1,26 @@
+{{- if and .Values.nginxGatewayFabric.clientSettings.enabled .Values.httproute.enabled -}}
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: {{ include "ghost.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.clientSettingsPolicy.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "ghost.annotations" (dict "top" . "extra" .Values.resourceMetadata.clientSettingsPolicy.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: {{ include "ghost.fullname" . }}
+  {{- with .Values.nginxGatewayFabric.clientSettings.bodyMaxSize }}
+  body:
+    maxSize: {{ . | quote }}
+  {{- end }}
+{{- end }}

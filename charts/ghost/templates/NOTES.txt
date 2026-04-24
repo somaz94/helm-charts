@@ -1,0 +1,47 @@
+ghost {{ .Chart.Version }} (Ghost {{ .Chart.AppVersion }}) installed.
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+URL:       {{ .Values.url }}
+
+Ghost Service:
+  {{ include "ghost.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+Port-forward to test locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "ghost.fullname" . }} 2368:{{ .Values.service.port }}
+  open http://localhost:2368
+
+{{- if .Values.mysql.enabled }}
+
+Bundled MySQL Service:
+  {{ include "ghost.mysql.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.mysql.service.port }}
+{{- else }}
+
+Using external database at: {{ .Values.externalDatabase.host }}:{{ .Values.externalDatabase.port }}
+{{- end }}
+
+{{- if .Values.httproute.enabled }}
+
+HTTPRoute enabled — external hostname(s):
+{{- range .Values.httproute.hostnames }}
+  - {{ . }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+Ingress enabled — external host:
+  - {{ .Values.ingress.host }}
+{{- end }}
+
+{{- if .Values.backup.enabled }}
+
+Backup CronJob scheduled: {{ .Values.backup.schedule }} (retention: {{ .Values.backup.retentionDays }} days)
+Trigger a manual run:
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "ghost.backup.fullname" . }} {{ include "ghost.backup.fullname" . }}-manual
+{{- end }}
+
+NOTE: This chart runs a single-replica Ghost with Recreate update strategy
+(PVC RWO). Short downtime is expected on `helm upgrade`. For production prefer
+an external DB (mysql.enabled: false + externalDatabase.*) and a dedicated
+object storage adapter for Ghost content (out of scope for this chart).

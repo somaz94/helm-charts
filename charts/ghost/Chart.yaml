@@ -1,0 +1,35 @@
+apiVersion: v2
+name: ghost
+description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
+type: application
+version: 0.1.0
+appVersion: "5.117.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - ghost
+  - blog
+  - cms
+  - publishing
+  - mysql
+  - kubernetes
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+  - https://github.com/TryGhost/Ghost
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: integration-delivery
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: Ghost
+      url: https://ghost.org/
+    - name: Ghost Docker image
+      url: https://hub.docker.com/_/ghost
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.

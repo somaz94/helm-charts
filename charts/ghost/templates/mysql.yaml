@@ -1,0 +1,236 @@
+{{- if .Values.mysql.enabled -}}
+{{- if not .Values.mysql.auth.existingSecret -}}
+{{- if or (not .Values.mysql.auth.user) (not .Values.mysql.auth.password) (not .Values.mysql.auth.database) (not .Values.mysql.auth.rootPassword) -}}
+{{- fail "ghost: mysql.auth.{user,password,database,rootPassword} are all required when mysql.enabled is true and mysql.auth.existingSecret is empty." -}}
+{{- end -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "ghost.mysql.secretName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+    {{- with .Values.resourceMetadata.mysqlSecret.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $secAnn := include "ghost.annotations" (dict "top" . "extra" .Values.resourceMetadata.mysqlSecret.annotations) }}
+  {{- if $secAnn }}
+  annotations:
+    {{- $secAnn | nindent 4 }}
+  {{- end }}
+type: Opaque
+stringData:
+  MYSQL_USER: {{ .Values.mysql.auth.user | quote }}
+  MYSQL_PASSWORD: {{ .Values.mysql.auth.password | quote }}
+  MYSQL_DATABASE: {{ .Values.mysql.auth.database | quote }}
+  MYSQL_ROOT_PASSWORD: {{ .Values.mysql.auth.rootPassword | quote }}
+---
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ghost.mysql.configMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+    {{- with .Values.resourceMetadata.mysqlConfigMap.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $cmAnn := include "ghost.annotations" (dict "top" . "extra" .Values.resourceMetadata.mysqlConfigMap.annotations) }}
+  {{- if $cmAnn }}
+  annotations:
+    {{- $cmAnn | nindent 4 }}
+  {{- end }}
+data:
+  custom.cnf: |-
+{{ .Values.mysql.customConfig | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ghost.mysql.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+    {{- with .Values.resourceMetadata.mysqlDeployment.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $depAnn := include "ghost.annotations" (dict "top" . "extra" .Values.resourceMetadata.mysqlDeployment.annotations) }}
+  {{- if $depAnn }}
+  annotations:
+    {{- $depAnn | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ghost.mysql.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ghost.mysql.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mysql.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mysql.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mysql.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mysql.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mysql
+          image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+          imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+          {{- with .Values.mysql.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          env:
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ghost.mysql.secretName" . }}
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ghost.mysql.secretName" . }}
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ghost.mysql.secretName" . }}
+                  key: MYSQL_DATABASE
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ghost.mysql.secretName" . }}
+                  key: MYSQL_ROOT_PASSWORD
+          {{- with .Values.mysql.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+            - name: config
+              mountPath: /etc/mysql/conf.d
+      volumes:
+        - name: data
+          {{- if .Values.mysql.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.mysql.persistence.existingClaim | default (printf "%s-data" (include "ghost.mysql.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "ghost.mysql.configMapName" . }}
+      {{- with .Values.mysql.podTemplateExtra }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+  {{- with .Values.mysql.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ghost.mysql.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+    {{- with .Values.resourceMetadata.mysqlService.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $svcAnn := include "ghost.annotations" (dict "top" . "extra" .Values.resourceMetadata.mysqlService.annotations) }}
+  {{- if $svcAnn }}
+  annotations:
+    {{- $svcAnn | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.mysql.service.type }}
+  ports:
+    - name: mysql
+      port: {{ .Values.mysql.service.port }}
+      targetPort: mysql
+      protocol: TCP
+      {{- if and (eq .Values.mysql.service.type "NodePort") .Values.mysql.service.nodePort }}
+      nodePort: {{ .Values.mysql.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "ghost.mysql.selectorLabels" . | nindent 4 }}
+{{- if and .Values.mysql.persistence.enabled (not .Values.mysql.persistence.existingClaim) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "ghost.mysql.fullname" . }}-data
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+    {{- with .Values.resourceMetadata.mysqlPvc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $pvcAnn := include "ghost.annotations" (dict "top" . "extra" (merge (deepCopy (default (dict) .Values.mysql.persistence.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.mysqlPvc.annotations)))) }}
+  {{- if $pvcAnn }}
+  annotations:
+    {{- $pvcAnn | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.mysql.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.mysql.persistence.size }}
+  {{- with .Values.mysql.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- if and (not .Values.mysql.enabled) (not .Values.externalDatabase.existingSecret) -}}
+{{- if or (not .Values.externalDatabase.user) (not .Values.externalDatabase.password) (not .Values.externalDatabase.database) -}}
+{{- fail "ghost: externalDatabase.{user,password,database} are all required when mysql.enabled is false and externalDatabase.existingSecret is empty." -}}
+{{- end -}}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "ghost.database.secretName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ghost
+    {{- with .Values.resourceMetadata.mysqlSecret.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+type: Opaque
+stringData:
+  MYSQL_USER: {{ .Values.externalDatabase.user | quote }}
+  MYSQL_PASSWORD: {{ .Values.externalDatabase.password | quote }}
+  MYSQL_DATABASE: {{ .Values.externalDatabase.database | quote }}
+{{- end }}

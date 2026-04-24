@@ -1,0 +1,40 @@
+{{- if .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "ghost.fullname" . }}
+  namespace: {{ .Values.serviceMonitor.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.releaseLabel }}
+    release: {{ . }}
+    {{- end }}
+    {{- with .Values.resourceMetadata.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "ghost.annotations" (dict "top" . "extra" .Values.resourceMetadata.serviceMonitor.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    {{- if .Values.serviceMonitor.selector }}
+    {{- toYaml .Values.serviceMonitor.selector | nindent 4 }}
+    {{- else }}
+    matchLabels:
+      {{- include "ghost.selectorLabels" . | nindent 6 }}
+    {{- end }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    {{- if .Values.serviceMonitor.endpoints }}
+    {{- toYaml .Values.serviceMonitor.endpoints | nindent 4 }}
+    {{- else }}
+    - port: http
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+{{- end }}

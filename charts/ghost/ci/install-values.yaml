@@ -1,0 +1,41 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — credentials below are dummy and
+# must not be reused.
+url: https://blog.example.com
+mysql:
+  auth:
+    user: ghost
+    password: ci-test-password
+    database: ghost
+    rootPassword: ci-test-root-password
+backup:
+  enabled: true
+httproute:
+  enabled: true
+  parentRefs:
+    - name: ngf
+      namespace: nginx-gateway
+  hostnames:
+    - blog.example.com
+ingress:
+  enabled: true
+  className: nginx
+  host: blog.example.com
+nginxGatewayFabric:
+  clientSettings:
+    enabled: true
+    bodyMaxSize: "500m"
+serviceMonitor:
+  enabled: true
+serviceAccount:
+  create: true
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nginx-gateway
+      ports:
+        - protocol: TCP
+          port: 2368

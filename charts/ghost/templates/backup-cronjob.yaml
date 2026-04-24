@@ -1,0 +1,135 @@
+{{- if .Values.backup.enabled -}}
+{{- if and .Values.backup.persistence.enabled (not .Values.backup.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "ghost.backup.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+    {{- with .Values.resourceMetadata.backupPvc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $pvcAnn := include "ghost.annotations" (dict "top" . "extra" (merge (deepCopy (default (dict) .Values.backup.persistence.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.backupPvc.annotations)))) }}
+  {{- if $pvcAnn }}
+  annotations:
+    {{- $pvcAnn | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.backup.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.backup.persistence.size }}
+  {{- with .Values.backup.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+---
+{{- end }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "ghost.backup.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ghost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+    {{- with .Values.resourceMetadata.backupCronJob.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $cjAnn := include "ghost.annotations" (dict "top" . "extra" .Values.resourceMetadata.backupCronJob.annotations) }}
+  {{- if $cjAnn }}
+  annotations:
+    {{- $cjAnn | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: backup
+              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -e
+                  DATE=$(date +%Y%m%d)
+                  BACKUP_DIR="/backup-data"
+                  RETENTION_DAYS={{ .Values.backup.retentionDays }}
+
+                  echo "[$(date)] Starting Ghost backup..."
+
+                  mysqldump -h "$DB_HOST" -P "$DB_PORT" \
+                    -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
+                    --single-transaction --quick --lock-tables=false \
+                    "$MYSQL_DATABASE" > "$BACKUP_DIR/ghost-db-${DATE}.sql"
+                  echo "[$(date)] DB backup: ghost-db-${DATE}.sql ($(du -h "$BACKUP_DIR/ghost-db-${DATE}.sql" | cut -f1))"
+
+                  tar czf "$BACKUP_DIR/ghost-content-${DATE}.tar.gz" -C /ghost-content .
+                  echo "[$(date)] Content backup: ghost-content-${DATE}.tar.gz ($(du -h "$BACKUP_DIR/ghost-content-${DATE}.tar.gz" | cut -f1))"
+
+                  DB_DEL=$(find "$BACKUP_DIR" -name "ghost-db-*.sql" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
+                  CONTENT_DEL=$(find "$BACKUP_DIR" -name "ghost-content-*.tar.gz" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
+                  echo "[$(date)] Retention: deleted $((DB_DEL + CONTENT_DEL)) backups older than ${RETENTION_DAYS} days"
+
+                  echo ""
+                  echo "Available backups:"
+                  ls -lh "$BACKUP_DIR"/ghost-db-*.sql 2>/dev/null || echo "  (none)"
+                  echo ""
+                  echo "[$(date)] Ghost backup complete."
+              env:
+                - name: DB_HOST
+                  value: {{ include "ghost.databaseHost" . | quote }}
+                - name: DB_PORT
+                  value: {{ include "ghost.databasePort" . | quote }}
+                - name: MYSQL_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "ghost.database.secretName" . }}
+                      key: MYSQL_USER
+                - name: MYSQL_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "ghost.database.secretName" . }}
+                      key: MYSQL_PASSWORD
+                - name: MYSQL_DATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "ghost.database.secretName" . }}
+                      key: MYSQL_DATABASE
+              {{- with .Values.backup.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              volumeMounts:
+                - name: ghost-content
+                  mountPath: /ghost-content
+                  readOnly: true
+                - name: backup
+                  mountPath: /backup-data
+          volumes:
+            - name: ghost-content
+              persistentVolumeClaim:
+                claimName: {{ .Values.persistence.existingClaim | default (printf "%s-content" (include "ghost.fullname" .)) }}
+            - name: backup
+              persistentVolumeClaim:
+                claimName: {{ .Values.backup.persistence.existingClaim | default (include "ghost.backup.fullname" .) }}
+          {{- with .Values.backup.jobTemplateExtra }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+  {{- with .Values.backup.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
