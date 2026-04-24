@@ -2,7 +2,7 @@ apiVersion: v2
 name: kibana-eck
 description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed via elasticsearch-eck.
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: "9.3.3"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -41,3 +41,5 @@ annotations:
       description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-kb-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band."
     - kind: removed
       description: The auto-generated `<name>-ca` ConfigMap. Existing installs will leave an orphaned ConfigMap — helm garbage-collects it on upgrade.
+    - kind: fixed
+      description: "DO NOT USE 0.1.2 — same NGF Opaque Secret rejection as elasticsearch-eck 0.1.3. 0.1.3 reverts to the 0.1.1 behavior: `caCertificateRef.kind: ConfigMap` with chart-rendered CA ConfigMap via `helm lookup`. The `caCertificateRef` values block is retained for advanced consumers — `kind: Secret` requires a `kubernetes.io/tls`-typed Secret, or use consumer-managed external ConfigMap via `name: <custom>`. README documents the helm-diff lookup limitation as a known trade-off."

@@ -15,7 +15,7 @@ The chart renders the ECK `Kibana` Custom Resource plus optional siblings (Servi
 | `PodDisruptionBudget` | `policy/v1` | Optional. Required for zero-downtime rolling updates. |
 | `HTTPRoute` | `gateway.networking.k8s.io/v1` | Optional. Gateway API route for external access. |
 | `Ingress` | `networking.k8s.io/v1` | Optional. Legacy path for non-Gateway-API clusters. |
-| `BackendTLSPolicy` | `gateway.networking.k8s.io/v1` | Optional. TLS verification from Gateway. References ECK-managed `*-kb-http-certs-public` Secret by default. |
+| `BackendTLSPolicy` + CA `ConfigMap` | `gateway.networking.k8s.io/v1`, `v1` | Optional. TLS verification from Gateway. Chart copies `ca.crt` from ECK's `*-kb-http-certs-public` Secret into `<fullname>-ca` ConfigMap via `helm lookup` (only portable approach — see Known limitations). |
 | `ServiceMonitor` | `monitoring.coreos.com/v1` | Optional. Prometheus scrape config. |
 | `NetworkPolicy` | `networking.k8s.io/v1` | Optional. Lock down ingress/egress. |
 | `ReferenceGrant` | `gateway.networking.k8s.io/v1beta1` | Optional. Cross-namespace references from HTTPRoutes / other Kibanas. |
@@ -217,7 +217,13 @@ Structured passthrough for pod-level (`nodeSelector`, `affinity`, `tolerations`,
 | PodDisruptionBudget | `podDisruptionBudget.enabled` | External `policy/v1` PDB (Kibana is a Deployment). |
 | HTTPRoute | `httproute.enabled` | Gateway API route; defaults backend to `<fullname>-kb-http:5601`. |
 | Ingress | `ingress.enabled` | Legacy, kept for migration. |
-| BackendTLSPolicy | `backendTLSPolicy.enabled` | Only when Kibana serves HTTPS + Gateway validates backend TLS. `caCertificateRef.kind` defaults to `Secret` (NGF); set to `ConfigMap` for Gateway API Core-only implementations and manage the ConfigMap `<fullname>-ca` (key `ca.crt`) out-of-band. Migrating from 0.1.1: the auto-generated CA ConfigMap is dropped — NGF users need no action, other implementations must switch kind and provision the ConfigMap externally. |
+| BackendTLSPolicy | `backendTLSPolicy.enabled` | Only when Kibana serves HTTPS + Gateway validates backend TLS. Default `caCertificateRef.kind: ConfigMap` → chart renders `<fullname>-ca` via `helm lookup` (requires Kibana Ready; re-run `helm upgrade` after first install). Set `name: <custom>` to point at an externally-managed ConfigMap; set `kind: Secret` only with a `kubernetes.io/tls` Secret (NGF rejects Opaque). |
+
+<br/>
+
+### Known limitations
+
+- **`helmfile diff` / `helm-diff` shows spurious "removed"** for the CA ConfigMap + BackendTLSPolicy when the default `caCertificateRef.kind: ConfigMap` with empty `name` is used. Cause: `helm-diff` renders target charts client-side; `helm lookup` returns nil without cluster access. The actual `helm upgrade` reads the cluster and renders correctly.
 | ServiceMonitor | `serviceMonitor.enabled` | Prometheus scrape config. |
 | NetworkPolicy | `networkPolicy.enabled` | Full NetworkPolicy shape exposed (ingress/egress arrays). |
 | ReferenceGrant | `referenceGrants[]` | List of cross-namespace grants. |
