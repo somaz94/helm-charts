@@ -1,6 +1,5 @@
 #!/bin/bash
-# upgrade-template: helm-charts/local-cr-version (adapted from
-# kuberntes-infra/scripts/upgrade-sync/templates/local-cr-version.sh)
+# upgrade-template: chart-appversion
 #
 # Purpose: bump Chart.yaml appVersion + values.yaml version to the latest
 # Kibana GA. File-level only — cluster is not touched. Additional safeguard:
@@ -9,25 +8,26 @@
 set -euo pipefail
 
 # ============================================================
-# Configuration
+# Configuration — per chart
 # ============================================================
 SCRIPT_NAME="kibana-eck Helm Chart appVersion Bump"
 COMPONENT_LABEL="kibana"
 VERSION_SOURCE="elastic-artifacts"
 VERSION_SOURCE_ARG=""
-VALUES_FILE="values.yaml"
-VERSION_KEY="version"
 MAJOR_PIN="9"
 CHANGELOG_URL="https://www.elastic.co/guide/en/kibana/current/release-notes.html"
 CONTAINER_IMAGE="docker.elastic.co/kibana/kibana"
-MIRROR_CHART_VERSION="false"
-UPDATE_ARTIFACTHUB_CHANGES="true"
-# Sibling chart dependency: this chart's version must be <= sibling's.
-# Path is relative to CHART_DIR. Empty → skip the check.
+TAG_SUFFIX=""
+VALUES_FILE="values.yaml"
+VERSION_KEY="version"
 SIBLING_CHART_DIR="../elasticsearch-eck"
 SIBLING_CHART_LABEL="elasticsearch-eck"
+UPDATE_ARTIFACTHUB_CHANGES="true"
+MIRROR_CHART_VERSION="false"
+GITHUB_TAG_PREFIX="${GITHUB_TAG_PREFIX:-v}"
 # ============================================================
 
+# === BEGIN CANONICAL BODY ===
 CHART_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_DIR="$CHART_DIR/backup"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -39,25 +39,30 @@ Usage: $(basename "$0") [COMMAND] [OPTIONS]
 
 $SCRIPT_NAME
 Tracks the upstream $COMPONENT_LABEL GA version and bumps Chart.yaml
-appVersion + $VALUES_FILE.$VERSION_KEY. Does NOT touch any cluster.
-
-Sibling check: target version must be <= $SIBLING_CHART_LABEL version
-(Kibana can only connect to an equal-or-older Elasticsearch).
-
+appVersion${VALUES_FILE:+ + $VALUES_FILE.$VERSION_KEY}. Does NOT touch any cluster.
+${SIBLING_CHART_LABEL:+
+Sibling check: target version must be <= $SIBLING_CHART_LABEL version.
+}
 Commands:
   (default)           Check latest version and bump
   --version <VER>     Bump to a specific version (skips upstream query)
   --dry-run           Preview changes only (no files will be modified)
   --rollback          Restore files from a previous backup
   --list-backups      List available backups
-  --cleanup-backups   Keep only the last $KEEP_BACKUPS backups
-  -h, --help          Show this help
+  --cleanup-backups   Keep only the last $KEEP_BACKUPS backups, remove older ones
+  -h, --help          Show this help message
 
 Examples:
-  $(basename "$0")                  # Bump to latest GA
-  $(basename "$0") --dry-run        # Preview without changes
-  $(basename "$0") --version 9.1.2  # Pin to a specific version
-  $(basename "$0") --rollback       # Restore files from backup
+  $(basename "$0")                                # Bump to latest GA
+  $(basename "$0") --dry-run                      # Preview without changes
+  $(basename "$0") --version X.Y.Z                # Pin to a specific version
+  $(basename "$0") --rollback                     # Restore files from backup
+
+After a successful bump, next steps are:
+  1. git diff (review Chart.yaml${VALUES_FILE:+, $VALUES_FILE})
+  2. make bump CHART=$(basename "$CHART_DIR") LEVEL=patch   # bump chart SemVer
+  3. make ci CHART=$(basename "$CHART_DIR")                 # lint + template + validate
+  4. git add $(basename "$CHART_DIR") && git commit -m "feat($(basename "$CHART_DIR")): bump appVersion"
 EOF
   exit 0
 }
@@ -72,10 +77,10 @@ list_backups() {
   local i=1
   for dir in $(ls -dt "$BACKUP_DIR"/2*/); do
     local dirname=$(basename "$dir")
-    local chart_ver="unknown"
-    [ -f "$dir/Chart.yaml" ] && chart_ver=$(grep '^appVersion:' "$dir/Chart.yaml" | awk '{print $2}' | tr -d '"')
+    local app_ver="unknown"
+    [ -f "$dir/Chart.yaml" ] && app_ver=$(grep '^appVersion:' "$dir/Chart.yaml" | awk '{print $2}' | tr -d '"')
     local files=$(ls "$dir" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
-    printf "  [%d] %s (appVersion: %s) — %s\n" "$i" "$dirname" "$chart_ver" "$files"
+    printf "  [%d] %s (appVersion: %s) — %s\n" "$i" "$dirname" "$app_ver" "$files"
     i=$((i + 1))
   done
   echo ""
@@ -88,9 +93,7 @@ do_rollback() {
   fi
   list_backups
   local backups=()
-  for dir in $(ls -dt "$BACKUP_DIR"/2*/); do
-    backups+=("$dir")
-  done
+  for dir in $(ls -dt "$BACKUP_DIR"/2*/); do backups+=("$dir"); done
   read -rp "Select backup number to restore [1]: " choice
   choice=${choice:-1}
   if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "${#backups[@]}" ]; then
@@ -100,14 +103,14 @@ do_rollback() {
   local selected="${backups[$((choice - 1))]}"
   local dirname=$(basename "$selected")
   echo ""
-  echo "Restoring files from backup/$dirname..."
+  echo "Restoring from backup/$dirname..."
   [ -f "$selected/Chart.yaml" ] && cp "$selected/Chart.yaml" "$CHART_DIR/Chart.yaml" && echo "  Restored Chart.yaml"
-  if [ -f "$selected/$(basename "$VALUES_FILE")" ]; then
+  if [ -n "$VALUES_FILE" ] && [ -f "$selected/$(basename "$VALUES_FILE")" ]; then
     cp "$selected/$(basename "$VALUES_FILE")" "$CHART_DIR/$VALUES_FILE"
     echo "  Restored $VALUES_FILE"
   fi
   echo ""
-  echo "File rollback complete. No cluster operations were performed."
+  echo "Rollback complete. Run 'git diff' to review."
 }
 
 cleanup_backups() {
@@ -124,9 +127,8 @@ cleanup_backups() {
   local to_delete=$((total - KEEP_BACKUPS))
   echo "Removing $to_delete old backup(s)..."
   ls -dt "$BACKUP_DIR"/2*/ | tail -n "$to_delete" | while read -r dir; do
-    local dirname=$(basename "$dir")
     rm -rf "$dir"
-    echo "  Removed: $dirname"
+    echo "  Removed: $(basename "$dir")"
   done
   echo "Done."
 }
@@ -137,12 +139,11 @@ auto_prune_backups() {
   total=$(ls -d "$BACKUP_DIR"/2*/ 2>/dev/null | wc -l | tr -d ' ')
   [ "$total" -le "$KEEP_BACKUPS" ] && return 0
   local to_delete=$((total - KEEP_BACKUPS))
-  ls -dt "$BACKUP_DIR"/2*/ | tail -n "$to_delete" | while read -r dir; do
-    rm -rf "$dir"
-  done
+  ls -dt "$BACKUP_DIR"/2*/ | tail -n "$to_delete" | while read -r dir; do rm -rf "$dir"; done
   echo "  Auto-pruned $to_delete old backup(s) (KEEP_BACKUPS=$KEEP_BACKUPS)."
 }
 
+# Read a top-level YAML string value. Handles quoted and unquoted values.
 read_yaml_value() {
   local file="$1"
   local key="$2"
@@ -157,6 +158,7 @@ read_yaml_value() {
   ' "$file"
 }
 
+# Replace a top-level YAML string value (quotes preserved where possible).
 update_yaml_value() {
   local file="$1"
   local key="$2"
@@ -185,6 +187,7 @@ update_yaml_value() {
   mv "$tmp" "$file"
 }
 
+# Append an entry to the Chart.yaml artifacthub.io/changes literal block.
 update_artifacthub_changes() {
   local file="$1"
   local from="$2"
@@ -216,13 +219,13 @@ entry_indent = indent + '  '
 new_entry = f"{entry_indent}- kind: changed\n{entry_indent}  description: {desc}\n"
 if body and not body.endswith('\n'):
     body += '\n'
-new_body = body + new_entry
-text = text[:m.start('body')] + new_body + text[m.end('body'):]
-path.write_text(text)
+new_text = text[:m.end('body')] + new_entry + text[m.end('body'):]
+path.write_text(new_text)
 print("  Appended entry to artifacthub.io/changes.")
 PYEOF
 }
 
+# Fetch sorted list of GA versions (newest first, respecting MAJOR_PIN).
 fetch_ga_versions() {
   case "$VERSION_SOURCE" in
     elastic-artifacts)
@@ -243,12 +246,91 @@ for v in ga:
     print(v)
 " 2>/dev/null
       ;;
+    docker-hub)
+      local repo="${VERSION_SOURCE_ARG}"
+      [ -z "$repo" ] && return 0
+      local base="https://hub.docker.com/v2/repositories/${repo}/tags/?page_size=100"
+      local url="$base"
+      local page=1
+      local all_tags=""
+      while [ "$page" -le 5 ] && [ -n "$url" ]; do
+        local resp
+        resp=$(curl -sSfL "$url" 2>/dev/null) || break
+        all_tags+="$(printf '%s' "$resp" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    for r in d.get('results', []):
+        print(r.get('name', ''))
+except Exception:
+    pass
+" 2>/dev/null)
+"
+        url=$(printf '%s' "$resp" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    print(d.get('next') or '')
+except Exception:
+    print('')
+" 2>/dev/null)
+        page=$((page + 1))
+      done
+      printf '%s' "$all_tags" | python3 -c "
+import sys, re, os
+major = os.environ.get('MAJOR_PIN', '').strip()
+ga = set()
+for line in sys.stdin:
+    t = line.strip()
+    if re.fullmatch(r'\d+\.\d+\.\d+', t):
+        if major and not t.startswith(major + '.'):
+            continue
+        ga.add(t)
+ga = sorted(ga, key=lambda v: tuple(int(p) for p in v.split('.')), reverse=True)
+for v in ga:
+    print(v)
+"
+      ;;
+    github-release)
+      local repo="${VERSION_SOURCE_ARG}"
+      [ -z "$repo" ] && return 0
+      local url="https://api.github.com/repos/${repo}/releases?per_page=100"
+      curl -sSfL \
+        ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
+        -H 'Accept: application/vnd.github+json' \
+        "$url" 2>/dev/null \
+        | python3 -c "
+import json, sys, re, os
+try:
+    releases = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+major = os.environ.get('MAJOR_PIN', '').strip()
+prefix = os.environ.get('GITHUB_TAG_PREFIX', 'v')
+ga = set()
+for r in releases:
+    if r.get('draft') or r.get('prerelease'):
+        continue
+    tag = r.get('tag_name') or ''
+    if prefix and tag.startswith(prefix):
+        tag = tag[len(prefix):]
+    if re.fullmatch(r'\d+\.\d+\.\d+', tag):
+        if major and not tag.startswith(major + '.'):
+            continue
+        ga.add(tag)
+ga = sorted(ga, key=lambda v: tuple(int(p) for p in v.split('.')), reverse=True)
+for v in ga:
+    print(v)
+" 2>/dev/null
+      ;;
+    *)
+      echo "  ERROR: unknown VERSION_SOURCE: $VERSION_SOURCE" >&2
+      return 1
+      ;;
   esac
 }
 
-fetch_latest_version() {
-  fetch_ga_versions | head -1
-}
+fetch_latest_version() { fetch_ga_versions | head -1; }
 
 find_latest_available_version() {
   local max_attempts=15
@@ -273,29 +355,26 @@ semver_compare() {
   local a_tuple b_tuple
   a_tuple=$(echo "$1" | awk -F. '{printf "%d%03d%03d", $1, $2, $3}')
   b_tuple=$(echo "$2" | awk -F. '{printf "%d%03d%03d", $1, $2, $3}')
-  if [ "$a_tuple" -lt "$b_tuple" ]; then
-    echo -1
-  elif [ "$a_tuple" -gt "$b_tuple" ]; then
-    echo 1
-  else
-    echo 0
-  fi
+  if [ "$a_tuple" -lt "$b_tuple" ]; then echo -1
+  elif [ "$a_tuple" -gt "$b_tuple" ]; then echo 1
+  else echo 0; fi
 }
 
-# File-based sibling check: read elasticsearch-eck/values.yaml .version and
-# ensure our target version is <= that. No kubectl, no cluster access.
+# File-based sibling check (no kubectl, no cluster access).
 check_sibling_version() {
   local target="$1"
   [ -n "$SIBLING_CHART_DIR" ] || return 0
   local sibling_values="$CHART_DIR/$SIBLING_CHART_DIR/values.yaml"
-  if [ ! -f "$sibling_values" ]; then
-    echo "  WARN: sibling values file not found at $sibling_values. Skipping."
-    return 0
+  local sibling_chart="$CHART_DIR/$SIBLING_CHART_DIR/Chart.yaml"
+  local sibling_ver=""
+  if [ -n "$VERSION_KEY" ] && [ -f "$sibling_values" ]; then
+    sibling_ver=$(read_yaml_value "$sibling_values" "$VERSION_KEY")
   fi
-  local sibling_ver
-  sibling_ver=$(read_yaml_value "$sibling_values" "$VERSION_KEY")
+  if [ -z "$sibling_ver" ] && [ -f "$sibling_chart" ]; then
+    sibling_ver=$(grep '^appVersion:' "$sibling_chart" | awk '{print $2}' | tr -d '"')
+  fi
   if [ -z "$sibling_ver" ]; then
-    echo "  WARN: could not parse '$VERSION_KEY' from sibling values.yaml. Skipping."
+    echo "  WARN: could not determine sibling ($SIBLING_CHART_LABEL) version. Skipping check."
     return 0
   fi
   echo "  Sibling $SIBLING_CHART_LABEL version: $sibling_ver"
@@ -304,7 +383,7 @@ check_sibling_version() {
   if [ "$cmp" = "1" ]; then
     echo ""
     echo "  ERROR: target version $target is HIGHER than $SIBLING_CHART_LABEL version $sibling_ver."
-    echo "  Kibana must be <= Elasticsearch. Bump $SIBLING_CHART_LABEL first:"
+    echo "  Bump $SIBLING_CHART_LABEL first:"
     echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $target"
     return 1
   fi
@@ -312,14 +391,19 @@ check_sibling_version() {
   return 0
 }
 
+# Verify that a container image tag exists in the registry.
 verify_image_exists() {
-  local tag="$1"
-  if [ -z "$CONTAINER_IMAGE" ] || [ -z "$tag" ]; then
+  local tag="$1${TAG_SUFFIX}"
+  if [ -z "$CONTAINER_IMAGE" ] || [ -z "$1" ]; then
     return 0
   fi
   local registry="${CONTAINER_IMAGE%%/*}"
   local repo="${CONTAINER_IMAGE#*/}"
   local manifest_url="https://${registry}/v2/${repo}/manifests/${tag}"
+  # Docker Hub uses registry-1.docker.io as the actual registry host.
+  if [ "$registry" = "docker.io" ]; then
+    manifest_url="https://registry-1.docker.io/v2/${repo}/manifests/${tag}"
+  fi
   local auth_header
   auth_header=$(curl -sSL -I "$manifest_url" 2>/dev/null \
     | grep -i '^www-authenticate:' | head -1) || true
@@ -338,6 +422,7 @@ verify_image_exists() {
         http_code=$(curl -sSL -o /dev/null -w '%{http_code}' \
           -H "Authorization: Bearer $token" \
           -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+          -H "Accept: application/vnd.oci.image.manifest.v1+json" \
           "$manifest_url" 2>/dev/null) || true
         [ "$http_code" = "200" ] && return 0
         return 1
@@ -350,9 +435,11 @@ verify_image_exists() {
   [ "$http_code" = "200" ]
 }
 
+# -----------------------------------------------
+# Argument parsing
+# -----------------------------------------------
 DRY_RUN=false
 TARGET_VERSION=""
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help)          usage ;;
@@ -362,32 +449,39 @@ while [[ $# -gt 0 ]]; do
     --dry-run)          DRY_RUN=true; shift ;;
     --version)
       TARGET_VERSION="${2:-}"
-      if [ -z "$TARGET_VERSION" ]; then
-        echo "ERROR: --version requires a version number"
-        exit 1
-      fi
-      shift 2
-      ;;
-    *)   echo "Unknown option: $1"; echo ""; usage ;;
+      [ -z "$TARGET_VERSION" ] && { echo "ERROR: --version requires a version number"; exit 1; }
+      shift 2 ;;
+    *) echo "Unknown option: $1"; echo ""; usage ;;
   esac
 done
 
+# -----------------------------------------------
+# Main
+# -----------------------------------------------
 echo "================================================"
 echo " $SCRIPT_NAME"
 $DRY_RUN && echo " Mode: DRY-RUN (no files will be changed)"
-[ -n "$TARGET_VERSION" ] && echo " Target: v$TARGET_VERSION"
+[ -n "$TARGET_VERSION" ] && echo " Target: $TARGET_VERSION"
 [ -n "$MAJOR_PIN" ] && echo " Major pin: $MAJOR_PIN.x"
 echo "================================================"
 
+# Step 1: read current version
 echo ""
-echo "[Step 1/6] Reading current version from $VALUES_FILE..."
-if [ ! -f "$CHART_DIR/$VALUES_FILE" ]; then
-  echo "  ERROR: values file not found: $CHART_DIR/$VALUES_FILE"
-  exit 1
+if [ -n "$VALUES_FILE" ]; then
+  echo "[Step 1/N] Reading current version from $VALUES_FILE..."
+  if [ ! -f "$CHART_DIR/$VALUES_FILE" ]; then
+    echo "  ERROR: values file not found: $CHART_DIR/$VALUES_FILE"
+    exit 1
+  fi
+  CURRENT_VERSION=$(read_yaml_value "$CHART_DIR/$VALUES_FILE" "$VERSION_KEY")
+  [ -z "$CURRENT_VERSION" ] && { echo "  ERROR: could not read '$VERSION_KEY' from $VALUES_FILE"; exit 1; }
+  echo "  Current $COMPONENT_LABEL version: $CURRENT_VERSION"
+else
+  echo "[Step 1/N] Reading current appVersion from Chart.yaml..."
+  CURRENT_VERSION=$(grep '^appVersion:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
+  [ -z "$CURRENT_VERSION" ] && { echo "  ERROR: could not read appVersion"; exit 1; }
+  echo "  Current appVersion: $CURRENT_VERSION"
 fi
-CURRENT_VERSION=$(read_yaml_value "$CHART_DIR/$VALUES_FILE" "$VERSION_KEY")
-[ -z "$CURRENT_VERSION" ] && { echo "  ERROR: could not read '$VERSION_KEY'"; exit 1; }
-echo "  Current $COMPONENT_LABEL version: $CURRENT_VERSION"
 
 CURRENT_APP_VERSION=""
 if [ -f "$CHART_DIR/Chart.yaml" ]; then
@@ -395,8 +489,9 @@ if [ -f "$CHART_DIR/Chart.yaml" ]; then
   echo "  Chart.yaml appVersion:       $CURRENT_APP_VERSION"
 fi
 
+# Step 2: fetch latest upstream
 echo ""
-echo "[Step 2/6] Checking latest upstream version (source: $VERSION_SOURCE)..."
+echo "[Step 2/N] Checking latest upstream version (source: $VERSION_SOURCE)..."
 if [ -n "$TARGET_VERSION" ]; then
   LATEST_VERSION="$TARGET_VERSION"
   echo "  Using explicit target: $TARGET_VERSION"
@@ -416,52 +511,53 @@ echo ""
 echo "  Bump: $CURRENT_VERSION -> $LATEST_VERSION"
 echo "  Changelog: $CHANGELOG_URL"
 
-echo ""
-echo "[Step 3/6] Sibling dependency check ($SIBLING_CHART_LABEL)..."
-if ! check_sibling_version "$LATEST_VERSION"; then
-  exit 1
+# Step 3: optional sibling check
+if [ -n "$SIBLING_CHART_DIR" ]; then
+  echo ""
+  echo "[Step 3/N] Sibling version check ($SIBLING_CHART_LABEL)..."
+  if ! check_sibling_version "$LATEST_VERSION"; then
+    exit 1
+  fi
 fi
 
+# Step 4: verify image if configured
 echo ""
-echo "[Step 4/6] Verifying container image..."
+echo "[Step 4/N] Verifying container image..."
 if [ -n "$CONTAINER_IMAGE" ]; then
-  echo "  Checking: $CONTAINER_IMAGE:$LATEST_VERSION"
+  echo "  Checking: $CONTAINER_IMAGE:${LATEST_VERSION}${TAG_SUFFIX}"
   if verify_image_exists "$LATEST_VERSION"; then
     echo "  Image verified OK."
   else
     echo ""
     echo "  WARNING: Container image not found in registry."
     if [ -n "$TARGET_VERSION" ]; then
-      echo "  Explicit --version specified; not searching for alternatives."
+      echo "  Refusing to bump. Retry once the image is published or choose another version."
       exit 1
     fi
     echo "  Searching for the newest GA version with a published image..."
     AVAILABLE_VERSION=$(find_latest_available_version) || true
     if [ -z "$AVAILABLE_VERSION" ]; then
-      echo "  ERROR: No GA version with a published image found."
+      echo "  ERROR: no GA version with a published image found within search limit."
       exit 1
     fi
     if [ "$AVAILABLE_VERSION" = "$CURRENT_VERSION" ]; then
       echo "  Newest available matches current. Nothing to bump."
       exit 0
     fi
-    echo "  Latest available: $AVAILABLE_VERSION"
+    echo "  Latest available (with published image): $AVAILABLE_VERSION"
     if $DRY_RUN; then
       LATEST_VERSION="$AVAILABLE_VERSION"
     else
-      read -rp "  Use $AVAILABLE_VERSION instead? [y/N]: " use_alt
-      [[ "$use_alt" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
+      read -rp "  Use $AVAILABLE_VERSION instead of $LATEST_VERSION? [y/N]: " use_alt
+      [[ ! "$use_alt" =~ ^[Yy]$ ]] && { echo "Aborted."; exit 1; }
       LATEST_VERSION="$AVAILABLE_VERSION"
-      # Re-check sibling with the new fallback version.
-      if ! check_sibling_version "$LATEST_VERSION"; then
-        exit 1
-      fi
     fi
   fi
 else
   echo "  Skipped (CONTAINER_IMAGE not configured)."
 fi
 
+# Step 5: major bump warning
 CURRENT_MAJOR="${CURRENT_VERSION%%.*}"
 LATEST_MAJOR="${LATEST_VERSION%%.*}"
 if [ -n "$CURRENT_MAJOR" ] && [ -n "$LATEST_MAJOR" ] && [ "$CURRENT_MAJOR" != "$LATEST_MAJOR" ]; then
@@ -472,42 +568,44 @@ if [ -n "$CURRENT_MAJOR" ] && [ -n "$LATEST_MAJOR" ] && [ "$CURRENT_MAJOR" != "$
   echo "  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   if ! $DRY_RUN; then
     read -rp "  Continue with major version bump? [y/N]: " major_confirm
-    [[ "$major_confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
+    [[ ! "$major_confirm" =~ ^[Yy]$ ]] && { echo "Aborted."; exit 1; }
   fi
 fi
 
+# Step 6: dry-run or apply
 echo ""
 if $DRY_RUN; then
-  echo "[Step 5/6] DRY-RUN complete. No files were changed."
-  echo "  To apply: ./upgrade.sh"
-  [ -n "$TARGET_VERSION" ] && echo "  To apply: ./upgrade.sh --version $TARGET_VERSION"
+  echo "[Step 6/N] DRY-RUN complete. No files were changed."
+  echo "  To apply: $(basename "$0")${TARGET_VERSION:+ --version $TARGET_VERSION}"
   exit 0
 fi
 
-echo "[Step 5/6] Backing up current files..."
+echo "[Step 6/N] Applying bump..."
 mkdir -p "$BACKUP_DIR/$TIMESTAMP"
-cp "$CHART_DIR/$VALUES_FILE" "$BACKUP_DIR/$TIMESTAMP/$(basename "$VALUES_FILE")"
-[ -f "$CHART_DIR/Chart.yaml" ] && cp "$CHART_DIR/Chart.yaml" "$BACKUP_DIR/$TIMESTAMP/Chart.yaml"
+cp "$CHART_DIR/Chart.yaml" "$BACKUP_DIR/$TIMESTAMP/Chart.yaml"
+if [ -n "$VALUES_FILE" ] && [ -f "$CHART_DIR/$VALUES_FILE" ]; then
+  cp "$CHART_DIR/$VALUES_FILE" "$BACKUP_DIR/$TIMESTAMP/$(basename "$VALUES_FILE")"
+fi
 echo "  Backed up to: backup/$TIMESTAMP/"
 ls "$BACKUP_DIR/$TIMESTAMP/" | while read -r f; do echo "    - $f"; done
 
-echo ""
-echo "[Step 6/6] Applying version update..."
-update_yaml_value "$CHART_DIR/$VALUES_FILE" "$VERSION_KEY" "$LATEST_VERSION"
-echo "  Updated $VALUES_FILE ($VERSION_KEY: $CURRENT_VERSION -> $LATEST_VERSION)"
-
-if [ -f "$CHART_DIR/Chart.yaml" ]; then
-  update_yaml_value "$CHART_DIR/Chart.yaml" "appVersion" "$LATEST_VERSION"
-  echo "  Updated Chart.yaml (appVersion: ${CURRENT_APP_VERSION:-unset} -> $LATEST_VERSION)"
-  if [ "$MIRROR_CHART_VERSION" = "true" ]; then
-    CURRENT_CHART_VERSION=$(grep '^version:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
-    if [ "$CURRENT_CHART_VERSION" != "$LATEST_VERSION" ]; then
-      update_yaml_value "$CHART_DIR/Chart.yaml" "version" "$LATEST_VERSION"
-      echo "  Updated Chart.yaml (version: ${CURRENT_CHART_VERSION:-unset} -> $LATEST_VERSION) [mirrored]"
-    fi
-  fi
-  update_artifacthub_changes "$CHART_DIR/Chart.yaml" "$CURRENT_APP_VERSION" "$LATEST_VERSION"
+if [ -n "$VALUES_FILE" ]; then
+  update_yaml_value "$CHART_DIR/$VALUES_FILE" "$VERSION_KEY" "$LATEST_VERSION"
+  echo "  Updated $VALUES_FILE ($VERSION_KEY: $CURRENT_VERSION -> $LATEST_VERSION)"
 fi
+
+update_yaml_value "$CHART_DIR/Chart.yaml" "appVersion" "$LATEST_VERSION"
+echo "  Updated Chart.yaml (appVersion: ${CURRENT_APP_VERSION:-unset} -> $LATEST_VERSION)"
+
+if [ "$MIRROR_CHART_VERSION" = "true" ]; then
+  CURRENT_CHART_VERSION=$(grep '^version:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
+  if [ "$CURRENT_CHART_VERSION" != "$LATEST_VERSION" ]; then
+    update_yaml_value "$CHART_DIR/Chart.yaml" "version" "$LATEST_VERSION"
+    echo "  Updated Chart.yaml (version: ${CURRENT_CHART_VERSION:-unset} -> $LATEST_VERSION) [mirrored]"
+  fi
+fi
+
+update_artifacthub_changes "$CHART_DIR/Chart.yaml" "$CURRENT_APP_VERSION" "$LATEST_VERSION"
 
 auto_prune_backups
 
@@ -518,11 +616,12 @@ echo ""
 echo " Changelog: $CHANGELOG_URL"
 echo ""
 echo " Next steps:"
-echo "   1. Review diff: git diff $(basename "$CHART_DIR")"
-echo "   2. Bump chart SemVer: make bump CHART=$(basename "$CHART_DIR") LEVEL=minor"
-echo "   3. Validate: make lint CHART=$(basename "$CHART_DIR") && make template CHART=$(basename "$CHART_DIR")"
-echo "   4. Commit: git add $(basename "$CHART_DIR") && git commit -m \"feat($(basename "$CHART_DIR")): bump appVersion to $LATEST_VERSION\""
+echo "   1. git diff (review Chart.yaml${VALUES_FILE:+, $VALUES_FILE})"
+echo "   2. make bump CHART=$(basename "$CHART_DIR") LEVEL=patch   # bump chart SemVer"
+echo "   3. make ci CHART=$(basename "$CHART_DIR")"
+echo "   4. git add $(basename "$CHART_DIR") && git commit"
 echo ""
-echo " To rollback files:"
-echo "   ./upgrade.sh --rollback"
+echo " To rollback:"
+echo "   $(basename "$0") --rollback"
 echo "================================================"
+# === END CANONICAL BODY ===

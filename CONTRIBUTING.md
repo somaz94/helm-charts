@@ -98,7 +98,7 @@ The target updates `Chart.yaml` and prints the next steps (annotation, README, c
 
 ### Upstream version tracking (`upgrade.sh`)
 
-Some charts wrap a third-party component whose image tag evolves on its own release cadence (e.g. `elasticsearch-eck`, `kibana-eck`). These charts ship a local `upgrade.sh` that queries the component's upstream version feed (e.g. `artifacts-api.elastic.co`), verifies the container image is published, backs up the current state, and rewrites the chart's `Chart.yaml` `appVersion` plus `values.yaml` `version` in one shot.
+Some charts wrap a third-party component whose image tag evolves on its own release cadence (e.g. `elasticsearch-eck`, `kibana-eck`, `ghost`, `unity-mcp-server`). These charts ship a local `upgrade.sh` that queries the component's upstream version feed (Elastic Artifacts API, Docker Hub, GitHub Releases), verifies the container image is published, backs up the current state, and rewrites the chart's `Chart.yaml` `appVersion` (plus `values.yaml.<VERSION_KEY>` when set).
 
 ```bash
 cd charts/<chart-name>
@@ -113,6 +113,20 @@ cd charts/<chart-name>
 `upgrade.sh` **does not touch any cluster**. It only rewrites local files and places the previous versions in `backup/<timestamp>/`. The chart's own SemVer (`Chart.yaml` `version`) is **not** auto-mirrored — bump it afterwards via `make bump CHART=<chart-name> LEVEL=minor`.
 
 Charts with sibling-version constraints (e.g. `kibana-eck` requires version ≤ `elasticsearch-eck`) enforce that by reading the sibling's `values.yaml` directly — no kubectl access is needed.
+
+<br/>
+
+### `upgrade.sh` canonical template
+
+All `upgrade.sh` scripts are **thin wrappers** around a single canonical body in [`scripts/upgrade-sync/templates/chart-appversion.sh`](scripts/upgrade-sync/templates/chart-appversion.sh). Each chart keeps only its Configuration block (script name, VERSION_SOURCE, CONTAINER_IMAGE, MAJOR_PIN, …) at the top of `upgrade.sh`; everything between `# === BEGIN CANONICAL BODY ===` and `# === END CANONICAL BODY ===` is synced from the template.
+
+```bash
+scripts/upgrade-sync/sync.sh --list     # show every chart and its template + sync status
+scripts/upgrade-sync/sync.sh --check    # exits 1 if any chart drifts
+scripts/upgrade-sync/sync.sh --apply    # overwrite canonical bodies to match templates
+```
+
+Supported `VERSION_SOURCE` values: `elastic-artifacts` (ES/Kibana), `docker-hub` (Ghost), `github-release` (Unity MCP, generic OSS). See [`scripts/upgrade-sync/README.md`](scripts/upgrade-sync/README.md) for the full list of config knobs.
 
 <br/>
 

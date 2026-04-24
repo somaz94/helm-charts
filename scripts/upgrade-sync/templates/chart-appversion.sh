@@ -1,31 +1,63 @@
 #!/bin/bash
-# upgrade-template: chart-appversion
+# CANONICAL TEMPLATE — do not run directly, and do not hand-edit the body
+# of a per-chart upgrade.sh that uses this template.
 #
-# Purpose: as a chart maintainer, track the latest Elasticsearch GA version
-# and bump Chart.yaml `appVersion` + values.yaml `version` safely. Chart
-# `version` (SemVer of the chart itself) is NOT mirrored — bump manually with
-# `make bump CHART=elasticsearch-eck LEVEL=patch|minor|major` after reviewing
-# the diff. No cluster-side operations are performed; rollback restores files
-# from backup/<timestamp>/ only.
+# Purpose: as a chart maintainer, track the latest upstream GA version of
+# a component (image / release) and bump Chart.yaml `appVersion`, plus
+# optionally `values.yaml.<VERSION_KEY>`. File-level only — no cluster.
+#
+# The body below (everything between the BEGIN/END CANONICAL BODY markers)
+# is the source of truth propagated to per-chart `upgrade.sh` files via
+#   scripts/upgrade-sync/sync.sh --apply
+# Each chart's upgrade.sh keeps its own Configuration block above the BEGIN
+# marker and receives the same body.
+#
+# Supported VERSION_SOURCE values and the repo/owner fed through
+# VERSION_SOURCE_ARG:
+#   elastic-artifacts    (no arg; uses artifacts-api.elastic.co)
+#   docker-hub           (arg: "library/ghost", "bitnami/redis", ...)
+#   github-release       (arg: "owner/repo" — uses GitHub Releases API,
+#                         tag_name stripped of GITHUB_TAG_PREFIX)
+#
+# Optional config:
+#   MAJOR_PIN                 restrict to this major version, e.g. "5"
+#   CONTAINER_IMAGE           if set, the script verifies the image tag
+#                             exists in the registry before bumping
+#   TAG_SUFFIX                suffix appended to the version when verifying
+#                             image existence, e.g. "-alpine" for Ghost
+#   VALUES_FILE / VERSION_KEY if VALUES_FILE is set, update
+#                             <CHART_DIR>/<VALUES_FILE>.<VERSION_KEY>;
+#                             empty VALUES_FILE means only Chart.yaml
+#                             appVersion is rewritten
+#   SIBLING_CHART_DIR         path (relative to CHART_DIR) to a sibling
+#                             chart whose version acts as an upper bound
+#   SIBLING_CHART_LABEL       human-readable name of that sibling
+#   UPDATE_ARTIFACTHUB_CHANGES  when "true", append a
+#                               `- kind: changed / description: Bump ...`
+#                               entry to Chart.yaml annotations on success
+#   MIRROR_CHART_VERSION      when "true", also bump Chart.yaml `version`
+#                             (NOT recommended — prefer `make bump`)
+#   GITHUB_TAG_PREFIX         defaults to "v"; stripped from github-release
+#                             tag_name to derive the version
 set -euo pipefail
 
 # ============================================================
-# Configuration — per chart
+# Configuration (per-chart placeholders — replaced in real upgrade.sh)
 # ============================================================
-SCRIPT_NAME="elasticsearch-eck Helm Chart appVersion Bump"
-COMPONENT_LABEL="elasticsearch"
-VERSION_SOURCE="elastic-artifacts"
-VERSION_SOURCE_ARG=""
-MAJOR_PIN="9"
-CHANGELOG_URL="https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html"
-CONTAINER_IMAGE="docker.elastic.co/elasticsearch/elasticsearch"
-TAG_SUFFIX=""
-VALUES_FILE="values.yaml"
-VERSION_KEY="version"
-SIBLING_CHART_DIR=""
-SIBLING_CHART_LABEL=""
-UPDATE_ARTIFACTHUB_CHANGES="true"
-MIRROR_CHART_VERSION="false"
+SCRIPT_NAME="__SCRIPT_NAME__"
+COMPONENT_LABEL="__COMPONENT_LABEL__"
+VERSION_SOURCE="__VERSION_SOURCE__"
+VERSION_SOURCE_ARG="__VERSION_SOURCE_ARG__"
+MAJOR_PIN="__MAJOR_PIN__"
+CHANGELOG_URL="__CHANGELOG_URL__"
+CONTAINER_IMAGE="__CONTAINER_IMAGE__"
+TAG_SUFFIX="__TAG_SUFFIX__"
+VALUES_FILE="__VALUES_FILE__"
+VERSION_KEY="__VERSION_KEY__"
+SIBLING_CHART_DIR="__SIBLING_CHART_DIR__"
+SIBLING_CHART_LABEL="__SIBLING_CHART_LABEL__"
+UPDATE_ARTIFACTHUB_CHANGES="__UPDATE_ARTIFACTHUB_CHANGES__"
+MIRROR_CHART_VERSION="__MIRROR_CHART_VERSION__"
 GITHUB_TAG_PREFIX="${GITHUB_TAG_PREFIX:-v}"
 # ============================================================
 
