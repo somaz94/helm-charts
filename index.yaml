@@ -103,6 +103,60 @@ entries:
           description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-es-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band (e.g. via Reflector or External Secrets)."
         - kind: removed
           description: The auto-generated `<name>-ca` ConfigMap and the `caConfigMapName` helper. Existing installs will leave an orphaned ConfigMap — safe to delete manually once BackendTLSPolicy is reconciled against the Secret.
+        - kind: fixed
+          description: "DO NOT USE 0.1.3 — NGINX Gateway Fabric rejects `type: Opaque` Secrets for `caCertificateRefs`, so the 0.1.3 default (`kind: Secret`) breaks BTP resolution against ECK (which ships Opaque Secrets). 0.1.4 reverts to the 0.1.2 behavior: `caCertificateRef.kind: ConfigMap` with chart-rendered CA ConfigMap via `helm lookup`. The `caCertificateRef` values block is retained for advanced consumers — `kind: Secret` + `type: kubernetes.io/tls`, or consumer-managed external ConfigMap via `name: <custom>`. README documents the helm-diff lookup limitation as a known trade-off."
+        - kind: added
+          description: '`caConfigMapName` helper restored in `_helpers.tpl`. `_helpers.tpl` comments clarify the ConfigMap source-of-truth relationship.'
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-24T01:51:29.944021436Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 2c0c846b43b0833ff0fc2b62fa60602e5d5b758451ae555a9db2fdaf44357c05
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.4/elasticsearch-eck-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: removed
+          description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
+        - kind: changed
+          description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-es-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band (e.g. via Reflector or External Secrets)."
+        - kind: removed
+          description: The auto-generated `<name>-ca` ConfigMap and the `caConfigMapName` helper. Existing installs will leave an orphaned ConfigMap — safe to delete manually once BackendTLSPolicy is reconciled against the Secret.
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
         - name: Source
@@ -231,6 +285,57 @@ entries:
     - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.1/elasticsearch-eck-0.1.1.tgz
     version: 0.1.1
   kibana-eck:
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Kibana ECK CR with podTemplate extensibility, HTTPRoute, legacy Ingress, PodDisruptionBudget, and elasticsearchRef auto-wiring.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: changed
+          description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-kb-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band."
+        - kind: removed
+          description: The auto-generated `<name>-ca` ConfigMap. Existing installs will leave an orphaned ConfigMap — helm garbage-collects it on upgrade.
+        - kind: fixed
+          description: "DO NOT USE 0.1.2 — same NGF Opaque Secret rejection as elasticsearch-eck 0.1.3. 0.1.3 reverts to the 0.1.1 behavior: `caCertificateRef.kind: ConfigMap` with chart-rendered CA ConfigMap via `helm lookup`. The `caCertificateRef` values block is retained for advanced consumers — `kind: Secret` requires a `kubernetes.io/tls`-typed Secret, or use consumer-managed external ConfigMap via `name: <custom>`. README documents the helm-diff lookup limitation as a known trade-off."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Kibana Release Notes
+          url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-24T01:51:30.075073719Z"
+    description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with
+      HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed
+      via elasticsearch-eck.
+    digest: d3bfadbc06ecf0fec511c75d2a24a28910bebb04facf8a010f5932015a82868a
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - kibana
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - dashboard
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: kibana-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.3/kibana-eck-0.1.3.tgz
+    version: 0.1.3
   - annotations:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
@@ -435,4 +540,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.1.0/nginx-gateway-cr-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-24T01:34:04.391102931Z"
+generated: "2026-04-24T01:51:30.075124283Z"
