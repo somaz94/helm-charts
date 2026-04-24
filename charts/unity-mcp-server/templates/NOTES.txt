@@ -1,0 +1,35 @@
+unity-mcp-server {{ .Chart.Version }} (upstream target {{ .Chart.AppVersion }}) installed.
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Image:     {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+Service:
+  {{ include "unity-mcp-server.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+Port-forward to test locally (POST with a valid Mcp-Session-Id):
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "unity-mcp-server.fullname" . }} 8080:{{ .Values.service.port }}
+
+{{- if .Values.httproute.enabled }}
+
+HTTPRoute enabled — external hostname(s):
+{{- range .Values.httproute.hostnames }}
+  - {{ . }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+Ingress enabled — external host:
+  - {{ .Values.ingress.host }}
+{{- end }}
+
+{{- if .Values.apiKey.enabled }}
+
+API key auth enabled — MCP_API_KEY is injected from Secret {{ include "unity-mcp-server.secretName" . }}.
+Clients must send it on every request (header depends on upstream build).
+{{- end }}
+
+NOTE: FastMCP's StreamableHTTP transport returns 400 on bare `GET /mcp`
+prior to session init — that is spec-compliant behavior, not a chart issue.
+{{- if not (hasKey (dict "val" .Values.image.tag) "val") }}{{/* ignore */}}{{- end }}

@@ -1,0 +1,41 @@
+apiVersion: v2
+name: unity-mcp-server
+description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
+type: application
+version: 0.1.0
+# appVersion pins the upstream mcp-for-unity release the chart was tested
+# against. Users MUST still set image.repository / image.tag — this chart
+# does not ship a default image.
+appVersion: "3.0.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - mcp
+  - model-context-protocol
+  - unity
+  - fastmcp
+  - ai
+  - llm
+  - kubernetes
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+  - https://github.com/CoplayDev/unity-mcp
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: ai-machine-learning
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: unity-mcp (upstream)
+      url: https://github.com/CoplayDev/unity-mcp
+    - name: FastMCP
+      url: https://gofastmcp.com/
+    - name: Model Context Protocol spec
+      url: https://modelcontextprotocol.io/
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.

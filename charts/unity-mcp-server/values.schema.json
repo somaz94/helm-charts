@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "unity-mcp-server values",
+  "description": "Schema for the unity-mcp-server Helm chart values.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "commonLabels":      { "type": "object", "additionalProperties": { "type": "string" } },
+    "commonAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+    "resourceMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deployment":          { "$ref": "#/$defs/metadataBlock" },
+        "service":             { "$ref": "#/$defs/metadataBlock" },
+        "secret":              { "$ref": "#/$defs/metadataBlock" },
+        "httproute":           { "$ref": "#/$defs/metadataBlock" },
+        "ingress":             { "$ref": "#/$defs/metadataBlock" },
+        "proxySettingsPolicy": { "$ref": "#/$defs/metadataBlock" },
+        "serviceAccount":      { "$ref": "#/$defs/metadataBlock" },
+        "networkPolicy":       { "$ref": "#/$defs/metadataBlock" }
+      }
+    },
+    "nameOverride":     { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository"],
+      "properties": {
+        "repository": { "type": "string" },
+        "tag":        { "type": "string" },
+        "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "imagePullSecrets": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "replicaCount":     { "type": "integer", "minimum": 1 },
+    "containerPort":    { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type":        { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+        "port":        { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "nodePort":    { "type": ["integer", "null"] },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "command": { "type": "array", "items": { "type": "string" } },
+    "args":    { "type": "array", "items": { "type": "string" } },
+    "apiKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":        { "type": "boolean" },
+        "value":          { "type": "string" },
+        "existingSecret": { "type": "string" },
+        "secretKey":      { "type": "string", "minLength": 1 }
+      }
+    },
+    "env":                       { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+    "resources":                 { "$ref": "#/$defs/resources" },
+    "livenessProbe":             { "type": "object", "additionalProperties": true },
+    "readinessProbe":            { "type": "object", "additionalProperties": true },
+    "nodeSelector":              { "type": "object", "additionalProperties": { "type": "string" } },
+    "tolerations":               { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+    "affinity":                  { "type": "object", "additionalProperties": true },
+    "topologySpreadConstraints": { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+    "priorityClassName":         { "type": "string" },
+    "podSecurityContext":        { "type": "object", "additionalProperties": true },
+    "securityContext":           { "type": "object", "additionalProperties": true },
+    "specExtra":                 { "type": "object", "additionalProperties": true },
+    "podTemplateExtra":          { "type": "object", "additionalProperties": true },
+    "kubernetesExtra":           { "type": "object", "additionalProperties": true },
+    "httproute": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":    { "type": "boolean" },
+        "parentRefs": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "hostnames":  { "type": "array", "items": { "type": "string" } },
+        "rules":      { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":     { "type": "boolean" },
+        "className":   { "type": "string" },
+        "host":        { "type": "string" },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "tls":         { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+        "path":        { "type": "string" },
+        "pathType":    { "type": "string", "enum": ["Exact", "Prefix", "ImplementationSpecific"] },
+        "backend": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "serviceName": { "type": "string" },
+            "servicePort": { "type": ["integer", "null"] }
+          }
+        },
+        "extraPaths": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+      }
+    },
+    "nginxGatewayFabric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "proxySettings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled":          { "type": "boolean" },
+            "bufferingDisable": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create":                       { "type": "boolean" },
+        "name":                         { "type": "string" },
+        "annotations":                  { "type": "object", "additionalProperties": { "type": "string" } },
+        "imagePullSecrets":             { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+        "automountServiceAccountToken": { "type": "boolean" }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":     { "type": "boolean" },
+        "policyTypes": { "type": "array", "items": { "type": "string", "enum": ["Ingress", "Egress"] } },
+        "ingress":     { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "egress":      { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "podSelector": { "type": "object", "additionalProperties": true }
+      }
+    }
+  },
+  "required": ["image"],
+  "$defs": {
+    "metadataBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "labels":      { "type": "object", "additionalProperties": { "type": "string" } },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requests": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpu":    { "type": ["string", "number"] },
+            "memory": { "type": "string" }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpu":    { "type": ["string", "number"] },
+            "memory": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

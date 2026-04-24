@@ -1,0 +1,25 @@
+# Values used by CI to exercise helm lint/template/validate + chart-testing.
+# Not a deployment recipe — the image/key below are placeholders.
+image:
+  repository: ghcr.io/example/unity-mcp-server
+  tag: ci-dummy
+apiKey:
+  value: ci-dummy-key
+httproute:
+  enabled: true
+  parentRefs:
+    - name: ngf
+      namespace: nginx-gateway
+  hostnames:
+    - unity-mcp.example.com
+ingress:
+  enabled: true
+  className: nginx
+  host: unity-mcp.example.com
+nginxGatewayFabric:
+  proxySettings:
+    enabled: true
+serviceAccount:
+  create: true
+networkPolicy:
+  enabled: true

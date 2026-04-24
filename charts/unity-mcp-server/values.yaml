@@ -1,0 +1,227 @@
+# Default values for unity-mcp-server.
+#
+# The chart renders a Deployment + Service for the Unity MCP (Model Context
+# Protocol) Server plus optional API-key Secret, HTTPRoute (Gateway API),
+# Ingress, and NGINX Gateway Fabric ProxySettingsPolicy.
+#
+# BRING YOUR OWN IMAGE: this chart has NO default image.repository/tag.
+# Build from the upstream CoplayDev/unity-mcp repo (FastMCP 3.2+ strongly
+# recommended) and push to your own registry. See README for the minimum
+# Dockerfile.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+commonLabels: {}
+commonAnnotations: {}
+
+resourceMetadata:
+  deployment:
+    labels: {}
+    annotations: {}
+  service:
+    labels: {}
+    annotations: {}
+  secret:
+    labels: {}
+    annotations: {}
+  httproute:
+    labels: {}
+    annotations: {}
+  ingress:
+    labels: {}
+    annotations: {}
+  proxySettingsPolicy:
+    labels: {}
+    annotations: {}
+  serviceAccount:
+    labels: {}
+    annotations: {}
+  networkPolicy:
+    labels: {}
+    annotations: {}
+
+# ---------------------------------------------------------------------------
+# App container
+# ---------------------------------------------------------------------------
+nameOverride: ""
+fullnameOverride: ""
+
+# REQUIRED — chart does not ship a default image. Example:
+#   image:
+#     repository: ghcr.io/yourorg/unity-mcp-server
+#     tag: v9.6.6
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+# imagePullSecrets:
+#   - name: harbor-robot-secret
+
+replicaCount: 1
+
+# Container port the MCP server listens on (FastMCP default = 8080).
+containerPort: 8080
+
+service:
+  type: ClusterIP
+  port: 80
+  nodePort: null
+  annotations: {}
+
+# Container command / args override. Default matches upstream mcp-for-unity.
+# Set api-key-service-token from MCP_API_KEY env (see apiKey below).
+command:
+  - uv
+  - run
+  - mcp-for-unity
+args:
+  - "--transport"
+  - "http"
+  - "--http-host"
+  - "0.0.0.0"
+  - "--http-port"
+  - "8080"
+  - "--api-key-service-token"
+  - "$(MCP_API_KEY)"
+
+# ---------------------------------------------------------------------------
+# API key authentication
+# ---------------------------------------------------------------------------
+# When apiKey.enabled is true, the chart injects MCP_API_KEY from a Secret
+# into the container. Two modes:
+#   - apiKey.value (inline) → chart renders the Secret
+#   - apiKey.existingSecret  → chart references an existing Secret; must
+#     contain a key named `api-key`.
+apiKey:
+  enabled: true
+  value: ""
+  existingSecret: ""
+  secretKey: api-key
+
+# Extra env vars. Defaults cover the most common tuning (telemetry off,
+# unbuffered Python for real-time logs). Append to customize.
+env:
+  - name: PYTHONPATH
+    value: /app/Server/src
+  - name: DISABLE_TELEMETRY
+    value: "true"
+  - name: PYTHONUNBUFFERED
+    value: "1"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "1Gi"
+
+# Probes. Default tcpSocket — the MCP HTTP server returns 400 on bare GET
+# /mcp prior to session init (per StreamableHTTP spec) so httpGet probes are
+# unreliable. Override at your own risk.
+livenessProbe:
+  tcpSocket:
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  tcpSocket:
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+
+podSecurityContext: {}
+securityContext: {}
+
+specExtra: {}
+podTemplateExtra: {}
+kubernetesExtra: {}
+
+# ---------------------------------------------------------------------------
+# HTTPRoute (Gateway API)
+# ---------------------------------------------------------------------------
+# Long-lived SSE connections — keep request/backendRequest timeouts high.
+httproute:
+  enabled: false
+  parentRefs: []
+  hostnames: []
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      timeouts:
+        request: 300s
+        backendRequest: 300s
+      backendRefs:
+        - {}
+
+# ---------------------------------------------------------------------------
+# Ingress (legacy)
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+  annotations: {}
+  # annotations:
+  #   nginx.ingress.kubernetes.io/proxy-buffering: "off"
+  #   nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  #   nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  tls: []
+  path: /
+  pathType: Prefix
+  backend:
+    serviceName: ""
+    servicePort: null
+  extraPaths: []
+
+# ---------------------------------------------------------------------------
+# ServiceAccount
+# ---------------------------------------------------------------------------
+# Optional — render a dedicated SA and wire it to the pod via
+# serviceAccountName. Useful for IRSA / Workload Identity, or to scope
+# imagePullSecrets to this release. Default off: pods use the `default` SA.
+serviceAccount:
+  create: false
+  name: ""                # empty → <fullname>
+  annotations: {}
+  imagePullSecrets: []
+  automountServiceAccountToken: true
+
+# ---------------------------------------------------------------------------
+# NetworkPolicy
+# ---------------------------------------------------------------------------
+# Lock down traffic to/from the MCP server pods. Opt-in. `ingress`/`egress`
+# take native NetworkPolicy shapes; empty with policyTypes set = deny-all.
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+  # Override the pod selector; defaults to this release's selectorLabels.
+  podSelector: {}
+
+# ---------------------------------------------------------------------------
+# NGINX Gateway Fabric policies (optional)
+# ---------------------------------------------------------------------------
+nginxGatewayFabric:
+  # ProxySettingsPolicy — disable response buffering so SSE events flush
+  # immediately (replaces legacy annotation nginx.ingress.kubernetes.io/proxy-buffering=off).
+  proxySettings:
+    enabled: false
+    bufferingDisable: true
