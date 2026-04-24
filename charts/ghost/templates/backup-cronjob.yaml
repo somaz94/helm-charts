@@ -59,8 +59,8 @@ spec:
           {{- end }}
           containers:
             - name: backup
-              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
-              imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+              image: "{{ .Values.backup.image.repository | default .Values.mysql.image.repository }}:{{ .Values.backup.image.tag | default .Values.mysql.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.image.pullPolicy | default .Values.mysql.image.pullPolicy }}
               command: ["sh", "-c"]
               args:
                 - |

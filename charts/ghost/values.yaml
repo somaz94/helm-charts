@@ -294,9 +294,10 @@ backup:
   failedJobsHistoryLimit: 3
   retentionDays: 30
   image:
-    # Reuses the MySQL image for `mysqldump`. Override to pin a specific client.
-    repository: mysql
-    tag: "8.0.40"
+    # By default, reuses `mysql.image.*` for `mysqldump` (empty = inherit).
+    # Override to pin a specific client image (e.g. `mysql/mysql-shell`).
+    repository: ""
+    tag: ""
     pullPolicy: IfNotPresent
   resources: {}
   persistence:

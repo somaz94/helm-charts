@@ -161,10 +161,9 @@
         "image": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["repository", "tag"],
           "properties": {
-            "repository": { "type": "string", "minLength": 1 },
-            "tag":        { "type": "string", "minLength": 1 },
+            "repository": { "type": "string" },
+            "tag":        { "type": "string" },
             "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
           }
         },
