@@ -1,35 +1,23 @@
 {{- /*
-BackendTLSPolicy + CA ConfigMap — verifies ECK's self-signed HTTPS cert from
-a Gateway HTTPRoute. Uses `lookup` to copy the CA out of the ECK-managed Secret
-`<name>-es-http-certs-public`. The Secret is created by the ECK operator after
-the Elasticsearch CR is reconciled, so on first install this resource silently
-no-ops (template renders only when the Secret already exists). Re-run
-`helm upgrade` after ES is Ready to render it.
+BackendTLSPolicy — verifies ECK's self-signed HTTPS cert from a Gateway
+HTTPRoute. Points directly at the CA source (Secret or ConfigMap) so the
+template is pure and `helm diff` / `helmfile diff` render deterministically.
+
+Default is the ECK-managed Secret `<name>-es-http-certs-public`, which already
+contains `ca.crt`. NGF supports Secret kind for caCertificateRefs; Gateway API
+Core only mandates ConfigMap, so switch to `kind: ConfigMap` and manage the
+ConfigMap out-of-band if your Gateway implementation requires it.
 */ -}}
 {{- if and .Values.httproute.enabled .Values.backendTLSPolicy.enabled }}
-{{- $secretName := include "elasticsearch-eck.httpCertsSecretName" . }}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace $secretName }}
-{{- if $secret }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "elasticsearch-eck.caConfigMapName" . }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "elasticsearch-eck.labels" . | nindent 4 }}
-    elasticsearch.k8s.elastic.co/source-secret: {{ $secretName }}
-    {{- with .Values.resourceMetadata.backendTLSPolicy.labels }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-  {{- $ann := include "elasticsearch-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.backendTLSPolicy.annotations) }}
-  {{- if $ann }}
-  annotations:
-    {{- $ann | nindent 4 }}
+{{- $refKind := .Values.backendTLSPolicy.caCertificateRef.kind | default "Secret" }}
+{{- $refName := .Values.backendTLSPolicy.caCertificateRef.name }}
+{{- if not $refName }}
+  {{- if eq $refKind "Secret" }}
+    {{- $refName = include "elasticsearch-eck.httpCertsSecretName" . }}
+  {{- else }}
+    {{- $refName = printf "%s-ca" (include "elasticsearch-eck.fullname" .) }}
   {{- end }}
-data:
-  ca.crt: |
-{{ index $secret.data "ca.crt" | b64dec | indent 4 }}
----
+{{- end }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
@@ -40,6 +28,7 @@ metadata:
     {{- with .Values.resourceMetadata.backendTLSPolicy.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  {{- $ann := include "elasticsearch-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.backendTLSPolicy.annotations) }}
   {{- if $ann }}
   annotations:
     {{- $ann | nindent 4 }}
@@ -52,8 +41,7 @@ spec:
   validation:
     caCertificateRefs:
       - group: ""
-        kind: ConfigMap
-        name: {{ include "elasticsearch-eck.caConfigMapName" . }}
+        kind: {{ $refKind }}
+        name: {{ $refName }}
     hostname: {{ include "elasticsearch-eck.httpServiceName" . }}
-{{- end }}
 {{- end }}

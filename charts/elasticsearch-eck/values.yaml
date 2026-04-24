@@ -332,12 +332,26 @@ ingress:
 # ---------------------------------------------------------------------------
 # BackendTLSPolicy (Gateway API)
 # ---------------------------------------------------------------------------
-# Auto-generates a BackendTLSPolicy + CA ConfigMap referencing ECK's
-# self-signed cert. Required when httproute is enabled and Elasticsearch
-# serves HTTPS (default). Uses `lookup` so it is skipped during first-time
-# `helm install --dry-run` when the ECK secret does not exist yet.
+# Renders a BackendTLSPolicy so a Gateway HTTPRoute can verify ECK's self-
+# signed HTTPS cert. Required when httproute is enabled and Elasticsearch
+# serves HTTPS (default).
+#
+# `caCertificateRef` points at the CA bundle directly. Default is the ECK-
+# managed Secret `<name>-es-http-certs-public` (contains `ca.crt`). Switch to
+# `kind: ConfigMap` and manage the ConfigMap out-of-band (e.g. via Reflector
+# or a kubectl bootstrap) if your Gateway implementation does not support the
+# Secret kind for caCertificateRefs.
+#
+# Support matrix:
+#   - NGINX Gateway Fabric:  Secret + ConfigMap
+#   - Gateway API Core spec: ConfigMap only (Secret is implementation-specific)
 backendTLSPolicy:
   enabled: false
+  caCertificateRef:
+    kind: Secret        # Secret | ConfigMap
+    name: ""            # Empty = default:
+                        #   Secret    -> <fullname>-es-http-certs-public
+                        #   ConfigMap -> <fullname>-ca (not rendered by this chart)
 
 # ---------------------------------------------------------------------------
 # ReferenceGrant (Gateway API cross-namespace)

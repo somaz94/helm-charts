@@ -14,7 +14,7 @@ The chart renders the ECK `Elasticsearch` Custom Resource plus a handful of opti
 | `Secret` (elastic user) | `v1` | Optional. Pre-seeded `elastic` user password when `elasticPassword` is set. |
 | `PodDisruptionBudget` | `policy/v1` | Optional (external mode). Prefer `podDisruptionBudget.native: true` which renders PDB inside the CR. |
 | `HTTPRoute` | `gateway.networking.k8s.io/v1` | Optional. Gateway API route for external access. |
-| `BackendTLSPolicy` + CA `ConfigMap` | `gateway.networking.k8s.io/v1`, `v1` | Optional. Verifies ECK self-signed HTTPS cert from the Gateway. |
+| `BackendTLSPolicy` | `gateway.networking.k8s.io/v1` | Optional. Verifies ECK self-signed HTTPS cert from the Gateway. Points directly at the ECK-managed `*-es-http-certs-public` Secret by default. |
 | `ServiceMonitor` | `monitoring.coreos.com/v1` | Optional. Prometheus scrape config for `/_prometheus/metrics`. |
 
 <br/>
@@ -194,7 +194,11 @@ backendTLSPolicy:
   enabled: true
 ```
 
-> The `BackendTLSPolicy` template uses `lookup` to copy the CA out of the ECK-managed Secret. On a first install, run `helm upgrade` once the Elasticsearch pods are Ready so the CA ConfigMap renders.
+> The `BackendTLSPolicy` references the ECK-managed Secret `<name>-es-http-certs-public` directly (it already contains `ca.crt`). NGINX Gateway Fabric supports the `Secret` kind for `caCertificateRefs`.
+>
+> **Gateway API Core-only implementations** (Secret not supported): set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision a ConfigMap `<fullname>-ca` with key `ca.crt` out-of-band — e.g. via the [Reflector](https://github.com/emberstack/kubernetes-reflector) operator reflecting the ECK Secret, via External Secrets, or via a one-shot kubectl command after the ECK Secret is ready.
+>
+> **Migrating from 0.1.x (< 0.1.3)**: the chart used to render the `<fullname>-ca` ConfigMap automatically via `helm lookup`. On upgrade to 0.1.3+, Helm garbage-collects that ConfigMap because it's no longer in the release manifest. NGF users keep working transparently (BTP now points at the Secret). For other implementations see above.
 
 <br/>
 
@@ -290,6 +294,8 @@ nodeSets:
 ### `httproute` / `backendTLSPolicy`
 
 Standard Gateway API HTTPRoute fields; see the values.yaml for the full shape. `backendRefs[].name` defaults to `<fullname>-es-http` and `backendRefs[].port` defaults to `9200`.
+
+`backendTLSPolicy.caCertificateRef` controls which resource supplies the CA bundle. Defaults to `kind: Secret` with the ECK-generated `<fullname>-es-http-certs-public`. Override with `kind: ConfigMap` for Gateway implementations that only honor the Gateway API Core (ConfigMap-only) contract.
 
 <br/>
 
