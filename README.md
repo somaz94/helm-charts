@@ -17,6 +17,8 @@ Charts are published to:
 | [certmanager-letsencrypt](charts/certmanager-letsencrypt) | `0.2.0` | Let's Encrypt resources for cert-manager — multi-issuer / multi-certificate / multi-secret / optional Ingress, DNS-01 (Cloudflare, Route53, Cloud DNS, ...) |
 | [elasticsearch-eck](charts/elasticsearch-eck) | `0.1.1` | Elasticsearch CR for ECK (Elastic Cloud on Kubernetes) — nodeSets[] array, HTTPRoute, Ingress, BackendTLSPolicy, PDB (native/external), ServiceMonitor, NetworkPolicy, ReferenceGrant, sysctl init container. Single-node default, HA opt-in. |
 | [kibana-eck](charts/kibana-eck) | `0.1.1` | Kibana CR for ECK — auto-wired to an Elasticsearch CR via elasticsearchRef, HTTPRoute, Ingress, BackendTLSPolicy, PDB, ServiceMonitor, NetworkPolicy, ReferenceGrant. Sibling-version check in upgrade.sh. |
+| [ghost](charts/ghost) | `0.1.0` | Ghost CMS (Node.js blog) — Deployment + PVC + optional bundled MySQL 8 (ConfigMap/Secret/PVC/Deployment/Service), backup CronJob, HTTPRoute + NGF ClientSettingsPolicy, Ingress, ServiceMonitor. Suits self-hosted single-replica blogs. |
+| [unity-mcp-server](charts/unity-mcp-server) | `0.1.0` | Unity MCP (Model Context Protocol) Server running FastMCP's StreamableHTTP transport — Deployment + Service + optional API-key Secret, HTTPRoute + NGF ProxySettingsPolicy (SSE-friendly), Ingress. Bring-your-own-image (build from CoplayDev/unity-mcp). |
 
 <br/>
 
