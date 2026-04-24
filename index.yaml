@@ -290,6 +290,51 @@ entries:
       artifacthub.io/changes: |
         - kind: added
           description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.117.0
+    created: "2026-04-24T03:58:51.133600266Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: 02a8c8c48bdccccb03f82ce27209f2a4bc51dd5de1994740dda906d828da467c
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.1/ghost-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
         - name: Source
@@ -588,6 +633,56 @@ entries:
       artifacthub.io/changes: |
         - kind: added
           description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
+        - kind: fixed
+          description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.6.6
+    created: "2026-04-24T03:58:51.34754526Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: 280c2db5ecee75a246c82dc535be7af662018784adf8d3ad759af5a49a62dd72
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.2/unity-mcp-server-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
         - name: Source
@@ -627,4 +722,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-24T03:47:19.17219002Z"
+generated: "2026-04-24T03:58:51.347578202Z"
