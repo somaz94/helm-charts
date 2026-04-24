@@ -50,7 +50,7 @@ fullnameOverride: ""
 # REQUIRED — chart does not ship a default image. Example:
 #   image:
 #     repository: ghcr.io/yourorg/unity-mcp-server
-#     tag: v9.6.6
+#     tag: <your-build-tag>      # whatever tag you used when pushing
 image:
   repository: ""
   tag: ""

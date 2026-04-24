@@ -20,12 +20,12 @@ EXPOSE 8080
 # Command/args are driven by the Helm chart (values.yaml: command/args).
 ```
 
-Push to your registry (GHCR, ECR, Harbor, …) and set:
+Push to your registry (GHCR, ECR, Harbor, …) and set `image.repository` / `image.tag` to whatever you pushed. `YOUR_TAG` in every example below is a placeholder — substitute your build tag (e.g. the upstream release version, a git SHA, a CI build number, …).
 
 ```yaml
 image:
   repository: ghcr.io/yourorg/unity-mcp-server
-  tag: v9.6.6
+  tag: YOUR_TAG
 ```
 
 ## What it deploys
@@ -61,7 +61,7 @@ helm install unity-mcp oci://ghcr.io/somaz94/charts/unity-mcp-server \
   --version 0.1.0 \
   --namespace mcp --create-namespace \
   --set image.repository=ghcr.io/yourorg/unity-mcp-server \
-  --set image.tag=v9.6.6 \
+  --set image.tag=YOUR_TAG \
   --set apiKey.value=CHANGE_ME
 ```
 
@@ -78,7 +78,7 @@ helm install unity-mcp oci://ghcr.io/somaz94/charts/unity-mcp-server \
 ```yaml
 image:
   repository: ghcr.io/yourorg/unity-mcp-server
-  tag: v9.6.6
+  tag: YOUR_TAG
 apiKey:
   value: super-secret-key
 ```
@@ -88,7 +88,7 @@ apiKey:
 ```yaml
 image:
   repository: ghcr.io/yourorg/unity-mcp-server
-  tag: v9.6.6
+  tag: YOUR_TAG
 apiKey:
   existingSecret: unity-mcp-api-key   # keys: api-key
 imagePullSecrets:
@@ -120,7 +120,7 @@ nginxGatewayFabric:
 ```yaml
 image:
   repository: ghcr.io/yourorg/unity-mcp-server
-  tag: v9.6.6
+  tag: YOUR_TAG
 apiKey:
   value: super-secret-key
 ingress:
