@@ -76,18 +76,26 @@ ct-lint: ## chart-testing lint (matches CI behavior).
 	ct lint --target-branch main --check-version-increment=false
 
 .PHONY: template
-template: ## helm template render smoke test (CHART=name to limit).
+template: ## helm template render smoke test (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
 	@for c in $(TARGET_CHARTS); do \
 		echo "==> helm template $$c"; \
-		helm template ci $(CHARTS_DIR)/$$c > /dev/null; \
+		ci_args=""; \
+		for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
+			[ -f "$$f" ] && ci_args="$$ci_args -f $$f"; \
+		done; \
+		helm template ci $(CHARTS_DIR)/$$c $$ci_args > /dev/null; \
 	done
 
 .PHONY: validate
-validate: ## kubeconform validation against k8s + CRD schemas (CHART=name to limit).
+validate: ## kubeconform validation against k8s + CRD schemas (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
 	@command -v kubeconform >/dev/null 2>&1 || { echo "kubeconform required: brew install kubeconform"; exit 1; }
 	@for c in $(TARGET_CHARTS); do \
 		echo "==> kubeconform $$c"; \
-		helm template ci $(CHARTS_DIR)/$$c | kubeconform \
+		ci_args=""; \
+		for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
+			[ -f "$$f" ] && ci_args="$$ci_args -f $$f"; \
+		done; \
+		helm template ci $(CHARTS_DIR)/$$c $$ci_args | kubeconform \
 			-strict \
 			-ignore-missing-schemas \
 			-schema-location default \
