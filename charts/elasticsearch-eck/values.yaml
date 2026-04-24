@@ -336,22 +336,36 @@ ingress:
 # signed HTTPS cert. Required when httproute is enabled and Elasticsearch
 # serves HTTPS (default).
 #
-# `caCertificateRef` points at the CA bundle directly. Default is the ECK-
-# managed Secret `<name>-es-http-certs-public` (contains `ca.crt`). Switch to
-# `kind: ConfigMap` and manage the ConfigMap out-of-band (e.g. via Reflector
-# or a kubectl bootstrap) if your Gateway implementation does not support the
-# Secret kind for caCertificateRefs.
+# `caCertificateRef` selects the CA bundle source. Three modes:
 #
-# Support matrix:
-#   - NGINX Gateway Fabric:  Secret + ConfigMap
-#   - Gateway API Core spec: ConfigMap only (Secret is implementation-specific)
+#   1. kind: ConfigMap, name: ""   (DEFAULT, recommended)
+#      Chart auto-renders `<fullname>-ca` ConfigMap via helm lookup of the
+#      ECK-managed Secret `<fullname>-es-http-certs-public`. On first install
+#      the Secret does not exist yet, so the template renders as a no-op —
+#      re-run `helm upgrade` once Elasticsearch is Ready. This is the ONLY
+#      path portable across all Gateway API implementations (ConfigMap is
+#      the Core-guaranteed kind).
+#
+#   2. kind: ConfigMap, name: "<custom>"
+#      Consumer-managed ConfigMap (e.g. reflected from another namespace by
+#      the Reflector operator or provisioned by External Secrets). Chart
+#      does NOT render the ConfigMap.
+#
+#   3. kind: Secret, name: "" or "<custom>"   (ADVANCED)
+#      BTP references the Secret directly. Support is implementation-specific
+#      AND type-constrained. Verified behavior: NGINX Gateway Fabric accepts
+#      `kind: Secret` only when the Secret `type` is `kubernetes.io/tls` —
+#      the ECK `*-es-http-certs-public` Secret is `Opaque` and WILL BE
+#      REJECTED with `InvalidCACertificateRef`. Use only with a curated
+#      tls-type Secret.
 backendTLSPolicy:
   enabled: false
   caCertificateRef:
-    kind: Secret        # Secret | ConfigMap
-    name: ""            # Empty = default:
-                        #   Secret    -> <fullname>-es-http-certs-public
-                        #   ConfigMap -> <fullname>-ca (not rendered by this chart)
+    kind: ConfigMap     # ConfigMap | Secret
+    name: ""            # Empty = chart default:
+                        #   kind=ConfigMap -> <fullname>-ca (chart-rendered via lookup)
+                        #   kind=Secret    -> <fullname>-es-http-certs-public (Opaque;
+                        #                     NOT accepted by NGF — see above)
 
 # ---------------------------------------------------------------------------
 # ReferenceGrant (Gateway API cross-namespace)

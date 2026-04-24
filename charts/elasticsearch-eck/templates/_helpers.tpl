@@ -45,9 +45,17 @@ Service name ECK generates for the HTTP endpoint (<name>-es-http).
 {{- end -}}
 
 {{/*
-Secret name ECK generates for the public HTTP certs. Used as the default
-caCertificateRef target for BackendTLSPolicy (contains `ca.crt`).
+Secret name ECK generates for the public HTTP certs. Source of `ca.crt`
+for BackendTLSPolicy (copied into a ConfigMap via helm lookup).
 */}}
 {{- define "elasticsearch-eck.httpCertsSecretName" -}}
 {{ printf "%s-es-http-certs-public" (include "elasticsearch-eck.fullname" .) }}
+{{- end -}}
+
+{{/*
+ConfigMap name this chart renders for the CA bundle (used by BackendTLSPolicy
+when `caCertificateRef.kind: ConfigMap` with empty `name`).
+*/}}
+{{- define "elasticsearch-eck.caConfigMapName" -}}
+{{ printf "%s-ca" (include "elasticsearch-eck.fullname" .) }}
 {{- end -}}

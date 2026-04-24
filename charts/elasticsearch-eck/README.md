@@ -14,7 +14,7 @@ The chart renders the ECK `Elasticsearch` Custom Resource plus a handful of opti
 | `Secret` (elastic user) | `v1` | Optional. Pre-seeded `elastic` user password when `elasticPassword` is set. |
 | `PodDisruptionBudget` | `policy/v1` | Optional (external mode). Prefer `podDisruptionBudget.native: true` which renders PDB inside the CR. |
 | `HTTPRoute` | `gateway.networking.k8s.io/v1` | Optional. Gateway API route for external access. |
-| `BackendTLSPolicy` | `gateway.networking.k8s.io/v1` | Optional. Verifies ECK self-signed HTTPS cert from the Gateway. Points directly at the ECK-managed `*-es-http-certs-public` Secret by default. |
+| `BackendTLSPolicy` + CA `ConfigMap` | `gateway.networking.k8s.io/v1`, `v1` | Optional. Verifies ECK self-signed HTTPS cert from the Gateway. Chart auto-copies `ca.crt` from ECK's `*-es-http-certs-public` Secret into a `<fullname>-ca` ConfigMap via `helm lookup` (only portable approach — see Known limitations). |
 | `ServiceMonitor` | `monitoring.coreos.com/v1` | Optional. Prometheus scrape config for `/_prometheus/metrics`. |
 
 <br/>
@@ -194,11 +194,11 @@ backendTLSPolicy:
   enabled: true
 ```
 
-> The `BackendTLSPolicy` references the ECK-managed Secret `<name>-es-http-certs-public` directly (it already contains `ca.crt`). NGINX Gateway Fabric supports the `Secret` kind for `caCertificateRefs`.
+> Default behavior (`caCertificateRef.kind: ConfigMap`, `name: ""`): the chart copies `ca.crt` from the ECK-managed Secret `<name>-es-http-certs-public` into a `<name>-ca` ConfigMap via `helm lookup`, and BTP references that ConfigMap. On first install, the Secret does not exist yet — re-run `helm upgrade` once Elasticsearch is Ready so the ConfigMap (and the BTP) can render.
 >
-> **Gateway API Core-only implementations** (Secret not supported): set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision a ConfigMap `<fullname>-ca` with key `ca.crt` out-of-band — e.g. via the [Reflector](https://github.com/emberstack/kubernetes-reflector) operator reflecting the ECK Secret, via External Secrets, or via a one-shot kubectl command after the ECK Secret is ready.
+> **Advanced — externally-managed ConfigMap**: set `caCertificateRef.name: <your-cm>` (kind stays `ConfigMap`) to point BTP at a ConfigMap you manage out-of-band (e.g. via the [Reflector](https://github.com/emberstack/kubernetes-reflector) operator or External Secrets). The chart will no longer render the ConfigMap in that case.
 >
-> **Migrating from 0.1.x (< 0.1.3)**: the chart used to render the `<fullname>-ca` ConfigMap automatically via `helm lookup`. On upgrade to 0.1.3+, Helm garbage-collects that ConfigMap because it's no longer in the release manifest. NGF users keep working transparently (BTP now points at the Secret). For other implementations see above.
+> **Advanced — Secret kind (NOT supported for ECK on NGF)**: `caCertificateRef.kind: Secret` is exposed for completeness, but NGINX Gateway Fabric rejects `type: Opaque` Secrets (only `kubernetes.io/tls` is honored). ECK's `*-es-http-certs-public` is Opaque, so this path fails with `InvalidCACertificateRef` on NGF. Use only with a curated `kubernetes.io/tls` Secret.
 
 <br/>
 
@@ -295,7 +295,19 @@ nodeSets:
 
 Standard Gateway API HTTPRoute fields; see the values.yaml for the full shape. `backendRefs[].name` defaults to `<fullname>-es-http` and `backendRefs[].port` defaults to `9200`.
 
-`backendTLSPolicy.caCertificateRef` controls which resource supplies the CA bundle. Defaults to `kind: Secret` with the ECK-generated `<fullname>-es-http-certs-public`. Override with `kind: ConfigMap` for Gateway implementations that only honor the Gateway API Core (ConfigMap-only) contract.
+`backendTLSPolicy.caCertificateRef` selects the CA bundle source:
+
+| `kind` | `name` | Chart behavior |
+|---|---|---|
+| `ConfigMap` (default) | `""` (default) | Chart renders `<fullname>-ca` ConfigMap via `helm lookup` of the ECK Secret. Only portable approach across Gateway implementations. |
+| `ConfigMap` | `<custom>` | Chart does not render ConfigMap — consumer supplies it (e.g. via Reflector / External Secrets). |
+| `Secret` | any | BTP references the Secret directly. Implementation-specific; NGINX Gateway Fabric requires `kubernetes.io/tls` type — ECK's Opaque Secret will be rejected. |
+
+<br/>
+
+### Known limitations
+
+- **`helmfile diff` / `helm-diff` shows spurious "removed" output** for the CA ConfigMap and BackendTLSPolicy when the default `caCertificateRef.kind: ConfigMap` with `name: ""` is used. Cause: `helm-diff` renders target charts client-side, where `helm lookup` returns nil (no cluster access). The actual `helm upgrade` reads the cluster and renders correctly. Inspect the running release instead of the diff when validating rollouts of this chart.
 
 <br/>
 
