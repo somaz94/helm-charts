@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgresql.configMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+    {{- with .Values.resourceMetadata.configMap.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "postgresql.annotations" (dict "top" . "extra" .Values.resourceMetadata.configMap.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+data:
+  postgresql.conf: |-
+{{ .Values.customConfig.postgresqlConf | indent 4 }}
+  pg_hba.conf: |-
+{{ .Values.customConfig.pgHbaConf | indent 4 }}

@@ -1,0 +1,42 @@
+apiVersion: v2
+name: postgresql
+description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump), NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+type: application
+version: 0.1.0
+appVersion: "18-alpine"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - postgresql
+  - postgres
+  - database
+  - rdbms
+  - kubernetes
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+  - https://hub.docker.com/_/postgres
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: database
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: PostgreSQL Docker image
+      url: https://hub.docker.com/_/postgres
+    - name: PostgreSQL documentation
+      url: https://www.postgresql.org/docs/
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Initial release. Standalone single-node PostgreSQL with ConfigMap (postgresql.conf + pg_hba.conf), Secret, PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), optional backup CronJob (pg_dump + retention), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), log emptyDir for logging_collector, kubernetesExtra escape hatch."
+    - kind: added
+      description: "`auth.existingSecret` + `auth.secretKeys.{user,password,database}` for adopting legacy Secrets that use non-standard key names (e.g. `DB_USERNAME` instead of `POSTGRES_USER`) without re-keying."
+    - kind: added
+      description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default (typical when migrating off raw-YAML deployments)."
+    - kind: added
+      description: "`persistence.existingClaim` for PVC reuse — the chart will not render or modify the PVC when set, preserving the underlying volume on uninstall."
+    - kind: added
+      description: "`logCollector.enabled` toggles the `/var/log/postgresql` emptyDir mount for logging_collector=on workloads (default off — stderr to stdout)."

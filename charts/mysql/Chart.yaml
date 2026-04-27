@@ -1,0 +1,39 @@
+apiVersion: v2
+name: mysql
+description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+type: application
+version: 0.1.0
+appVersion: "8.0.43"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - mysql
+  - database
+  - rdbms
+  - kubernetes
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+  - https://hub.docker.com/_/mysql
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: database
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: MySQL Docker image
+      url: https://hub.docker.com/_/mysql
+    - name: MySQL 8.0 Reference Manual
+      url: https://dev.mysql.com/doc/refman/8.0/en/
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Initial release. Standalone single-node MySQL 8 with ConfigMap (custom.cnf), Secret, PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), optional backup CronJob (mysqldump + retention), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS, additive), kubernetesExtra escape hatch."
+    - kind: added
+      description: "`auth.existingSecret` + `auth.secretKeys.{user,password,rootPassword,database}` for adopting legacy Secrets that use non-standard key names (e.g. `DB_USERNAME` instead of `MYSQL_USER`) without re-keying."
+    - kind: added
+      description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default (typical when migrating off raw-YAML deployments)."
+    - kind: added
+      description: "`persistence.existingClaim` for PVC reuse — the chart will not render or modify the PVC when set, preserving the underlying volume on uninstall."

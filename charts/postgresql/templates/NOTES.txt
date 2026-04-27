@@ -1,0 +1,33 @@
+postgresql {{ .Chart.Version }} (PostgreSQL {{ include "postgresql.imageTag" . }}) installed.
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Service:
+  {{ include "postgresql.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+{{- if eq .Values.service.type "NodePort" }}
+{{- if .Values.service.nodePort }}
+
+NodePort: {{ .Values.service.nodePort }}/TCP — connect via any cluster node IP.
+{{- end }}
+{{- end }}
+
+Connect from inside the cluster:
+  kubectl -n {{ .Release.Namespace }} exec -it deploy/{{ include "postgresql.fullname" . }} -- \
+    psql -U "$POSTGRES_USER" -d "${POSTGRES_DB:-postgres}"
+
+Port-forward to test locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "postgresql.fullname" . }} 5432:{{ .Values.service.port }}
+  PGPASSWORD=<password> psql -h 127.0.0.1 -p 5432 -U <USER> -d <DB>
+
+{{- if .Values.backup.enabled }}
+
+Backup CronJob scheduled: {{ .Values.backup.schedule }} (retention: {{ .Values.backup.retentionDays }} days)
+Trigger a manual run:
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "postgresql.backup.fullname" . }} {{ include "postgresql.backup.fullname" . }}-manual
+{{- end }}
+
+NOTE: This chart runs a single-replica PostgreSQL with Recreate update strategy
+(PVC RWO). Short downtime is expected on `helm upgrade`. For HA prefer an
+external managed DB (RDS / CloudSQL / Patroni) — out of scope for this chart.

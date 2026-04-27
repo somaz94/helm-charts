@@ -1,0 +1,194 @@
+# Default values for redis.
+#
+# The chart renders a single-node Redis Deployment + PVC + Service, plus an
+# optional Secret (when auth is enabled), optional ConfigMap (when customConfig
+# is set), NetworkPolicy, ServiceAccount and a chart-managed image pull Secret.
+#
+# Topology: single-replica with `Recreate` update strategy. PVC RWO. Suits
+# dev / staging / single-replica caches and legacy raw-YAML migrations (use
+# `fullnameOverride` + `existingClaim` for in-place adoption).
+# For HA prefer Sentinel / Cluster topology — out of scope here.
+#
+# Notes:
+#   - Backup CronJob intentionally not provided. Redis is typically a cache
+#     and the canonical backup approach is RDB / AOF on the same volume; if
+#     you need offsite backups, run a sidecar that uploads RDB to object
+#     storage rather than dumping over the wire.
+#   - Default `auth.enabled: false` matches a typical internal cache install.
+#     Enable for Redis exposed beyond the cluster.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+commonLabels: {}
+commonAnnotations: {}
+
+resourceMetadata:
+  deployment:
+    labels: {}
+    annotations: {}
+  service:
+    labels: {}
+    annotations: {}
+  pvc:
+    labels: {}
+    annotations: {}
+  configMap:
+    labels: {}
+    annotations: {}
+  secret:
+    labels: {}
+    annotations: {}
+  serviceAccount:
+    labels: {}
+    annotations: {}
+  networkPolicy:
+    labels: {}
+    annotations: {}
+
+# ---------------------------------------------------------------------------
+# Naming
+# ---------------------------------------------------------------------------
+nameOverride: ""
+
+# Override the base name for the Deployment / Service / default PVC / default
+# Secret / (when configMap.nameOverride is empty) the ConfigMap. Use this to
+# adopt pre-existing resources whose names do not match the default
+# `<release>-redis` pattern.
+fullnameOverride: ""
+
+configMap:
+  nameOverride: ""
+
+# ---------------------------------------------------------------------------
+# Image
+# ---------------------------------------------------------------------------
+image:
+  repository: redis
+  tag: ""                         # empty → defaults to .Chart.AppVersion (8.2-alpine).
+                                  # NOTE: Redis 7.5+ is licensed under RSALv2 / SSPL (not OSI-approved).
+                                  # Pin to `7.4-alpine` if you need to stay on the last BSD-licensed
+                                  # Redis. The chart itself is Apache-2.0 — license applies to the
+                                  # image you choose to deploy.
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+imagePullSecret:
+  create: false
+  name: ""
+  dockerconfigjson: ""
+
+# ---------------------------------------------------------------------------
+# Service
+# ---------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 6379
+  nodePort: null
+  annotations: {}
+
+# ---------------------------------------------------------------------------
+# Persistence (PVC)
+# ---------------------------------------------------------------------------
+persistence:
+  enabled: true
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 5Gi
+  existingClaim: ""
+  annotations: {}
+
+  # Mount path inside the Redis container. Default `/data` matches the
+  # official `redis` image's documented WORKDIR. Override (e.g. to
+  # `/redis-master-data`) when adopting a legacy raw-YAML Deployment so the
+  # mount layout stays identical and Redis finds existing RDB / AOF files.
+  mountPath: /data
+
+# ---------------------------------------------------------------------------
+# Authentication (Redis password)
+# ---------------------------------------------------------------------------
+# When `enabled: false` (default) Redis runs without `requirepass`. When
+# `enabled: true` and `existingSecret` is empty, the chart renders a Secret
+# with `password` (key configurable). When `existingSecret` is set, the chart
+# reads the password from that Secret using `passwordKey`.
+auth:
+  enabled: false
+  password: ""
+  existingSecret: ""
+  passwordKey: redis-password
+
+# ---------------------------------------------------------------------------
+# redis.conf
+# ---------------------------------------------------------------------------
+# When non-empty, the chart renders a ConfigMap with this content as
+# `redis.conf` and starts the container with `redis-server /etc/redis/redis.conf`.
+# When empty, the container runs with the image's default config (no `args:`,
+# no ConfigMap rendered) — matches the typical raw-YAML layout that just sets
+# the image and lets Redis use its built-in defaults.
+#
+# When `auth.enabled` is true, the chart appends `requirepass <password>` to
+# the rendered config (or starts the container with `--requirepass` when no
+# customConfig is provided). The password value is sourced from the Secret
+# at runtime via env var, never written to the rendered ConfigMap.
+customConfig: ""
+
+# ---------------------------------------------------------------------------
+# Pod scheduling + Resources
+# ---------------------------------------------------------------------------
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "1Gi"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+
+podSecurityContext: {}
+securityContext: {}
+
+# Probe defaults — TCP probe on the Redis port. Lightweight and safe to leave
+# on by default (no auth required for TCP-level probes).
+livenessProbe:
+  tcpSocket:
+    port: redis
+  initialDelaySeconds: 15
+  periodSeconds: 10
+readinessProbe:
+  tcpSocket:
+    port: redis
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+specExtra: {}
+podTemplateExtra: {}
+kubernetesExtra: {}
+
+# ---------------------------------------------------------------------------
+# ServiceAccount
+# ---------------------------------------------------------------------------
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+  imagePullSecrets: []
+  automountServiceAccountToken: true
+
+# ---------------------------------------------------------------------------
+# NetworkPolicy
+# ---------------------------------------------------------------------------
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+  podSelector: {}

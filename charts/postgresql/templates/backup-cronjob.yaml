@@ -1,0 +1,128 @@
+{{- if .Values.backup.enabled -}}
+{{- if and .Values.backup.persistence.enabled (not .Values.backup.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "postgresql.backup.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+    {{- with .Values.resourceMetadata.backupPvc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $pvcAnn := include "postgresql.annotations" (dict "top" . "extra" (merge (deepCopy (default (dict) .Values.backup.persistence.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.backupPvc.annotations)))) }}
+  {{- if $pvcAnn }}
+  annotations:
+    {{- $pvcAnn | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.backup.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.backup.persistence.size }}
+  {{- with .Values.backup.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+---
+{{- end }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "postgresql.backup.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+    {{- with .Values.resourceMetadata.backupCronJob.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $cjAnn := include "postgresql.annotations" (dict "top" . "extra" .Values.resourceMetadata.backupCronJob.annotations) }}
+  {{- if $cjAnn }}
+  annotations:
+    {{- $cjAnn | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "postgresql.imagePullSecretsBlock" . | nindent 10 }}
+          containers:
+            - name: backup
+              image: {{ include "postgresql.backup.image" . | quote }}
+              imagePullPolicy: {{ include "postgresql.backup.imagePullPolicy" . }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -e
+                  DATE=$(date +%Y%m%d)
+                  BACKUP_DIR="/backup-data"
+                  RETENTION_DAYS={{ .Values.backup.retentionDays }}
+                  DB_HOST={{ include "postgresql.fullname" . | quote }}
+                  DB_PORT={{ .Values.service.port }}
+                  TARGET_DB="${POSTGRES_DB:-}"
+                  export PGPASSWORD="$POSTGRES_PASSWORD"
+
+                  echo "[$(date)] Starting PostgreSQL backup..."
+
+                  if [ -n "$TARGET_DB" ]; then
+                    OUT="$BACKUP_DIR/postgres-${TARGET_DB}-${DATE}.sql"
+                    pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$POSTGRES_USER" \
+                      --clean --if-exists --no-owner --no-acl \
+                      "$TARGET_DB" > "$OUT"
+                  else
+                    OUT="$BACKUP_DIR/postgres-all-${DATE}.sql"
+                    pg_dumpall -h "$DB_HOST" -p "$DB_PORT" -U "$POSTGRES_USER" \
+                      --clean --if-exists --no-owner --no-role-passwords \
+                      > "$OUT"
+                  fi
+                  echo "[$(date)] DB backup: $(basename "$OUT") ($(du -h "$OUT" | cut -f1))"
+
+                  DEL=$(find "$BACKUP_DIR" -name "postgres-*.sql" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
+                  echo "[$(date)] Retention: deleted $DEL backups older than ${RETENTION_DAYS} days"
+
+                  echo ""
+                  echo "Available backups:"
+                  ls -lh "$BACKUP_DIR"/postgres-*.sql 2>/dev/null || echo "  (none)"
+                  echo ""
+                  echo "[$(date)] PostgreSQL backup complete."
+              env:
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "postgresql.secretName" . }}
+                      key: {{ .Values.auth.secretKeys.user | quote }}
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "postgresql.secretName" . }}
+                      key: {{ .Values.auth.secretKeys.password | quote }}
+                {{- if .Values.auth.database }}
+                - name: POSTGRES_DB
+                  value: {{ .Values.auth.database | quote }}
+                {{- end }}
+              {{- with .Values.backup.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup-data
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: {{ .Values.backup.persistence.existingClaim | default (include "postgresql.backup.fullname" .) }}
+          {{- with .Values.backup.jobTemplateExtra }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+  {{- with .Values.backup.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

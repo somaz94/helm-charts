@@ -1,0 +1,25 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — credentials below are dummy and
+# must not be reused.
+auth:
+  user: ci
+  password: ci-test-password
+  database: ci
+  rootPassword: ci-test-root-password
+backup:
+  enabled: true
+serviceAccount:
+  create: true
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ci-app
+      ports:
+        - protocol: TCP
+          port: 3306
+imagePullSecret:
+  create: true
+  dockerconfigjson: eyJhdXRocyI6IHt9fQ==

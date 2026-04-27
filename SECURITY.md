@@ -10,7 +10,10 @@ Each chart is independently versioned. Only the **latest released version** of e
 | elasticsearch-eck | `0.1.4` |
 | ghost | `0.1.3` |
 | kibana-eck | `0.1.3` |
+| mysql | `0.1.0` |
 | nginx-gateway-cr | `0.3.0` |
+| postgresql | `0.1.0` |
+| redis | `0.1.0` |
 | unity-mcp-server | `0.1.3` |
 
 ## Reporting a Vulnerability

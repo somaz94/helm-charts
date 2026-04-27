@@ -1,0 +1,21 @@
+{{- if eq (include "redis.useConfigFile" .) "true" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "redis.configMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "redis.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+    {{- with .Values.resourceMetadata.configMap.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "redis.annotations" (dict "top" . "extra" .Values.resourceMetadata.configMap.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+data:
+  redis.conf: |-
+{{ .Values.customConfig | indent 4 }}
+{{- end -}}

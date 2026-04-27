@@ -1,0 +1,134 @@
+{{- if .Values.backup.enabled -}}
+{{- if and .Values.backup.persistence.enabled (not .Values.backup.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mysql.backup.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mysql.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+    {{- with .Values.resourceMetadata.backupPvc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $pvcAnn := include "mysql.annotations" (dict "top" . "extra" (merge (deepCopy (default (dict) .Values.backup.persistence.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.backupPvc.annotations)))) }}
+  {{- if $pvcAnn }}
+  annotations:
+    {{- $pvcAnn | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.backup.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.backup.persistence.size }}
+  {{- with .Values.backup.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+---
+{{- end }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "mysql.backup.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mysql.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+    {{- with .Values.resourceMetadata.backupCronJob.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $cjAnn := include "mysql.annotations" (dict "top" . "extra" .Values.resourceMetadata.backupCronJob.annotations) }}
+  {{- if $cjAnn }}
+  annotations:
+    {{- $cjAnn | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "mysql.imagePullSecretsBlock" . | nindent 10 }}
+          containers:
+            - name: backup
+              image: {{ include "mysql.backup.image" . | quote }}
+              imagePullPolicy: {{ include "mysql.backup.imagePullPolicy" . }}
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -e
+                  DATE=$(date +%Y%m%d)
+                  BACKUP_DIR="/backup-data"
+                  RETENTION_DAYS={{ .Values.backup.retentionDays }}
+                  DB_HOST={{ include "mysql.fullname" . | quote }}
+                  DB_PORT={{ .Values.service.port }}
+                  TARGET_DB="${MYSQL_DATABASE:-}"
+
+                  echo "[$(date)] Starting MySQL backup..."
+
+                  if [ -n "$TARGET_DB" ]; then
+                    OUT="$BACKUP_DIR/mysql-${TARGET_DB}-${DATE}.sql"
+                    mysqldump -h "$DB_HOST" -P "$DB_PORT" \
+                      -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
+                      --single-transaction --quick --lock-tables=false \
+                      "$TARGET_DB" > "$OUT"
+                  else
+                    OUT="$BACKUP_DIR/mysql-all-${DATE}.sql"
+                    mysqldump -h "$DB_HOST" -P "$DB_PORT" \
+                      -u root -p"$MYSQL_ROOT_PASSWORD" \
+                      --single-transaction --quick --lock-tables=false \
+                      --all-databases > "$OUT"
+                  fi
+                  echo "[$(date)] DB backup: $(basename "$OUT") ($(du -h "$OUT" | cut -f1))"
+
+                  DEL=$(find "$BACKUP_DIR" -name "mysql-*.sql" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
+                  echo "[$(date)] Retention: deleted $DEL backups older than ${RETENTION_DAYS} days"
+
+                  echo ""
+                  echo "Available backups:"
+                  ls -lh "$BACKUP_DIR"/mysql-*.sql 2>/dev/null || echo "  (none)"
+                  echo ""
+                  echo "[$(date)] MySQL backup complete."
+              env:
+                - name: MYSQL_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "mysql.secretName" . }}
+                      key: {{ .Values.auth.secretKeys.user | quote }}
+                - name: MYSQL_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "mysql.secretName" . }}
+                      key: {{ .Values.auth.secretKeys.password | quote }}
+                - name: MYSQL_ROOT_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "mysql.secretName" . }}
+                      key: {{ .Values.auth.secretKeys.rootPassword | quote }}
+                {{- if .Values.auth.database }}
+                - name: MYSQL_DATABASE
+                  value: {{ .Values.auth.database | quote }}
+                {{- end }}
+              {{- with .Values.backup.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup-data
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: {{ .Values.backup.persistence.existingClaim | default (include "mysql.backup.fullname" .) }}
+          {{- with .Values.backup.jobTemplateExtra }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+  {{- with .Values.backup.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
