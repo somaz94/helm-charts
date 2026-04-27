@@ -34,6 +34,15 @@
       }
     },
     "imagePullSecrets": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "imagePullSecret": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create":           { "type": "boolean" },
+        "name":             { "type": "string" },
+        "dockerconfigjson": { "type": "string" }
+      }
+    },
     "replicaCount":     { "type": "integer", "minimum": 1 },
     "containerPort":    { "type": "integer", "minimum": 1, "maximum": 65535 },
     "service": {

@@ -172,6 +172,48 @@ kubectl -n blog create job --from=cronjob/blog-ghost-backup manual-$(date +%s)
 kubectl -n blog logs -l job-name=manual-...
 ```
 
+### Pulling from a private registry (chart-managed Secret)
+
+When the chart should also render the `kubernetes.io/dockerconfigjson` Secret (instead of you creating it ahead of time), set `imagePullSecret.create=true` and provide the base64-encoded `dockerconfigjson` blob. The Pod-level `imagePullSecrets` is then injected into Ghost, MySQL and the backup CronJob automatically; existing `imagePullSecrets[]` references (BYOIPS) are still honored and merged additively.
+
+Generate `dockerconfigjson` once with either:
+
+```bash
+docker login registry.example.com && cat ~/.docker/config.json | base64
+
+# or, without docker, build it via kubectl:
+kubectl create secret docker-registry tmp \
+  --docker-server=registry.example.com \
+  --docker-username=robot \
+  --docker-password=<token> \
+  --dry-run=client -o jsonpath='{.data.\.dockerconfigjson}'
+```
+
+Then in your values:
+
+```yaml
+url: https://blog.example.com
+image:
+  repository: registry.example.com/library/ghost
+  tag: 5.117.0-alpine
+mysql:
+  image:
+    repository: registry.example.com/library/mysql
+    tag: "8.0.40"
+  auth: { user: ghost, password: s3cret, database: ghost, rootPassword: s3cret-root }
+
+imagePullSecret:
+  create: true
+  dockerconfigjson: ewogICJhdXRoc...    # output from the command above
+```
+
+Or keep `imagePullSecret.create: false` and reference an externally-managed Secret:
+
+```yaml
+imagePullSecrets:
+  - name: my-pull-secret
+```
+
 ### Adopting pre-existing legacy resources
 
 When migrating from a hand-rolled deployment whose MySQL resources do not follow the chart's default `<release>-mysql` naming, set `mysql.fullnameOverride` (and optionally `mysql.configMap.nameOverride`) so the chart targets the existing names. Combine with `existingClaim` / `existingSecret` so PVCs and the auth Secret are reused instead of recreated.

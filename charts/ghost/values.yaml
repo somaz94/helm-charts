@@ -96,6 +96,20 @@ imagePullSecrets: []
 # imagePullSecrets:
 #   - name: my-registry-secret
 
+# Optional chart-managed pull Secret. When create=true the chart renders a
+# `kubernetes.io/dockerconfigjson` Secret and references it from every Pod in
+# this release (additive to imagePullSecrets above).
+# Generate dockerconfigjson with EITHER of:
+#   docker login <registry> && cat ~/.docker/config.json | base64
+#   kubectl create secret docker-registry tmp \
+#     --docker-server=<registry> --docker-username=<user> --docker-password=<pass> \
+#     --dry-run=client -o jsonpath='{.data.\.dockerconfigjson}'
+imagePullSecret:
+  create: false
+  # Defaults to `<fullname>-pull-secret` when empty.
+  name: ""
+  dockerconfigjson: ""
+
 replicaCount: 1
 
 # Ghost's HTTP port (containerPort).

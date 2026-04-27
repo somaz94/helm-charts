@@ -53,10 +53,7 @@ spec:
       template:
         spec:
           restartPolicy: OnFailure
-          {{- with .Values.imagePullSecrets }}
-          imagePullSecrets:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+          {{- include "ghost.imagePullSecretsBlock" . | nindent 10 }}
           containers:
             - name: backup
               image: "{{ .Values.backup.image.repository | default .Values.mysql.image.repository }}:{{ .Values.backup.image.tag | default .Values.mysql.image.tag }}"

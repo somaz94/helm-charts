@@ -75,10 +75,7 @@ spec:
       labels:
         {{- include "ghost.mysql.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "ghost.imagePullSecretsBlock" . | nindent 6 }}
       {{- with .Values.mysql.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

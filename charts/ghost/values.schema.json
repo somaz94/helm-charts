@@ -37,6 +37,15 @@
     },
     "nameOverride":     { "type": "string" },
     "fullnameOverride": { "type": "string" },
+    "imagePullSecret": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create":           { "type": "boolean" },
+        "name":             { "type": "string" },
+        "dockerconfigjson": { "type": "string" }
+      }
+    },
     "url":              { "type": "string" },
     "image": {
       "type": "object",

@@ -115,6 +115,37 @@ nginxGatewayFabric:
     enabled: true            # turn off response buffering for SSE
 ```
 
+### Pulling the BYOI image from a private registry (chart-managed Secret)
+
+When the chart should also render the `kubernetes.io/dockerconfigjson` Secret (instead of you creating it ahead of time), set `imagePullSecret.create=true` and provide the base64-encoded `dockerconfigjson` blob. The Pod-level `imagePullSecrets` is then injected into the Deployment automatically; existing `imagePullSecrets[]` references (BYOIPS) are still honored and merged additively.
+
+Generate `dockerconfigjson` once with either:
+
+```bash
+docker login registry.example.com && cat ~/.docker/config.json | base64
+
+# or, without docker, build it via kubectl:
+kubectl create secret docker-registry tmp \
+  --docker-server=registry.example.com \
+  --docker-username=robot \
+  --docker-password=<token> \
+  --dry-run=client -o jsonpath='{.data.\.dockerconfigjson}'
+```
+
+Then in your values:
+
+```yaml
+image:
+  repository: registry.example.com/library/unity-mcp-server
+  tag: YOUR_TAG
+apiKey:
+  value: <your-api-key>
+
+imagePullSecret:
+  create: true
+  dockerconfigjson: ewogICJhdXRoc...    # output from the command above
+```
+
 ### Legacy Ingress (ingress-nginx)
 
 ```yaml
@@ -143,7 +174,8 @@ Top-level blocks:
 | Block | Purpose |
 |---|---|
 | `image.{repository,tag,pullPolicy}` | Your self-built container image (**required**) |
-| `imagePullSecrets` | Extra pull secrets |
+| `imagePullSecrets` | Reference existing pull secrets (BYOIPS) |
+| `imagePullSecret.{create,name,dockerconfigjson,registry,username,password,email}` | Optional chart-managed `dockerconfigjson` Secret (additive to `imagePullSecrets`) |
 | `containerPort` | FastMCP listen port (default 8080) |
 | `service.{type,port,nodePort,annotations}` | Kubernetes Service shape |
 | `command` / `args` | Container entrypoint; defaults match upstream `mcp-for-unity` |

@@ -2,7 +2,7 @@ apiVersion: v2
 name: ghost
 description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: "5.117.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -41,3 +41,7 @@ annotations:
       description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
     - kind: changed
       description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
+    - kind: added
+      description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
+    - kind: changed
+      description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."

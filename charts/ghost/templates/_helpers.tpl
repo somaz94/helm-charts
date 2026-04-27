@@ -60,6 +60,37 @@ suffix (e.g. `<mysql-fullname>-config`) so existing data can be adopted.
 {{- end -}}
 
 {{/*
+Pull secret name. Default `<fullname>-pull-secret`; override with
+`imagePullSecret.name`. Only consulted when `imagePullSecret.create` is true.
+*/}}
+{{- define "ghost.imagePullSecretName" -}}
+{{- if .Values.imagePullSecret.name -}}
+{{- .Values.imagePullSecret.name -}}
+{{- else -}}
+{{- printf "%s-pull-secret" (include "ghost.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Render the `imagePullSecrets:` block for a Pod spec. Combines two sources:
+  1. `.Values.imagePullSecrets` — bring-your-own pull secrets (BYOIPS).
+  2. `<fullname>-pull-secret` — chart-managed Secret rendered when
+     `.Values.imagePullSecret.create` is true.
+Outputs nothing when both lists are empty so the caller can `nindent` safely.
+Usage: `{{- include "ghost.imagePullSecretsBlock" . | nindent 6 }}`
+*/}}
+{{- define "ghost.imagePullSecretsBlock" -}}
+{{- $list := default (list) .Values.imagePullSecrets -}}
+{{- if (default (dict) .Values.imagePullSecret).create -}}
+{{- $list = append $list (dict "name" (include "ghost.imagePullSecretName" .)) -}}
+{{- end -}}
+{{- if $list -}}
+imagePullSecrets:
+{{ toYaml $list | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Resolved database host (service name when mysql.enabled, else externalDatabase.host).
 */}}
 {{- define "ghost.databaseHost" -}}
