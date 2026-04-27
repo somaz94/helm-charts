@@ -172,6 +172,50 @@ kubectl -n blog create job --from=cronjob/blog-ghost-backup manual-$(date +%s)
 kubectl -n blog logs -l job-name=manual-...
 ```
 
+### Adopting pre-existing legacy resources
+
+When migrating from a hand-rolled deployment whose MySQL resources do not follow the chart's default `<release>-mysql` naming, set `mysql.fullnameOverride` (and optionally `mysql.configMap.nameOverride`) so the chart targets the existing names. Combine with `existingClaim` / `existingSecret` so PVCs and the auth Secret are reused instead of recreated.
+
+Pre-flight: stamp every adopted resource with the standard Helm ownership annotations and label so `helm install` does not fail on conflicts.
+
+```bash
+RELEASE=ghost
+NS=blog
+for kind in deployment/ghost-db service/ghost-db configmap/ghost-db-config secret/ghost-db-secret \
+            pvc/ghost-content-pvc pvc/ghost-db-pvc pvc/ghost-backup-pvc; do
+  kubectl -n "$NS" annotate "$kind" \
+    meta.helm.sh/release-name="$RELEASE" \
+    meta.helm.sh/release-namespace="$NS" --overwrite
+  kubectl -n "$NS" label "$kind" \
+    app.kubernetes.io/managed-by=Helm --overwrite
+done
+```
+
+Values:
+
+```yaml
+url: https://blog.example.com
+
+mysql:
+  fullnameOverride: ghost-db          # Deployment + Service + (default) Secret base name
+  configMap:
+    nameOverride: ghost-db-config     # ConfigMap keeps its legacy `-config` suffix
+  auth:
+    existingSecret: ghost-db-secret   # reuse the existing credentials Secret as-is
+  persistence:
+    existingClaim: ghost-db-pvc       # bind to the existing MySQL PVC
+
+persistence:
+  existingClaim: ghost-content-pvc    # Ghost content PVC
+
+backup:
+  enabled: true
+  persistence:
+    existingClaim: ghost-backup-pvc   # backup PVC
+```
+
+Run `helm diff upgrade --install ...` first and confirm every resource shows up as a modify (not an add) before applying.
+
 ## NFS notes
 
 Ghost on NFS-backed RWO volumes needs MySQL tuning. Append to `mysql.customConfig`:

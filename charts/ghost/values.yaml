@@ -186,6 +186,22 @@ kubernetesExtra: {}
 # managed DB (RDS/CloudSQL) — disable this block and set externalDatabase.*.
 mysql:
   enabled: true
+
+  # Override the base name used for the MySQL Deployment, Service, default
+  # PVC, default Secret, and (when configMap.nameOverride is empty) the
+  # ConfigMap. When empty, defaults to `<release-fullname>-mysql`.
+  # Use this to adopt pre-existing resources whose names do not fit the
+  # default `-mysql` suffix (for example, legacy `ghost-db` from a raw-YAML
+  # deployment).
+  fullnameOverride: ""
+
+  configMap:
+    # Override only the MySQL ConfigMap name. When empty, defaults to
+    # `mysql.fullnameOverride` (or its derived value). Useful when the
+    # legacy ConfigMap uses a different naming pattern such as
+    # `<mysql-fullname>-config`.
+    nameOverride: ""
+
   image:
     repository: mysql
     tag: "8.0.40"

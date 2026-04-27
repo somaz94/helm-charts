@@ -93,7 +93,15 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean" },
+        "enabled":          { "type": "boolean" },
+        "fullnameOverride": { "type": "string" },
+        "configMap": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nameOverride": { "type": "string" }
+          }
+        },
         "image": {
           "type": "object",
           "additionalProperties": false,

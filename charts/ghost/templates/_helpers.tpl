@@ -21,22 +21,38 @@ or .Values.nameOverride.
 {{- end -}}
 
 {{/*
-MySQL-specific names (derived from the Ghost fullname with a `-mysql` suffix).
+MySQL-specific names. Default: `<fullname>-mysql`. Override with
+`mysql.fullnameOverride` to adopt pre-existing resources whose names do not
+fit the default pattern (for example, when migrating off a legacy raw-YAML
+deployment that named the MySQL Service `<release>-db`).
 */}}
 {{- define "ghost.mysql.fullname" -}}
+{{- if .Values.mysql.fullnameOverride -}}
+{{- .Values.mysql.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
 {{- printf "%s-mysql" (include "ghost.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "ghost.mysql.secretName" -}}
 {{- if .Values.mysql.auth.existingSecret -}}
 {{- .Values.mysql.auth.existingSecret -}}
 {{- else -}}
-{{- printf "%s-mysql" (include "ghost.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- include "ghost.mysql.fullname" . -}}
 {{- end -}}
 {{- end -}}
 
+{{/*
+ConfigMap name. Default: same as `ghost.mysql.fullname`. Override with
+`mysql.configMap.nameOverride` when the legacy ConfigMap uses a different
+suffix (e.g. `<mysql-fullname>-config`) so existing data can be adopted.
+*/}}
 {{- define "ghost.mysql.configMapName" -}}
-{{- printf "%s-mysql" (include "ghost.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- if .Values.mysql.configMap.nameOverride -}}
+{{- .Values.mysql.configMap.nameOverride -}}
+{{- else -}}
+{{- include "ghost.mysql.fullname" . -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "ghost.backup.fullname" -}}
