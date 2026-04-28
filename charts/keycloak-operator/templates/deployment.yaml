@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keycloak-operator.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.deployment.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $mergedAnn := merge (deepCopy (default (dict) .Values.resourceMetadata.deployment.annotations)) (deepCopy (default (dict) .Values.commonAnnotations)) }}
+  {{- if $mergedAnn }}
+  annotations:
+    {{- toYaml $mergedAnn | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "keycloak-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "keycloak-operator.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "keycloak-operator.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        {{- $container := deepCopy (default (dict) .Values.containerExtra) }}
+        {{- $_ := set $container "name" "keycloak-operator" }}
+        {{- $_ := set $container "image" (include "keycloak-operator.image" .) }}
+        {{- $_ := set $container "imagePullPolicy" .Values.image.pullPolicy }}
+
+        {{- /* env: chart-managed defaults + user extraEnv (user wins on collision) */}}
+        {{- $env := list }}
+        {{- $env = append $env (dict "name" "KUBERNETES_NAMESPACE" "valueFrom" (dict "fieldRef" (dict "fieldPath" "metadata.namespace"))) }}
+        {{- $env = append $env (dict "name" "RELATED_IMAGE_KEYCLOAK" "value" (include "keycloak-operator.serverImage" .)) }}
+        {{- $env = append $env (dict "name" "QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES" "value" .Values.watchNamespaces) }}
+        {{- $env = append $env (dict "name" "QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES" "value" .Values.watchNamespaces) }}
+        {{- range $extra := .Values.extraEnv }}
+        {{- $env = append $env $extra }}
+        {{- end }}
+        {{- $_ := set $container "env" $env }}
+
+        {{- $_ := set $container "ports" (list (dict "name" "http" "containerPort" 8080 "protocol" "TCP")) }}
+        {{- $_ := set $container "resources" .Values.resources }}
+
+        {{- $liveness := mergeOverwrite (dict "httpGet" (dict "path" "/q/health/live" "port" 8080 "scheme" "HTTP") "successThreshold" 1) (deepCopy .Values.probes.liveness) }}
+        {{- $_ := set $container "livenessProbe" $liveness }}
+        {{- $readiness := mergeOverwrite (dict "httpGet" (dict "path" "/q/health/ready" "port" 8080 "scheme" "HTTP") "successThreshold" 1) (deepCopy .Values.probes.readiness) }}
+        {{- $_ := set $container "readinessProbe" $readiness }}
+        {{- $startup := mergeOverwrite (dict "httpGet" (dict "path" "/q/health/started" "port" 8080 "scheme" "HTTP") "successThreshold" 1) (deepCopy .Values.probes.startup) }}
+        {{- $_ := set $container "startupProbe" $startup }}
+
+        {{- with .Values.securityContext }}
+        {{- $_ := set $container "securityContext" . }}
+        {{- end }}
+        {{- with .Values.volumeMounts }}
+        {{- $_ := set $container "volumeMounts" . }}
+        {{- end }}
+        - {{- toYaml $container | nindent 10 }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- with .Values.deploymentExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

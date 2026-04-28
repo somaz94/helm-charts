@@ -1,0 +1,42 @@
+apiVersion: v2
+name: keycloak-operator
+description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+type: application
+version: 0.1.0
+appVersion: "26.6.1"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - keycloak
+  - keycloak-operator
+  - sso
+  - oidc
+  - oauth2
+  - identity
+  - kubernetes
+  - security
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+  - https://github.com/keycloak/keycloak-k8s-resources
+  - https://github.com/keycloak/keycloak
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: Keycloak Operator Documentation
+      url: https://www.keycloak.org/operator/installation
+    - name: Keycloak Operator Resources
+      url: https://github.com/keycloak/keycloak-k8s-resources
+    - name: Keycloak Release Notes
+      url: https://www.keycloak.org/docs/latest/release_notes/index.html
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Seamless Upgrades
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release. Keycloak Operator (CRDs Keycloak + KeycloakRealmImport, ServiceAccount, Role/RoleBinding, ClusterRole/ClusterRoleBinding, Deployment, Service) wrapped from the upstream keycloak-k8s-resources raw YAML at tag 26.6.1. upgrade.sh tracks the keycloak/keycloak-k8s-resources GitHub Releases feed and refreshes both CRDs + the operator manifest in templates/ on bump.

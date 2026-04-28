@@ -1,0 +1,63 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe.
+replicas: 1
+watchNamespaces: JOSDK_WATCH_ALL
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+image:
+  repository: quay.io/keycloak/keycloak-operator
+  pullPolicy: IfNotPresent
+
+serverImage:
+  repository: quay.io/keycloak/keycloak
+
+imagePullSecrets:
+  - name: ci-pull-secret
+
+podAnnotations:
+  ci-marker: "true"
+
+extraEnv:
+  - name: JAVA_OPTS_APPEND
+    value: "-Dquarkus.log.level=DEBUG"
+
+probes:
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    failureThreshold: 5
+    timeoutSeconds: 15
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    failureThreshold: 5
+    timeoutSeconds: 15
+  startup:
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    failureThreshold: 30
+    timeoutSeconds: 15
+
+deploymentExtra:
+  strategy:
+    type: Recreate
+
+service:
+  enabled: true
+  annotations:
+    ci-marker: "true"
+
+rbac:
+  create: true
+  subjectNamespace: keycloak-system
+
+crds:
+  install: true
+  keep: true

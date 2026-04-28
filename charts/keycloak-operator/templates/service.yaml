@@ -1,0 +1,29 @@
+{{- if .Values.service.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "keycloak-operator.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $mergedAnn := merge (deepCopy (default (dict) .Values.service.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.service.annotations)) (deepCopy (default (dict) .Values.commonAnnotations)) }}
+  {{- if $mergedAnn }}
+  annotations:
+    {{- toYaml $mergedAnn | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "keycloak-operator.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: {{ .Values.service.name }}
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}
