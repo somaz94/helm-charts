@@ -473,6 +473,98 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.0/ghost-0.1.0.tgz
     version: 0.1.0
+  keycloak-cr:
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Keycloak CR (k8s.keycloak.org/v2beta1) with hostname/db/http/proxy/scheduling/resources surfaced explicitly, KeycloakRealmImport with inline-spec or ConfigMap source, optional HTTPRoute, optional DB credentials Secret, optional bootstrap admin Secret, escape-hatch keycloakSpecExtra/realmSpecExtra blocks. Pure CR wrapper — requires the Keycloak Operator and CRDs to be installed in the cluster (e.g. via the keycloak-operator chart).
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-04-28T07:08:58.828765492Z"
+    description: Custom resources (Keycloak, KeycloakRealmImport) for the Keycloak
+      Operator, with optional HTTPRoute, DB-credentials Secret and bootstrap-admin
+      Secret. Defaults to a single-instance Keycloak with edge-proxy mode.
+    digest: 5265c520017981dea0e199dd24ad91f3eb045b49d66b22e8a7767097e53fe13d
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-cr-0.1.0/keycloak-cr-0.1.0.tgz
+    version: 0.1.0
+  keycloak-operator:
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Keycloak Operator (CRDs Keycloak + KeycloakRealmImport, ServiceAccount, Role/RoleBinding, ClusterRole/ClusterRoleBinding, Deployment, Service) wrapped from the upstream keycloak-k8s-resources raw YAML at tag 26.6.1. upgrade.sh tracks the keycloak/keycloak-k8s-resources GitHub Releases feed and refreshes both CRDs + the operator manifest in templates/ on bump.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+        - name: Keycloak Release Notes
+          url: https://www.keycloak.org/docs/latest/release_notes/index.html
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Seamless Upgrades
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 26.6.1
+    created: "2026-04-28T07:08:59.037990846Z"
+    description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped
+      from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via
+      upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+    digest: d8380f473f5b52d8b0a50faf4cae412ad76291291e162710645ea46611f94d67
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - keycloak-operator
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-operator
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    - https://github.com/keycloak/keycloak
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.1.0/keycloak-operator-0.1.0.tgz
+    version: 0.1.0
   kibana-eck:
   - annotations:
       artifacthub.io/category: monitoring-logging
@@ -1026,4 +1118,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-27T06:00:51.644116775Z"
+generated: "2026-04-28T07:08:59.038032494Z"
