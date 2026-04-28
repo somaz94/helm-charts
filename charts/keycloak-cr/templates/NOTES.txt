@@ -1,0 +1,36 @@
+Keycloak CR "{{ include "keycloak-cr.fullname" . }}" rendered in namespace "{{ .Release.Namespace }}".
+
+Verify the operator picked it up:
+  kubectl -n {{ .Release.Namespace }} get keycloak {{ include "keycloak-cr.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} get statefulset,svc -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- with .Values.keycloak.hostname.hostname }}
+
+Keycloak hostname: {{ . }}
+{{- end }}
+{{- if .Values.realmImport.enabled }}
+
+KeycloakRealmImport "{{ include "keycloak-cr.fullname" . }}" rendered.
+The operator runs a one-shot Job to import the realm:
+  kubectl -n {{ .Release.Namespace }} get keycloakrealmimport {{ include "keycloak-cr.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} logs -l app=keycloak-realm-import-job --tail=200
+{{- end }}
+{{- if .Values.httproute.enabled }}
+
+HTTPRoute "{{ include "keycloak-cr.fullname" . }}" rendered for hostnames:
+{{- range .Values.httproute.hostnames }}
+  - {{ . }}
+{{- end }}
+{{- end }}
+{{- if .Values.dbSecret.enabled }}
+
+DB credentials Secret rendered: {{ include "keycloak-cr.dbSecretName" . }}
+WARNING: the password was provided via values (plaintext). Rotate post-install
+or move to ExternalSecrets / Vault for production.
+{{- end }}
+{{- if .Values.adminSecret.enabled }}
+
+Bootstrap admin Secret rendered: {{ include "keycloak-cr.adminUserSecretName" . }}
+Log in once and rotate via the admin UI / kcadm.sh — the operator stops reading
+the bootstrap Secret after the master-realm admin exists.
+{{- end }}

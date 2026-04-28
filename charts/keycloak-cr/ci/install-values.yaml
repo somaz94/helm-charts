@@ -1,0 +1,78 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — credentials below are dummy and
+# must not be reused.
+keycloak:
+  instances: 2
+  hostname:
+    hostname: auth.example.com
+    strict: true
+  proxy:
+    headers: xforwarded
+  db:
+    vendor: postgres
+    host: keycloak-postgresql.keycloak.svc
+    database: keycloak
+    poolMaxSize: 20
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  scheduling:
+    nodeSelector:
+      role: keycloak
+  features:
+    enabled:
+      - token-exchange
+  tracing:
+    enabled: true
+    endpoint: http://otel-collector.observability.svc:4317
+    samplerType: traceidratio
+    samplerRatio: 0.1
+  additionalOptions:
+    - name: log-level
+      value: INFO
+  specExtra:
+    httpManagement:
+      port: 9000
+
+dbSecret:
+  enabled: true
+  username: ci
+  password: ci-test-password
+
+adminSecret:
+  enabled: true
+  username: admin
+  password: ci-test-password
+
+realmImport:
+  enabled: true
+  realm:
+    realm: ci
+    enabled: true
+    sslRequired: external
+    registrationAllowed: false
+    groups:
+      - name: server
+      - name: global-admin
+
+httproute:
+  enabled: true
+  parentRefs:
+    - name: app
+      namespace: nginx-gateway
+      sectionName: https
+  hostnames:
+    - auth.example.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - port: 8080
+  httpsRedirect:
+    enabled: true

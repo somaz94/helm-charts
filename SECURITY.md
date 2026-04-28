@@ -17,6 +17,7 @@ Charts in scope:
 | certmanager-letsencrypt |
 | elasticsearch-eck |
 | ghost |
+| keycloak-cr |
 | keycloak-operator |
 | kibana-eck |
 | mysql |

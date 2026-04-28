@@ -1,0 +1,34 @@
+{{- if .Values.realmImport.enabled }}
+apiVersion: k8s.keycloak.org/v2beta1
+kind: KeycloakRealmImport
+metadata:
+  name: {{ include "keycloak-cr.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-cr.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.realmImport.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "keycloak-cr.annotations" (dict "top" . "extra" .Values.resourceMetadata.realmImport.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  keycloakCRName: {{ default (include "keycloak-cr.fullname" .) .Values.realmImport.keycloakCRName | quote }}
+  {{- with .Values.realmImport.realm }}
+  realm:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.realmImport.placeholders }}
+  placeholders:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.realmImport.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.realmImport.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
