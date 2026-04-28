@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-operator
 description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "26.6.1"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -39,4 +39,6 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: Initial release. Keycloak Operator (CRDs Keycloak + KeycloakRealmImport, ServiceAccount, Role/RoleBinding, ClusterRole/ClusterRoleBinding, Deployment, Service) wrapped from the upstream keycloak-k8s-resources raw YAML at tag 26.6.1. upgrade.sh tracks the keycloak/keycloak-k8s-resources GitHub Releases feed and refreshes both CRDs + the operator manifest in templates/ on bump.
+      description: rbac.useClusterBindings option (default false) to bind keycloakcontroller-cluster-role and keycloakrealmimportcontroller-cluster-role via ClusterRoleBinding instead of in-namespace RoleBinding. Required for any cross-namespace watchNamespaces value because RoleBindings only grant their bound rules within their own namespace, so the operator silently 403s on list/watch in other namespaces otherwise.
+    - kind: changed
+      description: Documented the correct Quarkus Operator SDK constants for watchNamespaces — JOSDK_WATCH_CURRENT (own ns) and JOSDK_ALL_NAMESPACES (cluster-wide). The previous JOSDK_WATCH_ALL example was not a valid constant and the operator interpreted that string as a namespace name, returning 403 on startup.
