@@ -1,0 +1,26 @@
+Keycloak Operator {{ .Values.version }} installed in namespace "{{ .Release.Namespace }}".
+
+Verify the operator is running:
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "keycloak-operator.name" . }} --timeout=120s
+  kubectl -n {{ .Release.Namespace }} logs deployment/{{ include "keycloak-operator.name" . }} -f
+
+{{- if .Values.crds.install }}
+
+CRDs registered cluster-wide:
+  kubectl get crd keycloaks.k8s.keycloak.org keycloakrealmimports.k8s.keycloak.org
+{{- end }}
+
+Watch scope:
+  {{- if eq .Values.watchNamespaces "JOSDK_WATCH_CURRENT" }}
+  Operator watches its own namespace only ({{ .Release.Namespace }}).
+  Set watchNamespaces=JOSDK_WATCH_ALL to watch every namespace, or pass a
+  comma-separated namespace list.
+  {{- else if eq .Values.watchNamespaces "JOSDK_WATCH_ALL" }}
+  Operator watches every namespace in the cluster.
+  {{- else }}
+  Operator watches: {{ .Values.watchNamespaces }}
+  {{- end }}
+
+Next: install the keycloak-cr chart to render a Keycloak instance:
+  helm install keycloak oci://ghcr.io/somaz94/charts/keycloak-cr \
+    -n keycloak --create-namespace -f keycloak-values.yaml

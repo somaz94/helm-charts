@@ -1,0 +1,26 @@
+# Patterns to ignore when building Helm packages.
+.DS_Store
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.project
+.idea/
+*.tmproj
+.vscode/
+
+# Maintenance scripts and rollback trail — not part of the released chart.
+upgrade.sh
+backup/
+
+# Maintenance scripts and rollback trail — not part of the released chart.
+upgrade.sh
+backup/

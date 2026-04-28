@@ -1,0 +1,246 @@
+{{- if .Values.rbac.create -}}
+{{- $sa := include "keycloak-operator.serviceAccountName" . -}}
+{{- $subjectNs := include "keycloak-operator.subjectNamespace" . -}}
+{{- $crLabels := dict -}}
+{{- $cAnn := include "keycloak-operator.annotations" (dict "top" . "extra" .Values.resourceMetadata.clusterRoles.annotations) -}}
+{{- $cbAnn := include "keycloak-operator.annotations" (dict "top" . "extra" .Values.resourceMetadata.clusterRoleBindings.annotations) -}}
+{{- $rAnn := include "keycloak-operator.annotations" (dict "top" . "extra" .Values.resourceMetadata.role.annotations) -}}
+{{- $rbAnn := include "keycloak-operator.annotations" (dict "top" . "extra" .Values.resourceMetadata.roleBinding.annotations) -}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "keycloak-operator.name" . }}-clusterrole
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.clusterRoles.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $cAnn }}
+  annotations:
+    {{- $cAnn | nindent 4 }}
+  {{- end }}
+rules:
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - ingresses
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloakrealmimportcontroller-cluster-role
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.clusterRoles.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $cAnn }}
+  annotations:
+    {{- $cAnn | nindent 4 }}
+  {{- end }}
+rules:
+  - apiGroups: [k8s.keycloak.org]
+    resources:
+      - keycloakrealmimports
+      - keycloakrealmimports/status
+      - keycloakrealmimports/finalizers
+    verbs: [get, list, watch, patch, update, create, delete]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, delete, get, list, patch, watch]
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [create, delete, get, list, patch, update, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloakcontroller-cluster-role
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.clusterRoles.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $cAnn }}
+  annotations:
+    {{- $cAnn | nindent 4 }}
+  {{- end }}
+rules:
+  - apiGroups: [k8s.keycloak.org]
+    resources:
+      - keycloaks
+      - keycloaks/status
+      - keycloaks/finalizers
+    verbs: [get, list, watch, patch, update, create, delete]
+  - apiGroups: [""]
+    resources: [services]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [monitoring.coreos.com]
+    resources: [servicemonitors]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [create, delete, get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "keycloak-operator.name" . }}-clusterrole-binding
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.clusterRoleBindings.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $cbAnn }}
+  annotations:
+    {{- $cbAnn | nindent 4 }}
+  {{- end }}
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: {{ include "keycloak-operator.name" . }}-clusterrole
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+    namespace: {{ $subjectNs }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "keycloak-operator.name" . }}-role
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.role.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $rAnn }}
+  annotations:
+    {{- $rAnn | nindent 4 }}
+  {{- end }}
+rules:
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [get, list, watch, create, delete, patch, update]
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [secrets, services]
+    verbs: [get, list, watch, create, delete, patch, update]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, watch, create, delete, patch, update]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [get, list, watch, create, delete, patch, update]
+  - apiGroups: [monitoring.coreos.com]
+    resources: [servicemonitors]
+    verbs: [create, delete, get, list, update, watch, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "keycloak-operator.name" . }}-role-binding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.roleBinding.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $rbAnn }}
+  annotations:
+    {{- $rbAnn | nindent 4 }}
+  {{- end }}
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: {{ include "keycloak-operator.name" . }}-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloakrealmimportcontroller-role-binding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.roleBinding.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $rbAnn }}
+  annotations:
+    {{- $rbAnn | nindent 4 }}
+  {{- end }}
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: keycloakrealmimportcontroller-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloakcontroller-role-binding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.roleBinding.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $rbAnn }}
+  annotations:
+    {{- $rbAnn | nindent 4 }}
+  {{- end }}
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: keycloakcontroller-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "keycloak-operator.name" . }}-view
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.roleBinding.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if $rbAnn }}
+  annotations:
+    {{- $rbAnn | nindent 4 }}
+  {{- end }}
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+{{- end }}
