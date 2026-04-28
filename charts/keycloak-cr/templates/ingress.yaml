@@ -1,0 +1,49 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "keycloak-cr.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-cr.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.ingress.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $mergedAnn := merge (deepCopy (default (dict) .Values.ingress.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.ingress.annotations)) (deepCopy (default (dict) .Values.commonAnnotations)) }}
+  {{- if $mergedAnn }}
+  annotations:
+    {{- toYaml $mergedAnn | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- $backendService := .Values.ingress.backend.serviceName | default (include "keycloak-cr.serviceName" .) }}
+  {{- $backendPort := .Values.ingress.backend.servicePort | default 8080 }}
+  rules:
+    - {{- with .Values.ingress.host }}
+      host: {{ . | quote }}
+      {{- end }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.path | default "/" }}
+            pathType: {{ .Values.ingress.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $backendService }}
+                port:
+                  number: {{ $backendPort }}
+          {{- range .Values.ingress.extraPaths }}
+          - path: {{ .path | default "/" }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ .serviceName | default $backendService }}
+                port:
+                  number: {{ .servicePort | default $backendPort }}
+          {{- end }}
+{{- end }}

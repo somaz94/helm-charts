@@ -1,0 +1,227 @@
+{{- include "keycloak-cr.validate" . -}}
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: {{ include "keycloak-cr.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-cr.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.keycloak.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "keycloak-cr.annotations" (dict "top" . "extra" .Values.resourceMetadata.keycloak.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  instances: {{ .Values.keycloak.instances }}
+  {{- with .Values.keycloak.image }}
+  image: {{ . | quote }}
+  {{- end }}
+  {{- if and (kindIs "string" .Values.keycloak.startOptimized) (ne .Values.keycloak.startOptimized "") }}
+  startOptimized: {{ eq .Values.keycloak.startOptimized "true" }}
+  {{- else if kindIs "bool" .Values.keycloak.startOptimized }}
+  startOptimized: {{ .Values.keycloak.startOptimized }}
+  {{- end }}
+  {{- with .Values.keycloak.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- /* hostname */}}
+  {{- $h := .Values.keycloak.hostname }}
+  {{- if or $h.hostname $h.admin (hasKey $h "strict") (hasKey $h "backchannelDynamic") }}
+  hostname:
+    {{- with $h.hostname }}
+    hostname: {{ . | quote }}
+    {{- end }}
+    {{- with $h.admin }}
+    admin: {{ . | quote }}
+    {{- end }}
+    {{- if hasKey $h "strict" }}
+    strict: {{ $h.strict }}
+    {{- end }}
+    {{- if hasKey $h "backchannelDynamic" }}
+    backchannelDynamic: {{ $h.backchannelDynamic }}
+    {{- end }}
+  {{- end }}
+
+  {{- /* http */}}
+  {{- $http := .Values.keycloak.http }}
+  http:
+    {{- if hasKey $http "httpEnabled" }}
+    httpEnabled: {{ $http.httpEnabled }}
+    {{- end }}
+    {{- with $http.httpPort }}
+    httpPort: {{ . }}
+    {{- end }}
+    {{- with $http.httpsPort }}
+    httpsPort: {{ . }}
+    {{- end }}
+    {{- with $http.tlsSecret }}
+    tlsSecret: {{ . | quote }}
+    {{- end }}
+    {{- with $http.annotations }}
+    annotations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $http.labels }}
+    labels:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+  {{- /* proxy */}}
+  {{- with .Values.keycloak.proxy.headers }}
+  proxy:
+    headers: {{ . | quote }}
+  {{- end }}
+
+  {{- /* db */}}
+  {{- $db := .Values.keycloak.db }}
+  {{- $dbSecret := include "keycloak-cr.dbSecretName" . }}
+  db:
+    vendor: {{ $db.vendor | quote }}
+    {{- with $db.host }}
+    host: {{ . | quote }}
+    {{- end }}
+    {{- with $db.port }}
+    port: {{ . }}
+    {{- end }}
+    {{- with $db.database }}
+    database: {{ . | quote }}
+    {{- end }}
+    {{- with $db.schema }}
+    schema: {{ . | quote }}
+    {{- end }}
+    {{- with $db.url }}
+    url: {{ . | quote }}
+    {{- end }}
+    {{- if $dbSecret }}
+    usernameSecret:
+      name: {{ $dbSecret }}
+      key: {{ $db.usernameSecretKey | quote }}
+    passwordSecret:
+      name: {{ $dbSecret }}
+      key: {{ $db.passwordSecretKey | quote }}
+    {{- end }}
+    {{- if gt (int $db.poolMinSize) 0 }}
+    poolMinSize: {{ $db.poolMinSize }}
+    {{- end }}
+    {{- if gt (int $db.poolInitialSize) 0 }}
+    poolInitialSize: {{ $db.poolInitialSize }}
+    {{- end }}
+    {{- if gt (int $db.poolMaxSize) 0 }}
+    poolMaxSize: {{ $db.poolMaxSize }}
+    {{- end }}
+
+  {{- /* bootstrapAdmin */}}
+  {{- $userSec := include "keycloak-cr.adminUserSecretName" . }}
+  {{- $svcSec := .Values.keycloak.bootstrapAdmin.serviceSecret }}
+  {{- if or $userSec $svcSec }}
+  bootstrapAdmin:
+    {{- if $userSec }}
+    user:
+      secret: {{ $userSec | quote }}
+    {{- end }}
+    {{- with $svcSec }}
+    service:
+      secret: {{ . | quote }}
+    {{- end }}
+  {{- end }}
+
+  {{- /* resources */}}
+  {{- with .Values.keycloak.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- /* scheduling */}}
+  {{- with .Values.keycloak.scheduling }}
+  scheduling:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- /* features */}}
+  {{- $f := .Values.keycloak.features }}
+  {{- if or $f.enabled $f.disabled }}
+  features:
+    {{- with $f.enabled }}
+    enabled:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $f.disabled }}
+    disabled:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  {{- /* ingress */}}
+  {{- $ing := .Values.keycloak.ingress }}
+  ingress:
+    enabled: {{ $ing.enabled }}
+    {{- with $ing.className }}
+    className: {{ . | quote }}
+    {{- end }}
+    {{- with $ing.annotations }}
+    annotations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $ing.labels }}
+    labels:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+  {{- /* networkPolicy */}}
+  {{- if .Values.keycloak.networkPolicy.enabled }}
+  networkPolicy:
+    enabled: true
+  {{- end }}
+
+  {{- /* tracing */}}
+  {{- $tr := .Values.keycloak.tracing }}
+  {{- if $tr.enabled }}
+  tracing:
+    enabled: true
+    {{- with $tr.endpoint }}
+    endpoint: {{ . | quote }}
+    {{- end }}
+    {{- with $tr.protocol }}
+    protocol: {{ . | quote }}
+    {{- end }}
+    {{- with $tr.samplerType }}
+    samplerType: {{ . | quote }}
+    {{- end }}
+    {{- if ne (toString $tr.samplerRatio) "<nil>" }}
+    samplerRatio: {{ $tr.samplerRatio }}
+    {{- end }}
+  {{- end }}
+
+  {{- /* transaction */}}
+  {{- if ne (toString .Values.keycloak.transaction.xaEnabled) "<nil>" }}
+  transaction:
+    xaEnabled: {{ .Values.keycloak.transaction.xaEnabled }}
+  {{- end }}
+
+  {{- /* truststores */}}
+  {{- with .Values.keycloak.truststores }}
+  truststores:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- /* additionalOptions */}}
+  {{- with .Values.keycloak.additionalOptions }}
+  additionalOptions:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- /* env */}}
+  {{- with .Values.keycloak.env }}
+  env:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- /* Final escape hatch — merged into spec at the top level */}}
+  {{- with .Values.keycloak.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

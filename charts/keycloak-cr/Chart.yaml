@@ -1,0 +1,36 @@
+apiVersion: v2
+name: keycloak-cr
+description: Custom resources (Keycloak, KeycloakRealmImport) for the Keycloak Operator, with optional HTTPRoute, DB-credentials Secret and bootstrap-admin Secret. Defaults to a single-instance Keycloak with edge-proxy mode.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - keycloak
+  - sso
+  - oidc
+  - oauth2
+  - identity
+  - kubernetes
+  - security
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+  - https://github.com/keycloak/keycloak-k8s-resources
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: Keycloak Operator Documentation
+      url: https://www.keycloak.org/operator/installation
+    - name: Keycloak Operator Resources
+      url: https://github.com/keycloak/keycloak-k8s-resources
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release. Keycloak CR (k8s.keycloak.org/v2beta1) with hostname/db/http/proxy/scheduling/resources surfaced explicitly, KeycloakRealmImport with inline-spec or ConfigMap source, optional HTTPRoute, optional DB credentials Secret, optional bootstrap admin Secret, escape-hatch keycloakSpecExtra/realmSpecExtra blocks. Pure CR wrapper — requires the Keycloak Operator and CRDs to be installed in the cluster (e.g. via the keycloak-operator chart).
