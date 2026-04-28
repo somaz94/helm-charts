@@ -84,7 +84,9 @@ The operator only reconciles `Keycloak` / `KeycloakRealmImport` CRs in the `keyc
 ### 2. Watch every namespace cluster-wide
 
 ```yaml
-watchNamespaces: JOSDK_WATCH_ALL
+watchNamespaces: JOSDK_ALL_NAMESPACES
+rbac:
+  useClusterBindings: true   # required for any cross-namespace watch
 ```
 
 ```bash
@@ -98,6 +100,8 @@ helm install keycloak-operator oci://ghcr.io/somaz94/charts/keycloak-operator \
 
 ```yaml
 watchNamespaces: "tenant-a,tenant-b"
+rbac:
+  useClusterBindings: true   # required when the list spans namespaces other than the release ns
 ```
 
 <br/>
@@ -162,7 +166,7 @@ When this flag is off, the chart skips both CRDs — the operator still referenc
 | `nodeSelector`, `tolerations`, `affinity`, `priorityClassName`, `topologySpreadConstraints` | — | — | Standard pod-scheduling fields. |
 | `podLabels`, `podAnnotations`, `podSecurityContext`, `securityContext` | object | `{}` | Pod template metadata + security contexts. |
 | `extraEnv[]` | list | `[]` | Additional env vars (chart already wires `KUBERNETES_NAMESPACE`, `RELATED_IMAGE_KEYCLOAK`, watch-scope vars). |
-| `watchNamespaces` | string | `JOSDK_WATCH_CURRENT` | `JOSDK_WATCH_CURRENT` (own NS), `JOSDK_WATCH_ALL` (cluster-wide), or `ns-a,ns-b` list. |
+| `watchNamespaces` | string | `JOSDK_WATCH_CURRENT` | `JOSDK_WATCH_CURRENT` (own NS), `JOSDK_ALL_NAMESPACES` (cluster-wide), or `ns-a,ns-b` list. Anything other than `JOSDK_WATCH_CURRENT` requires `rbac.useClusterBindings: true`. |
 | `probes.{liveness,readiness,startup}` | object | upstream defaults | Probe knobs. |
 | `volumes`, `volumeMounts` | list | `[]` | Operator container volumes. |
 | `deploymentExtra` | object | `{}` | **Escape hatch.** Merged into `Deployment.spec`. |
@@ -178,6 +182,7 @@ When this flag is off, the chart skips both CRDs — the operator still referenc
 | `serviceAccount.name` | string | `keycloak-operator` | SA name. The Deployment references this. |
 | `rbac.create` | bool | `true` | Render `ClusterRole` / `ClusterRoleBinding` / `Role` / `RoleBinding`. |
 | `rbac.subjectNamespace` | string | `""` (= `Release.Namespace`) | Namespace used as the `ClusterRoleBinding` subject's namespace. Override only when SA lives in a different namespace from the chart release. |
+| `rbac.useClusterBindings` | bool | `false` | Bind the `keycloakcontroller-cluster-role` / `keycloakrealmimportcontroller-cluster-role` via `ClusterRoleBinding` instead of in-namespace `RoleBinding`. **Required** when `watchNamespaces` is anything other than `JOSDK_WATCH_CURRENT` — RoleBindings only grant their bound rules within their own namespace, so the operator cannot list/watch CRs in other namespaces otherwise. |
 | `crds.install` | bool | `true` | Render the two CRDs in `templates/`. Disable when CRDs are managed externally. |
 | `crds.keep` | bool | `true` | Add `helm.sh/resource-policy: keep` so the CRDs survive a chart uninstall. Recommended in production. |
 

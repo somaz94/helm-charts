@@ -178,11 +178,21 @@ subjects:
   - kind: ServiceAccount
     name: {{ $sa }}
 ---
+{{- /*
+  Controller bindings: RoleBinding in the release namespace by default
+  (mirrors upstream single-ns operator), or ClusterRoleBinding when
+  `rbac.useClusterBindings` is true (required for cross-ns watchNamespaces —
+  see values.yaml comments). Subject ns also needs to be set on
+  ClusterRoleBindings since SA lookup is namespaced.
+*/}}
+{{- $bindingKind := ternary "ClusterRoleBinding" "RoleBinding" .Values.rbac.useClusterBindings }}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: {{ $bindingKind }}
 metadata:
   name: keycloakrealmimportcontroller-role-binding
+  {{- if not .Values.rbac.useClusterBindings }}
   namespace: {{ .Release.Namespace }}
+  {{- end }}
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
     {{- with .Values.resourceMetadata.roleBinding.labels }}
@@ -199,12 +209,17 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ $sa }}
+    {{- if .Values.rbac.useClusterBindings }}
+    namespace: {{ $subjectNs }}
+    {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: {{ $bindingKind }}
 metadata:
   name: keycloakcontroller-role-binding
+  {{- if not .Values.rbac.useClusterBindings }}
   namespace: {{ .Release.Namespace }}
+  {{- end }}
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
     {{- with .Values.resourceMetadata.roleBinding.labels }}
@@ -221,6 +236,9 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ $sa }}
+    {{- if .Values.rbac.useClusterBindings }}
+    namespace: {{ $subjectNs }}
+    {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
