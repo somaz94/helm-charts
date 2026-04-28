@@ -4,17 +4,25 @@
 
 Each chart is independently versioned. Only the **latest released version** of each chart receives security fixes. Users are encouraged to track the latest release and bump promptly when security advisories are published.
 
-| Chart | Latest |
-|---|---|
-| certmanager-letsencrypt | `0.2.0` |
-| elasticsearch-eck | `0.1.4` |
-| ghost | `0.1.3` |
-| kibana-eck | `0.1.3` |
-| mysql | `0.1.0` |
-| nginx-gateway-cr | `0.3.0` |
-| postgresql | `0.1.0` |
-| redis | `0.1.0` |
-| unity-mcp-server | `0.1.3` |
+The current latest version of every chart below is published to:
+
+- OCI registry: `oci://ghcr.io/somaz94/charts/<chart>` (resolve `:latest` or pin a tag)
+- Classic Helm repo: `https://charts.somaz.blog` (run `helm repo update` then `helm search repo somaz94/<chart>`)
+- GitHub Releases: tagged `<chart>-<version>` per release
+
+Charts in scope:
+
+| Chart |
+|---|
+| certmanager-letsencrypt |
+| elasticsearch-eck |
+| ghost |
+| kibana-eck |
+| mysql |
+| nginx-gateway-cr |
+| postgresql |
+| redis |
+| unity-mcp-server |
 
 ## Reporting a Vulnerability
 
