@@ -10,7 +10,11 @@
 # By design, this script treats each chart's upgrade.sh as a black box and
 # only relies on the standard CLI contract documented in
 # scripts/upgrade-sync/templates/chart-appversion.sh:
-#   --dry-run, --version <X.Y.Z>, --rollback, --list-backups
+#   --dry-run, --dry-run --json, --version <X.Y.Z>, --rollback, --list-backups
+#
+# Drift detection consumes the `--dry-run --json` record (schema:
+# helm-charts.upgrade.dryrun.v1). See the "Dry-run JSON contract" section of
+# scripts/check-version/README.md for the schema.
 #
 # Major version bumps are skipped by default (drift-only report) because
 # they typically require manual review of breaking changes. Use
@@ -148,12 +152,39 @@ is_major_bump() {
   [ "${cur%%.*}" != "${new%%.*}" ]
 }
 
-# Parse the upstream "latest" version from upgrade.sh --dry-run output.
-# Both chart-appversion and external-tracked templates print one of:
-#   "  Latest available:      <X.Y.Z>"
-#   "  Using explicit target: <X.Y.Z>"
-parse_latest_from_dry_run() {
-  awk '/Latest available:/ || /Using explicit target:/ { print $NF; exit }'
+# Parse upgrade.sh --dry-run --json output (schema:
+# helm-charts.upgrade.dryrun.v1) into a TAB-separated record:
+#   <status>\t<current>\t<latest>\t<upstream>\t<major>\t<sibling>\t<error>
+# where <major> is "yes" or "no", and any null/missing fields are empty
+# strings. Emits nothing and exits non-zero on parse failure.
+parse_dry_run_json() {
+  # Pass the script via -c so python3's stdin stays attached to the pipe
+  # (a here-doc would shadow the upstream JSON). Fields are joined with
+  # \x01 (non-whitespace) so `IFS=$'\x01' read` preserves empty fields —
+  # \t collapses consecutive empties when used as IFS.
+  python3 -c '
+import json, sys
+try:
+    doc = json.loads(sys.stdin.read())
+except Exception as e:
+    sys.stderr.write(f"JSON parse error: {e}\n")
+    sys.exit(1)
+schema = doc.get("schema", "")
+if not schema.startswith("helm-charts.upgrade.dryrun."):
+    sys.stderr.write(f"unexpected schema: {schema}\n")
+    sys.exit(1)
+sib = (doc.get("sibling") or {}).get("name") or ""
+fields = [
+    doc.get("status") or "",
+    doc.get("current") or "",
+    doc.get("latest") or "",
+    doc.get("upstream_latest") or "",
+    "yes" if doc.get("major_bump") else "no",
+    sib,
+    doc.get("error") or "",
+]
+print("\x01".join(fields))
+'
 }
 
 # Working tree must be clean before --apply touches anything.
@@ -192,76 +223,63 @@ record_result() {
   RESULTS+=("$1"$'\t'"$2"$'\t'"$3"$'\t'"$4"$'\t'"$5"$'\t'"$6")
 }
 
-# Run upgrade.sh --dry-run for a chart, print drift info (or "uptodate").
-# stdout: one of:
+# Run upgrade.sh --dry-run --json for a chart, print drift info (or
+# "uptodate"). stdout: one of:
 #   uptodate
 #   drift <current> <latest>
-#   blocked <current> <latest> <sibling-name>
+#   blocked <current> <upstream-latest> <sibling-name>
 #   no-image <current> <upstream-latest>
 #   error <message>
 #
-# The chart-appversion template has an image-fallback path: when the upstream
-# feed advertises X.Y.Z but the container image isn't published yet, the script
-# searches for the newest GA whose image IS published. Three sub-cases:
-#   (a) fallback finds a version > current -> bumps to that (line: "Latest
-#       available (with published image): X.Y.Z")
-#   (b) fallback finds version == current -> "Newest available matches
-#       current. Nothing to bump." (treat as uptodate)
-#   (c) fallback finds nothing -> "no GA version with a published image found"
-#       (treat as no-image; nothing to do until upstream publishes the image)
+# The output line format (legacy, consumed by process_chart) is preserved
+# verbatim across the JSON migration. The semantic mapping is:
+#   JSON status=uptodate          -> uptodate
+#   JSON status=drift             -> drift current latest
+#   JSON status=blocked           -> blocked current upstream_latest sibling.name
+#   JSON status=no-image          -> no-image current upstream_latest
+#   JSON status=error             -> error <upgrade.sh's error message>
 detect_drift() {
   local chart="$1"
-  local current latest upstream_latest dry_out sibling
-  current=$(read_app_version "$chart")
+  local raw json_record status current latest upstream major sibling err
 
-  # Capture both stdout and stderr; upgrade.sh dry-run never prompts.
-  dry_out=$(cd "$CHARTS_DIR/$chart" && bash ./upgrade.sh --dry-run 2>&1) || true
-
-  # Sibling-version constraint (e.g. kibana-eck must be <= elasticsearch-eck).
-  if printf '%s\n' "$dry_out" | grep -qE 'is HIGHER than .* version'; then
-    latest=$(printf '%s\n' "$dry_out" | parse_latest_from_dry_run)
-    sibling=$(printf '%s\n' "$dry_out" | sed -n 's/.*is HIGHER than \([^ ]*\) version.*/\1/p' | head -1)
-    echo "blocked ${current:-?} ${latest:-?} ${sibling:-sibling}"
+  # Capture the JSON line on stdout regardless of exit code — upgrade.sh
+  # exits non-zero on `blocked` / `no-image-exhausted`, but the EXIT trap
+  # has already emitted the JSON record. `|| true` shields us from
+  # `set -euo pipefail` so the pipe-failure exit doesn't blow away the
+  # captured payload.
+  raw=$(cd "$CHARTS_DIR/$chart" && bash ./upgrade.sh --dry-run --json 2>/dev/null || true)
+  if [ -z "$raw" ]; then
+    echo "error empty stdout from upgrade.sh --dry-run --json"
     return 0
   fi
-
-  # Image-fallback paths: upstream feed has a newer version, but the container
-  # image isn't published yet. Two sub-cases, both reported as no-image:
-  #   - "no GA version with a published image found" (search exhausted)
-  #   - "Newest available matches current. Nothing to bump." (fallback returned
-  #     current as the newest with a published image; means newer GA exists
-  #     upstream but its image isn't out yet)
-  if printf '%s\n' "$dry_out" | grep -qE 'no GA version with a published image found|Newest available matches current\. Nothing to bump\.'; then
-    upstream_latest=$(printf '%s\n' "$dry_out" | awk '/Latest available:/ && !/with published image/ { print $NF; exit }')
-    echo "no-image ${current:-?} ${upstream_latest:-?}"
+  json_record=$(printf '%s' "$raw" | parse_dry_run_json) || {
+    echo "error could not parse upgrade.sh --dry-run --json output (schema mismatch)"
     return 0
-  fi
+  }
 
-  # Genuine uptodate: upstream feed itself is at current version.
-  if printf '%s\n' "$dry_out" | grep -qF "Already up to date"; then
-    echo "uptodate"
-    return 0
-  fi
+  IFS=$'\x01' read -r status current latest upstream major sibling err <<< "$json_record"
 
-  # Prefer the image-fallback target if upgrade.sh fell back; otherwise the
-  # original upstream value.
-  latest=$(printf '%s\n' "$dry_out" | awk -F': *' '/Latest available \(with published image\):/ { print $NF; exit }')
-  if [ -z "$latest" ]; then
-    latest=$(printf '%s\n' "$dry_out" | parse_latest_from_dry_run)
-  fi
-
-  if [ -z "$latest" ]; then
-    local last_err
-    last_err=$(printf '%s\n' "$dry_out" | grep -E 'ERROR|WARN' | tail -1)
-    echo "error ${last_err:-could not parse dry-run output}"
-    return 0
-  fi
-
-  if [ "$latest" = "$current" ]; then
-    echo "uptodate"
-    return 0
-  fi
-  echo "drift $current $latest"
+  case "$status" in
+    uptodate)
+      echo "uptodate"
+      ;;
+    drift)
+      echo "drift ${current:-?} ${latest:-?}"
+      ;;
+    blocked)
+      # `latest` is null in the JSON record (no bump can happen); the third
+      # field of the legacy line is the version that was attempted, which is
+      # what `upstream_latest` carries.
+      echo "blocked ${current:-?} ${upstream:-?} ${sibling:-sibling}"
+      ;;
+    no-image)
+      echo "no-image ${current:-?} ${upstream:-?}"
+      ;;
+    error|*)
+      echo "error ${err:-unknown error from upgrade.sh}"
+      ;;
+  esac
+  return 0
 }
 
 # Extract the topmost section from a chart's CHANGELOG.md (from the first

@@ -81,6 +81,10 @@ Commands:
   (default)           Check latest version and bump
   --version <VER>     Bump to a specific version (skips upstream query)
   --dry-run           Preview changes only (no files will be modified)
+  --json              With --dry-run, emit a single-line JSON record on stdout
+                      (schema: helm-charts.upgrade.dryrun.v1). Human progress
+                      output is redirected to stderr. Consumed by
+                      scripts/check-version/check-version.sh.
   --rollback          Restore files from a previous backup
   --list-backups      List available backups
   --cleanup-backups   Keep only the last $KEEP_BACKUPS backups, remove older ones
@@ -89,6 +93,7 @@ Commands:
 Examples:
   $(basename "$0")                                # Bump to latest GA
   $(basename "$0") --dry-run                      # Preview without changes
+  $(basename "$0") --dry-run --json               # Machine-readable preview
   $(basename "$0") --version X.Y.Z                # Pin to a specific version
   $(basename "$0") --rollback                     # Restore files from backup
 
@@ -416,6 +421,12 @@ check_sibling_version() {
   local cmp
   cmp=$(semver_compare "$target" "$sibling_ver")
   if [ "$cmp" = "1" ]; then
+    JSON_STATUS="blocked"
+    JSON_LATEST=""
+    JSON_UPSTREAM_LATEST="$target"
+    JSON_SIBLING_NAME="$SIBLING_CHART_LABEL"
+    JSON_SIBLING_VERSION="$sibling_ver"
+    JSON_ERROR=""
     echo ""
     echo "  ERROR: target version $target is HIGHER than $SIBLING_CHART_LABEL version $sibling_ver."
     echo "  Bump $SIBLING_CHART_LABEL first:"
@@ -474,6 +485,7 @@ verify_image_exists() {
 # Argument parsing
 # -----------------------------------------------
 DRY_RUN=false
+JSON_OUTPUT=false
 TARGET_VERSION=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -482,6 +494,7 @@ while [[ $# -gt 0 ]]; do
     --rollback)         do_rollback; exit 0 ;;
     --cleanup-backups)  cleanup_backups; exit 0 ;;
     --dry-run)          DRY_RUN=true; shift ;;
+    --json)             JSON_OUTPUT=true; shift ;;
     --version)
       TARGET_VERSION="${2:-}"
       [ -z "$TARGET_VERSION" ] && { echo "ERROR: --version requires a version number"; exit 1; }
@@ -489,6 +502,68 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown option: $1"; echo ""; usage ;;
   esac
 done
+
+if $JSON_OUTPUT && ! $DRY_RUN; then
+  echo "ERROR: --json requires --dry-run" >&2
+  exit 1
+fi
+
+# JSON state — populated at each natural exit point so the EXIT trap can emit
+# a structured one-line record on stdout. Schema: helm-charts.upgrade.dryrun.v1.
+# Defaults reflect "unexpected exit" so any code path that exits without
+# updating these surfaces as status=error.
+JSON_STATUS="error"
+JSON_LATEST=""
+JSON_UPSTREAM_LATEST=""
+JSON_SIBLING_NAME=""
+JSON_SIBLING_VERSION=""
+JSON_ERROR="unexpected exit before JSON status was set"
+
+emit_json() {
+  $JSON_OUTPUT || return 0
+  python3 - \
+    "$(basename "$CHART_DIR")" \
+    "$JSON_STATUS" \
+    "${CURRENT_VERSION:-}" \
+    "$JSON_LATEST" \
+    "$JSON_UPSTREAM_LATEST" \
+    "$JSON_SIBLING_NAME" \
+    "$JSON_SIBLING_VERSION" \
+    "$JSON_ERROR" \
+    <<'PYEOF' >&3 || true
+import json, sys
+chart, status, current, latest, upstream, sib_name, sib_ver, err = sys.argv[1:9]
+def _major(v):
+    if not v or "." not in v:
+        return None
+    return v.split(".", 1)[0]
+major_bump = bool(
+    status == "drift" and current and latest
+    and _major(current) != _major(latest)
+)
+sibling = None
+if status == "blocked" and sib_name:
+    sibling = {"name": sib_name, "version": sib_ver or None}
+doc = {
+    "schema": "helm-charts.upgrade.dryrun.v1",
+    "chart": chart,
+    "status": status,
+    "current": current or None,
+    "latest": latest or None,
+    "upstream_latest": upstream or None,
+    "major_bump": major_bump,
+    "sibling": sibling,
+    "error": err or None,
+}
+print(json.dumps(doc))
+PYEOF
+}
+
+if $JSON_OUTPUT; then
+  exec 3>&1
+  exec 1>&2
+  trap emit_json EXIT
+fi
 
 # -----------------------------------------------
 # Main
@@ -505,16 +580,25 @@ echo ""
 if [ -n "$VALUES_FILE" ]; then
   echo "[Step 1/N] Reading current version from $VALUES_FILE..."
   if [ ! -f "$CHART_DIR/$VALUES_FILE" ]; then
+    JSON_ERROR="values file not found: $VALUES_FILE"
     echo "  ERROR: values file not found: $CHART_DIR/$VALUES_FILE"
     exit 1
   fi
   CURRENT_VERSION=$(read_yaml_value "$CHART_DIR/$VALUES_FILE" "$VERSION_KEY")
-  [ -z "$CURRENT_VERSION" ] && { echo "  ERROR: could not read '$VERSION_KEY' from $VALUES_FILE"; exit 1; }
+  if [ -z "$CURRENT_VERSION" ]; then
+    JSON_ERROR="could not read '$VERSION_KEY' from $VALUES_FILE"
+    echo "  ERROR: could not read '$VERSION_KEY' from $VALUES_FILE"
+    exit 1
+  fi
   echo "  Current $COMPONENT_LABEL version: $CURRENT_VERSION"
 else
   echo "[Step 1/N] Reading current appVersion from Chart.yaml..."
   CURRENT_VERSION=$(grep '^appVersion:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
-  [ -z "$CURRENT_VERSION" ] && { echo "  ERROR: could not read appVersion"; exit 1; }
+  if [ -z "$CURRENT_VERSION" ]; then
+    JSON_ERROR="could not read appVersion from Chart.yaml"
+    echo "  ERROR: could not read appVersion"
+    exit 1
+  fi
   echo "  Current appVersion: $CURRENT_VERSION"
 fi
 
@@ -532,11 +616,19 @@ if [ -n "$TARGET_VERSION" ]; then
   echo "  Using explicit target: $TARGET_VERSION"
 else
   LATEST_VERSION=$(MAJOR_PIN="$MAJOR_PIN" fetch_latest_version)
-  [ -z "$LATEST_VERSION" ] && { echo "  ERROR: failed to fetch latest version"; exit 1; }
+  if [ -z "$LATEST_VERSION" ]; then
+    JSON_ERROR="failed to fetch latest version from $VERSION_SOURCE"
+    echo "  ERROR: failed to fetch latest version"
+    exit 1
+  fi
   echo "  Latest available:      $LATEST_VERSION"
 fi
 
 if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ] && { [ -z "$CURRENT_APP_VERSION" ] || [ "$CURRENT_APP_VERSION" = "$LATEST_VERSION" ]; }; then
+  JSON_STATUS="uptodate"
+  JSON_LATEST="$LATEST_VERSION"
+  JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+  JSON_ERROR=""
   echo ""
   echo "  Already up to date! Nothing to do."
   exit 0
@@ -572,14 +664,26 @@ if [ -n "$CONTAINER_IMAGE" ]; then
     echo "  Searching for the newest GA version with a published image..."
     AVAILABLE_VERSION=$(find_latest_available_version) || true
     if [ -z "$AVAILABLE_VERSION" ]; then
+      JSON_STATUS="no-image"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR="no GA version with a published image found"
       echo "  ERROR: no GA version with a published image found within search limit."
       exit 1
     fi
     if [ "$AVAILABLE_VERSION" = "$CURRENT_VERSION" ]; then
+      JSON_STATUS="no-image"
+      JSON_LATEST="$CURRENT_VERSION"
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
       echo "  Newest available matches current. Nothing to bump."
       exit 0
     fi
     echo "  Latest available (with published image): $AVAILABLE_VERSION"
+    # Image-fallback succeeded: record the original upstream value before
+    # rewriting LATEST_VERSION, so JSON output preserves the upstream feed
+    # value separately from the actual bump target.
+    JSON_UPSTREAM_LATEST="$LATEST_VERSION"
     if $DRY_RUN; then
       LATEST_VERSION="$AVAILABLE_VERSION"
     else
@@ -610,6 +714,10 @@ fi
 # Step 6: dry-run or apply
 echo ""
 if $DRY_RUN; then
+  JSON_STATUS="drift"
+  JSON_LATEST="$LATEST_VERSION"
+  JSON_UPSTREAM_LATEST="${JSON_UPSTREAM_LATEST:-$LATEST_VERSION}"
+  JSON_ERROR=""
   echo "[Step 6/N] DRY-RUN complete. No files were changed."
   echo "  To apply: $(basename "$0")${TARGET_VERSION:+ --version $TARGET_VERSION}"
   exit 0

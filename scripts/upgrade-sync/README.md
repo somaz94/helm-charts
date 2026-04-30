@@ -145,35 +145,51 @@ CI should run `--check` on every PR that touches `charts/*/upgrade.sh` or `scrip
 
 Each successful bump writes `backup/<timestamp>/` inside the chart's directory. These are **tracked in git** (rollback trail) — do not add them to `.gitignore`. Old backups are auto-pruned to `KEEP_BACKUPS` (default 5).
 
-## Dry-run output contract
+## Dry-run JSON contract
 
-`scripts/check-version/check-version.sh` parses `upgrade.sh --dry-run`
-output via fixed string matches. Treat the following lines emitted by
-templates under `templates/` as the **API surface** consumed by
-`check-version.sh` — when you change either side, change both in the same PR
-and re-run `make version-check` to verify.
+`scripts/check-version/check-version.sh` consumes the `--dry-run --json`
+output of each chart's `upgrade.sh`. This is the **API surface** between the
+templates and the orchestrator — when you change either side, change both in
+the same PR and re-run `make version-check` to verify.
 
-Strings consumed by `check-version.sh`:
+### Schema
 
-| Pattern | Emitted by | Consumed in `check-version.sh` | Drift status |
+`helm-charts.upgrade.dryrun.v1` — a single-line JSON object on stdout when
+`upgrade.sh` is invoked with `--dry-run --json`. All human progress output is
+redirected to stderr in this mode.
+
+| Field | Type | When | Meaning |
 |---|---|---|---|
-| `Already up to date` | `chart-appversion.sh` happy-path uptodate | `detect_drift` | `uptodate` |
-| `Latest available: <X.Y.Z>` | `chart-appversion.sh` upstream feed result | `parse_latest_from_dry_run`, `detect_drift` | `drift` |
-| `Using explicit target: <X.Y.Z>` | `chart-appversion.sh` when `--version` is given | `parse_latest_from_dry_run` | `drift` (forced) |
-| `Latest available (with published image): <X.Y.Z>` | `chart-appversion.sh` image-fallback path | `detect_drift` | `drift` (fallback target) |
-| `Newest available matches current. Nothing to bump.` | `chart-appversion.sh` image-fallback returns current | `detect_drift` | `no-image` |
-| `no GA version with a published image found` | `chart-appversion.sh` image-fallback exhausted | `detect_drift` | `no-image` |
-| `is HIGHER than <sibling> version` | `chart-appversion.sh` sibling constraint | `detect_drift` | `blocked` |
+| `schema` | string | always | Contract version. Must start with `helm-charts.upgrade.dryrun.`. Bump suffix on shape changes. |
+| `chart` | string | always | Basename of `CHART_DIR` (e.g. `ghost`). |
+| `status` | enum | always | One of `uptodate`, `drift`, `blocked`, `no-image`, `error`. |
+| `current` | string\|null | always | Current version read from `Chart.yaml` / `values.yaml`. |
+| `latest` | string\|null | `uptodate`/`drift`/`no-image` only | Version that would be applied. `null` for `blocked` (sibling forbids any bump) and exhausted `no-image`. For `drift` after image-fallback, this is the fallback target (older than `upstream_latest`). |
+| `upstream_latest` | string\|null | always | Raw upstream feed result before any image-fallback decision. For `drift` without fallback, equals `latest`. |
+| `major_bump` | bool | always | `true` only for `status=drift` when `current.major != latest.major`. |
+| `sibling` | object\|null | `blocked` only | `{"name": "<sibling-chart>", "version": "<sibling-current>"}` — the constraint that's holding the bump. |
+| `error` | string\|null | `error` and some `no-image` | Human-readable reason. `null` for happy-path states. |
 
-Two ways to break the contract silently:
+### Status transitions
 
-1. **Renaming/punctuation drift.** `check-version.sh` uses `grep -F` (fixed
-   string) for the simple cases and tolerant regexes for sibling/fallback.
-   Even a comma or capitalization change can cause a chart to be misclassified
-   as `error` or always `uptodate`.
-2. **New status added to the template without updating
-   `detect_drift`.** A new branch in `chart-appversion.sh` that emits
-   neither "Already up to date" nor "Latest available:" parses as `error`.
+| `status` | `latest` | `upstream_latest` | Notes |
+|---|---|---|---|
+| `uptodate` | = `current` | = `current` | Upstream feed itself is at the current version. |
+| `drift` | new version | = `latest` (or older if image-fallback hit) | Bump candidate. Check `major_bump` for review escalation. |
+| `blocked` | `null` | the version that was attempted | Sibling check rejected the target. `sibling.name` and `sibling.version` describe the constraint. |
+| `no-image` | `null` (exhausted) or `current` (matches-current) | upstream feed value | Newer GA exists upstream but the container image isn't published yet. Re-run later. |
+| `error` | `null` | maybe `null` | Fetch failed, `Chart.yaml`/`values.yaml` unreadable, etc. See `error`. |
 
-Future-proofing: a `--dry-run --json` mode is planned (will replace the
-text grep). Until then, treat this section as the contract.
+### Two ways to break the contract silently
+
+1. **New status added to a template without bumping `schema`.** Add a new
+   `status` enum value (e.g. `manual-review`) and update `detect_drift` in
+   `check-version.sh` to handle it; the schema string stays `v1` because the
+   shape is additive. If you change a field name or remove one, bump to
+   `v2` and update both sides.
+2. **Field renamed.** `check-version.sh` reads fields by exact name. Renaming
+   `upstream_latest` -> `feed_latest` without updating the parser silently
+   misclassifies every chart.
+
+Use `bash charts/<name>/upgrade.sh --dry-run --json | python3 -m json.tool`
+to eyeball the record before merging template changes.
