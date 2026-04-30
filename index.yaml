@@ -302,6 +302,61 @@ entries:
           description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
         - kind: changed
           description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."
+        - kind: changed
+          description: Bump appVersion from 5.117.0 to 5.130.6
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.130.6
+    created: "2026-04-30T02:38:42.467915985Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: 1fff66ef79282958077bec8915237b050b49979172c79d916275a1b36f7e1f8f
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.4/ghost-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
+        - kind: added
+          description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
+        - kind: changed
+          description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
+        - kind: added
+          description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
+        - kind: changed
+          description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
         - name: Source
@@ -1168,4 +1223,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-28T08:18:38.149454057Z"
+generated: "2026-04-30T02:38:43.838150325Z"
