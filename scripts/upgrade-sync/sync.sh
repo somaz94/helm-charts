@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Propagate the canonical upgrade.sh body from templates/ to each chart's
-# upgrade.sh. Mirrors the same `# upgrade-template: <name>` convention used
-# by ~/gitlab-project/kuberntes-infra/scripts/upgrade-sync/.
+# upgrade.sh. Inspired by (but not code-shared with) the
+# `# upgrade-template: <name>` convention in
+# `somaz94/kuberntes-infra/scripts/upgrade-sync/`. See README.md for the
+# differences between the two systems.
 #
 # Each chart's upgrade.sh declares its template on the second line:
 #   #!/bin/bash
@@ -15,9 +17,12 @@
 # per-chart Configuration block above BEGIN is left untouched.
 #
 # Usage:
-#   sync.sh --check   report charts that drift from their template (exit 1 on drift)
-#   sync.sh --apply   overwrite canonical-body regions to match templates
-#   sync.sh --list    list every chart and its template
+#   sync.sh --check         report charts that drift from their template (exit 1 on drift)
+#   sync.sh --apply [--force]
+#                           overwrite canonical-body regions to match templates;
+#                           refuses to run when the working tree is dirty
+#                           (use --force to override at your own risk)
+#   sync.sh --list          list every chart and its template
 
 set -euo pipefail
 
@@ -28,9 +33,48 @@ CHARTS_DIR="$REPO_ROOT/charts"
 BEGIN_MARKER="# === BEGIN CANONICAL BODY ==="
 END_MARKER="# === END CANONICAL BODY ==="
 
+# All temp files allocated by this run; cleaned up on EXIT (success or error).
+TMP_FILES=()
+cleanup_tmp() {
+  local f
+  for f in "${TMP_FILES[@]:-}"; do
+    [ -n "$f" ] && rm -f "$f"
+  done
+  return 0
+}
+trap cleanup_tmp EXIT
+
+mktemp_tracked() {
+  local f
+  f=$(mktemp)
+  TMP_FILES+=("$f")
+  printf '%s' "$f"
+}
+
+# Refuse `--apply` when the working tree contains uncommitted changes that
+# touch files this script will rewrite (charts/*/upgrade.sh). `--force`
+# overrides; intended only for `make sync-apply` invocations following a
+# clean checkout in CI.
+ensure_clean_tree() {
+  local force="$1"
+  [ "$force" = "1" ] && return 0
+  if ! command -v git >/dev/null 2>&1; then
+    return 0  # Not a git checkout, nothing to guard.
+  fi
+  local dirty
+  dirty=$(git -C "$REPO_ROOT" status --porcelain -- 'charts/*/upgrade.sh' 2>/dev/null || true)
+  if [ -n "$dirty" ]; then
+    echo "ERROR: working tree has uncommitted changes to charts/*/upgrade.sh:" >&2
+    printf '%s\n' "$dirty" >&2
+    echo "" >&2
+    echo "Commit or stash before --apply, or pass --force to override." >&2
+    exit 1
+  fi
+}
+
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--check|--apply|--list]
+Usage: $(basename "$0") [--check|--apply [--force]|--list]
 
 Propagates the canonical upgrade.sh body from
   scripts/upgrade-sync/templates/<NAME>.sh
@@ -39,7 +83,9 @@ to every chart whose upgrade.sh declares
 
 Commands:
   --check    Report drift; exits 1 when any chart body differs from template
-  --apply    Rewrite canonical-body region of each chart's upgrade.sh to match
+  --apply    Rewrite canonical-body region of each chart's upgrade.sh to match.
+             Refuses to run when the working tree is dirty.
+    --force  Skip the dirty-tree guard (CI / clean-checkout use only)
   --list     List detected charts, their template, and whether they are in sync
   -h, --help Show this help
 EOF
@@ -69,7 +115,7 @@ replace_body() {
   local script="$1"
   local body_file="$2"
   local tmp
-  tmp=$(mktemp)
+  tmp=$(mktemp_tracked)
   awk -v begin="$BEGIN_MARKER" -v end="$END_MARKER" -v bodyfile="$body_file" '
     BEGIN { inside=0; injected=0 }
     {
@@ -89,7 +135,7 @@ replace_body() {
       if (!inside) print
     }
     END { if (!injected) exit 2 }
-  ' "$script" > "$tmp" || { echo "  ERROR: BEGIN/END markers not found in $script"; rm -f "$tmp"; return 1; }
+  ' "$script" > "$tmp" || { echo "  ERROR: BEGIN/END markers not found in $script"; return 1; }
   mv "$tmp" "$script"
   chmod +x "$script"
 }
@@ -104,8 +150,8 @@ check_or_apply() {
     count=$((count + 1))
     local tmpl_file="$TEMPLATES_DIR/$tmpl.sh"
     local script_body_tmp tmpl_body_tmp
-    script_body_tmp=$(mktemp)
-    tmpl_body_tmp=$(mktemp)
+    script_body_tmp=$(mktemp_tracked)
+    tmpl_body_tmp=$(mktemp_tracked)
     extract_body < "$script" > "$script_body_tmp"
     extract_body < "$tmpl_file" > "$tmpl_body_tmp"
 
@@ -134,7 +180,6 @@ check_or_apply() {
         fi
         ;;
     esac
-    rm -f "$script_body_tmp" "$tmpl_body_tmp"
   done < <(find_charts_with_template)
 
   echo ""
@@ -150,10 +195,21 @@ check_or_apply() {
   return 0
 }
 
-case "${1:---list}" in
-  -h|--help) usage ;;
-  --list)    check_or_apply list ;;
-  --check)   check_or_apply check ;;
-  --apply)   check_or_apply apply ;;
-  *) echo "Unknown option: $1"; echo; usage ;;
-esac
+FORCE=0
+MODE="list"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage ;;
+    --list)    MODE="list"; shift ;;
+    --check)   MODE="check"; shift ;;
+    --apply)   MODE="apply"; shift ;;
+    --force)   FORCE=1; shift ;;
+    *) echo "Unknown option: $1"; echo; usage ;;
+  esac
+done
+
+if [ "$MODE" = "apply" ]; then
+  ensure_clean_tree "$FORCE"
+fi
+
+check_or_apply "$MODE"

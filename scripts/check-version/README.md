@@ -77,6 +77,37 @@ Environment variables:
 
 <br/>
 
+## Dry-run output contract (with `chart-appversion.sh`)
+
+`detect_drift` and `parse_latest_from_dry_run` in `check-version.sh` parse
+**fixed strings** emitted by `upgrade.sh --dry-run`. Treat the strings below
+as the API surface between `templates/chart-appversion.sh` and this script —
+when you change either side, change both in the same PR and re-run
+`make version-check` to verify.
+
+| Pattern in dry-run output | Emitted by | Mapped status |
+|---|---|---|
+| `Already up to date` | `chart-appversion.sh` happy-path uptodate | `uptodate` |
+| `Latest available: <X.Y.Z>` | `chart-appversion.sh` upstream feed result | `drift` |
+| `Using explicit target: <X.Y.Z>` | `chart-appversion.sh` `--version <V>` path | `drift` (forced) |
+| `Latest available (with published image): <X.Y.Z>` | `chart-appversion.sh` image-fallback hit | `drift` (fallback) |
+| `Newest available matches current. Nothing to bump.` | `chart-appversion.sh` image-fallback returns current | `no-image` |
+| `no GA version with a published image found` | `chart-appversion.sh` image-fallback exhausted | `no-image` |
+| `is HIGHER than <sibling> version` | `chart-appversion.sh` sibling constraint | `blocked` |
+
+Two ways to break the contract silently:
+
+1. **Renaming/punctuation drift.** Even capitalization or comma changes can
+   misclassify charts as `error` or `uptodate`.
+2. **New status added to the template without updating `detect_drift`.**
+   A new branch in `chart-appversion.sh` that emits neither
+   `Already up to date` nor `Latest available:` parses as `error`.
+
+A `--dry-run --json` mode is planned to eliminate the text grep. Until then,
+this section is the contract.
+
+<br/>
+
 ## Failure handling
 
 - **Working tree must be clean** before `--apply` runs. The script aborts otherwise.
