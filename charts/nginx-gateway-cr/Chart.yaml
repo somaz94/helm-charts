@@ -28,5 +28,7 @@ annotations:
       url: https://github.com/nginx/nginx-gateway-fabric
   artifacthub.io/changes: |
     - kind: changed
-      description: Add ci/install-values.yaml for kubeconform/chart-testing CI coverage; set https.tlsSecretName in CI values to satisfy the Gateway listener schema (kubeconform fix).
+      description: Add ci/install-values.yaml for kubeconform/chart-testing CI coverage; set https.tlsSecretName in CI values to satisfy the Gateway listener `certificateRefs.name` schema.
+    - kind: fixed
+      description: Omit empty `hostname` from the Gateway https listener instead of emitting `hostname: ""` (Gateway v1 schema requires `minLength: 1`; a missing hostname is a valid catch-all).
   artifacthub.io/prerelease: "false"
