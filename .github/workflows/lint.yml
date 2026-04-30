@@ -35,3 +35,45 @@ jobs:
           kubeconform_schema_locations: |
             default
             https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+
+  changelog-check:
+    name: CHANGELOG.md updated for version bumps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify CHANGELOG.md updates
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          base="origin/${BASE_REF}"
+          git fetch origin "${BASE_REF}" --depth=0 >/dev/null 2>&1 || git fetch origin "${BASE_REF}"
+          # Detect charts whose Chart.yaml `version:` line changed in this PR.
+          changed_charts=$(git diff "${base}...HEAD" -- 'charts/*/Chart.yaml' \
+            | awk '/^\+\+\+ b\/charts\// { sub(/^\+\+\+ b\/charts\//, ""); split($0, a, "/"); chart=a[1] } \
+                   /^[+-]version:/ && $0 !~ /^[+-]{3}/ { print chart }' \
+            | sort -u)
+          if [ -z "$changed_charts" ]; then
+            echo "No chart version bumps detected — nothing to verify."
+            exit 0
+          fi
+          echo "Charts with version bumps:"
+          printf '  - %s\n' $changed_charts
+          missing=()
+          for c in $changed_charts; do
+            if ! git diff --name-only "${base}...HEAD" | grep -qx "charts/${c}/CHANGELOG.md"; then
+              missing+=("$c")
+            fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::The following charts bumped Chart.yaml version but did not update CHANGELOG.md:"
+            printf '  - %s\n' "${missing[@]}"
+            echo ""
+            echo "Run 'make changelog CHART=<name>' for each chart and commit the updated CHANGELOG.md."
+            exit 1
+          fi
+          echo "All version-bumped charts have a corresponding CHANGELOG.md update."

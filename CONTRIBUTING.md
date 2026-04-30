@@ -92,7 +92,23 @@ make bump CHART=<chart-name> LEVEL=minor    # 0.1.0 -> 0.2.0
 make bump CHART=<chart-name> LEVEL=major    # 0.1.0 -> 1.0.0
 ```
 
-The target updates `Chart.yaml` and prints the next steps (annotation, README, commit, push).
+The target updates `Chart.yaml` and prints the next steps (annotation, changelog, README, commit, push).
+
+<br/>
+
+### Sync the chart's `CHANGELOG.md`
+
+After bumping `version` and adding the new `artifacthub.io/changes` entry to `Chart.yaml`, regenerate the chart's `CHANGELOG.md`:
+
+```bash
+make changelog CHART=<chart-name>            # prepend a new version section
+make changelog CHART=<chart-name> DRY_RUN=1  # preview without writing
+make changelog-all                           # sync every chart (backfill / sanity)
+```
+
+The script reads `Chart.yaml` `version` + `annotations.artifacthub.io/changes`, maps each entry's `kind` (`added` / `changed` / `deprecated` / `removed` / `fixed` / `security`) to a [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) section, and prepends a `## [vX.Y.Z] - YYYY-MM-DD` block to `charts/<chart-name>/CHANGELOG.md`. The annotation in `Chart.yaml` remains the source of truth — `CHANGELOG.md` is a regenerable mirror, never edit it directly. See [`scripts/changelog/README.md`](scripts/changelog/README.md) for details.
+
+A CI guard (`.github/workflows/lint.yml`, job `changelog-check`) fails any PR that bumps a chart's `version:` line without also updating that chart's `CHANGELOG.md`.
 
 <br/>
 
@@ -130,6 +146,22 @@ Supported `VERSION_SOURCE` values: `elastic-artifacts` (ES/Kibana), `docker-hub`
 
 <br/>
 
+### Automated upstream version checks (`check-version.sh`)
+
+A scheduled GitHub Actions workflow ([`.github/workflows/check-versions.yml`](.github/workflows/check-versions.yml)) sweeps every chart's `upgrade.sh` once a week, bumps any drifted chart, runs `make ci` to validate, and opens **one PR per chart**. Triggered locally via the same script:
+
+```bash
+./scripts/check-version/check-version.sh                   # drift report (default)
+./scripts/check-version/check-version.sh --apply           # bump + PR for every drifted chart
+./scripts/check-version/check-version.sh --apply --chart ghost --no-pr   # local-only test bump
+```
+
+Major-version bumps are **skipped by default** (the report flags them as `drift-major`); opt in with `--include-major` after reviewing breaking changes. Sibling-blocked charts (e.g. `kibana-eck` waiting on `elasticsearch-eck`) are reported as `blocked` and unblock automatically once the sibling PR lands.
+
+See [`scripts/check-version/README.md`](scripts/check-version/README.md) for the full status matrix, branch-protection notes, and `GITHUB_TOKEN` PR-trigger caveats.
+
+<br/>
+
 ### HA rolling-upgrade verification (stateful charts)
 
 Charts that claim zero-downtime rolling upgrade support (currently `elasticsearch-eck` and `kibana-eck`) **must re-run the HA verification** before a **major** chart bump (e.g. `0.x` → `1.0.0`). Procedure, load generator, and success criteria are documented in [`docs/ha-rolling-verification.md`](docs/ha-rolling-verification.md).
@@ -155,10 +187,11 @@ Required for:
      - kind: added | changed | deprecated | removed | fixed | security
        description: One-line summary of the change
    ```
-3. **Update the chart's `README.md`** if values, behavior, or install instructions change.
-4. **Verify locally** with the commands above.
-5. **Open a PR**. CI runs `helm lint`, `ct lint`, `helm template`, and `kubeconform` on changed charts.
-6. After review and merge, [chart-releaser-action](https://github.com/helm/chart-releaser-action) automatically packages the chart, creates a GitHub Release tagged `<chart-name>-<version>`, updates the gh-pages index, and pushes the OCI artifact to GHCR.
+3. **Run `make changelog CHART=<name>`** to update `charts/<chart>/CHANGELOG.md`. The new section is prepended automatically; commit the file alongside `Chart.yaml`. CI fails any version bump that does not include a `CHANGELOG.md` update.
+4. **Update the chart's `README.md`** if values, behavior, or install instructions change.
+5. **Verify locally** with the commands above.
+6. **Open a PR**. CI runs `helm lint`, `ct lint`, `helm template`, and `kubeconform` on changed charts.
+7. After review and merge, [chart-releaser-action](https://github.com/helm/chart-releaser-action) automatically packages the chart, creates a GitHub Release tagged `<chart-name>-<version>`, updates the gh-pages index, and pushes the OCI artifact to GHCR.
 
 <br/>
 

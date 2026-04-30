@@ -143,6 +143,17 @@ bump: ## Bump CHART version. Usage: make bump CHART=<name> LEVEL=patch|minor|maj
 	echo ""; \
 	echo "NEXT STEPS:"; \
 	echo "  1. Add an entry under 'artifacthub.io/changes' in $(CHARTS_DIR)/$(CHART)/Chart.yaml"; \
-	echo "  2. Update $(CHARTS_DIR)/$(CHART)/README.md if values/behavior changed"; \
-	echo "  3. git add $(CHARTS_DIR)/$(CHART) && git commit -m 'feat($(CHART)): describe change'"; \
-	echo "  4. git push (release.yml auto-triggers chart-releaser + GHCR push)"
+	echo "  2. Run 'make changelog CHART=$(CHART)' to update CHANGELOG.md"; \
+	echo "  3. Update $(CHARTS_DIR)/$(CHART)/README.md if values/behavior changed"; \
+	echo "  4. git add $(CHARTS_DIR)/$(CHART) && git commit -m 'feat($(CHART)): describe change'"; \
+	echo "  5. git push (release.yml auto-triggers chart-releaser + GHCR push)"
+
+.PHONY: changelog
+changelog: ## Sync CHART CHANGELOG.md from Chart.yaml. Usage: make changelog CHART=<name> [DRY_RUN=1]
+	@if [ -z "$(CHART)" ]; then echo "ERROR: CHART is required (e.g. make changelog CHART=nginx-gateway-cr)"; exit 1; fi
+	@if [ ! -d "$(CHARTS_DIR)/$(CHART)" ]; then echo "ERROR: chart not found: $(CHARTS_DIR)/$(CHART)"; exit 1; fi
+	@./scripts/changelog/sync-changelog.sh $(if $(DRY_RUN),--dry-run) $(CHARTS_DIR)/$(CHART)
+
+.PHONY: changelog-all
+changelog-all: ## Sync CHANGELOG.md for every chart (used for backfill / CI sanity).
+	@./scripts/changelog/sync-changelog.sh $(if $(DRY_RUN),--dry-run) --all
