@@ -13,9 +13,10 @@ or rewriting `Chart.yaml`/`values.yaml` — it just composes the existing pieces
 check-version.sh
   └─ for each chart:
        ./upgrade.sh --dry-run         (drift detection)
-       ./upgrade.sh --version <new>   (bump files)
+       ./upgrade.sh --version <new>   (bump files + append artifacthub.io/changes entry)
        make bump CHART=<name>         (chart SemVer +1)
        make ci CHART=<name>           (lint / template / validate)
+       make changelog CHART=<name>    (prepend new section to charts/<name>/CHANGELOG.md)
        git commit + branch + push + gh pr create
 ```
 
@@ -82,6 +83,30 @@ Environment variables:
 - **`make ci` failure** → the chart's working copy is reset (`git checkout -- charts/<name>`), the per-chart branch is deleted, and the script moves on to the next chart with an `error` status.
 - **`gh pr create` failure** → the branch stays pushed so a human can open the PR manually; only the PR step is marked `error`.
 - Errors in any chart cause the script to exit with code `2` so CI surfaces the failure.
+
+<br/>
+
+## CHANGELOG.md generation
+
+Each automated PR includes an updated `charts/<name>/CHANGELOG.md` so the auto-bump satisfies the `changelog-check` job in [`.github/workflows/lint.yml`](../../.github/workflows/lint.yml) without any human follow-up. Two pieces collaborate:
+
+1. **`upgrade.sh` appends a new entry** to `Chart.yaml`'s `annotations.artifacthub.io/changes`:
+   ```yaml
+   - kind: changed
+     description: Bump appVersion from <OLD> to <NEW>
+   ```
+   The append is idempotent (skipped if the same description text is already present), so a second `--apply` run for the same drift does not duplicate.
+
+2. **`make changelog CHART=<name>` renders the mirror.** [`scripts/changelog/sync-changelog.sh`](../changelog/) reads `Chart.yaml`'s `version` + `annotations.artifacthub.io/changes` and prepends a `## [vX.Y.Z] - YYYY-MM-DD` section to `charts/<name>/CHANGELOG.md`. The sync step runs after `make ci` and is itself idempotent — re-runs with the same chart version warn and skip.
+
+If a chart maintainer wants a more descriptive entry than the generic `Bump appVersion ...`, they can edit `Chart.yaml`'s annotation on the auto-PR branch and re-run `make changelog CHART=<name>` locally; the CHANGELOG.md will be regenerated against the edited annotation (the existing same-version section is replaced because `make changelog` skips on idempotency, so the cleaner path is to delete the auto-generated section first or amend it directly).
+
+The auto-PR's checklist marks both rows checked so reviewers can see at a glance that no human touch-up is required:
+
+```
+- [x] Added an entry under `artifacthub.io/changes` in `Chart.yaml` (handled by upgrade.sh)
+- [x] Updated `charts/<chart>/CHANGELOG.md` (handled by `make changelog`)
+```
 
 <br/>
 

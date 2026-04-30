@@ -89,6 +89,12 @@ The `changelog-check` job in [`.github/workflows/lint.yml`](../../.github/workfl
 
 <br/>
 
+## Integration with `check-version` (auto-bump PRs)
+
+[`scripts/check-version/check-version.sh`](../check-version/) runs `make changelog CHART=<name>` automatically after `make ci` so the auto-PRs it opens already include a generated `CHANGELOG.md` and pass the `changelog-check` guard without any human follow-up. See [`scripts/check-version/README.md`](../check-version/README.md#changelogmd-generation) for the end-to-end flow.
+
+<br/>
+
 ## Requirements
 
 - `yq` v4 (mikefarah/yq, Go binary). Install with `brew install yq`. The script aborts with a clear message if `yq` is missing or not v4.
