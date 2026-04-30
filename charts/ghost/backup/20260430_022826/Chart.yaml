@@ -2,8 +2,8 @@ apiVersion: v2
 name: ghost
 description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
 type: application
-version: 0.1.4
-appVersion: "5.130.6"
+version: 0.1.3
+appVersion: "5.117.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
   - ghost
@@ -45,5 +45,3 @@ annotations:
       description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
     - kind: changed
       description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."
-    - kind: changed
-      description: Bump appVersion from 5.117.0 to 5.130.6
