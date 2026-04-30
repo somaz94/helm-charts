@@ -189,7 +189,12 @@ update_yaml_value() {
   mv "$tmp" "$file"
 }
 
-# Append an entry to the Chart.yaml artifacthub.io/changes literal block.
+# Reset the Chart.yaml artifacthub.io/changes literal block to a single
+# `Bump appVersion ...` entry, replacing whatever was there. RESET semantics:
+# the annotation only describes the changes for the release currently being
+# cut, never an ever-growing accumulation of past entries. Manual entries
+# added by humans during PR review are preserved across the same release
+# cycle but are wiped out at the next bump (when this function runs).
 update_artifacthub_changes() {
   local file="$1"
   local from="$2"
@@ -197,17 +202,13 @@ update_artifacthub_changes() {
   [ "$UPDATE_ARTIFACTHUB_CHANGES" = "true" ] || return 0
   [ -f "$file" ] || return 0
   local desc="Bump appVersion from ${from} to ${to}"
-  if grep -qF "$desc" "$file"; then
-    echo "  artifacthub.io/changes entry already present. Skipped."
-    return 0
-  fi
   python3 - "$file" "$desc" <<'PYEOF'
 import sys, re, pathlib
 path = pathlib.Path(sys.argv[1])
 desc = sys.argv[2]
 text = path.read_text()
 pat = re.compile(
-    r'(^(?P<indent>\s+)artifacthub\.io/changes:\s*\|\s*\n)'
+    r'(?P<head>^(?P<indent>\s+)artifacthub\.io/changes:\s*\|\s*\n)'
     r'(?P<body>(?:(?P=indent)\s+.*\n?)*)',
     re.MULTILINE,
 )
@@ -216,14 +217,14 @@ if not m:
     sys.stderr.write("WARN: artifacthub.io/changes block not found; skipping.\n")
     sys.exit(0)
 indent = m.group('indent')
-body = m.group('body')
 entry_indent = indent + '  '
-new_entry = f"{entry_indent}- kind: changed\n{entry_indent}  description: {desc}\n"
-if body and not body.endswith('\n'):
-    body += '\n'
-new_text = text[:m.end('body')] + new_entry + text[m.end('body'):]
+new_body = f"{entry_indent}- kind: changed\n{entry_indent}  description: {desc}\n"
+if m.group('body') == new_body:
+    print("  artifacthub.io/changes already at the target reset state. Skipped.")
+    sys.exit(0)
+new_text = text[:m.start('body')] + new_body + text[m.end('body'):]
 path.write_text(new_text)
-print("  Appended entry to artifacthub.io/changes.")
+print("  Reset artifacthub.io/changes to single 'Bump appVersion ...' entry.")
 PYEOF
 }
 
