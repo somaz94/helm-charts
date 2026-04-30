@@ -2,7 +2,7 @@ apiVersion: v2
 name: ghost
 description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
 type: application
-version: 0.1.4
+version: 0.1.5
 appVersion: "5.130.6"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -32,4 +32,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: Bump appVersion from 5.117.0 to 5.130.6
+      description: Sync upgrade.sh from canonical chart-appversion template (RESET annotation model + JSON dry-run schema v1).

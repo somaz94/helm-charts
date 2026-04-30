@@ -57,6 +57,18 @@ helm install <release> oci://ghcr.io/somaz94/charts/<chart-name> --version <vers
 | Document | Applies to |
 |---|---|
 | [HA Rolling Upgrade Verification](docs/ha-rolling-verification.md) | `elasticsearch-eck`, `kibana-eck` — evidence that rolling upgrades are zero-downtime in HA topology (chart 0.1.1 / Stack 9.3.3) |
+| [Maintainer scripts overview](scripts/README.md) | `scripts/upgrade-sync/`, `scripts/check-version/`, `scripts/changelog/` — how the three sub-systems collaborate (template propagation → drift detection → CHANGELOG render) and the contracts between them |
+
+<br/>
+
+## Prerequisites
+
+Maintainers and local builders need:
+
+- Helm 3.16+
+- bash ≥ 4 (Homebrew bash on macOS)
+- python3 (used by `scripts/`)
+- Optional: `chart-testing`, `kubeconform`, `gh` for full `make ci` and auto-bump PRs
 
 <br/>
 

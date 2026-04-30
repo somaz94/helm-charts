@@ -1,0 +1,44 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — credentials below are dummy and
+# must not be reused. Toggles every optional template path so each renders.
+serviceAccount:
+  create: true
+podDisruptionBudget:
+  native: true
+  minAvailable: 1
+httproute:
+  enabled: true
+  parentRefs:
+    - name: ngf
+      namespace: nginx-gateway
+  hostnames:
+    - es.example.com
+ingress:
+  enabled: true
+  className: nginx
+  host: es.example.com
+backendTLSPolicy:
+  enabled: true
+  caCertificateRef:
+    kind: Secret
+    name: es-http-certs-public
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nginx-gateway
+      ports:
+        - protocol: TCP
+          port: 9200
+serviceMonitor:
+  enabled: true
+referenceGrants:
+  - name: es-grant
+    from:
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+        namespace: nginx-gateway
+    to:
+      - kind: Service

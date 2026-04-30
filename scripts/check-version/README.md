@@ -77,34 +77,32 @@ Environment variables:
 
 <br/>
 
-## Dry-run output contract (with `chart-appversion.sh`)
+## Dry-run JSON contract
 
-`detect_drift` and `parse_latest_from_dry_run` in `check-version.sh` parse
-**fixed strings** emitted by `upgrade.sh --dry-run`. Treat the strings below
-as the API surface between `templates/chart-appversion.sh` and this script —
-when you change either side, change both in the same PR and re-run
-`make version-check` to verify.
+`detect_drift` consumes the `--dry-run --json` output of each chart's
+`upgrade.sh` (schema `helm-charts.upgrade.dryrun.v1`). The full schema lives
+in [`../upgrade-sync/README.md`](../upgrade-sync/README.md#dry-run-json-contract);
+this section maps the JSON `status` values onto the summary classifications
+this script emits.
 
-| Pattern in dry-run output | Emitted by | Mapped status |
+| JSON `status` | Summary status | Notes |
 |---|---|---|
-| `Already up to date` | `chart-appversion.sh` happy-path uptodate | `uptodate` |
-| `Latest available: <X.Y.Z>` | `chart-appversion.sh` upstream feed result | `drift` |
-| `Using explicit target: <X.Y.Z>` | `chart-appversion.sh` `--version <V>` path | `drift` (forced) |
-| `Latest available (with published image): <X.Y.Z>` | `chart-appversion.sh` image-fallback hit | `drift` (fallback) |
-| `Newest available matches current. Nothing to bump.` | `chart-appversion.sh` image-fallback returns current | `no-image` |
-| `no GA version with a published image found` | `chart-appversion.sh` image-fallback exhausted | `no-image` |
-| `is HIGHER than <sibling> version` | `chart-appversion.sh` sibling constraint | `blocked` |
+| `uptodate` | `uptodate` | Upstream feed itself matches `current`. |
+| `drift` (with `major_bump=false`) | `drift` | `--apply` will bump on this. |
+| `drift` (with `major_bump=true`) | `drift-major` | Skipped by default; `--include-major` opts in. |
+| `blocked` | `blocked` | `sibling.name` is shown in the detail column. |
+| `no-image` | `no-image` | Newer GA exists upstream but its image isn't published; wait and re-run. |
+| `error` | `error` | Fetch failed, `Chart.yaml`/`values.yaml` unreadable, schema mismatch on the JSON record, etc. |
 
-Two ways to break the contract silently:
+`detect_drift` reads the JSON using `IFS=$'\x01'` (non-whitespace) so empty
+fields like `latest=null` (in `blocked`) or `error=null` (happy-path) are
+preserved through the bash split.
 
-1. **Renaming/punctuation drift.** Even capitalization or comma changes can
-   misclassify charts as `error` or `uptodate`.
-2. **New status added to the template without updating `detect_drift`.**
-   A new branch in `chart-appversion.sh` that emits neither
-   `Already up to date` nor `Latest available:` parses as `error`.
+Inspect a chart's JSON directly:
 
-A `--dry-run --json` mode is planned to eliminate the text grep. Until then,
-this section is the contract.
+```bash
+bash charts/ghost/upgrade.sh --dry-run --json | python3 -m json.tool
+```
 
 <br/>
 

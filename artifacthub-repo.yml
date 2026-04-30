@@ -1,6 +1,9 @@
 # ArtifactHub repository metadata.
 # After registering this repo at https://artifacthub.io/control-panel/repositories,
 # paste the assigned repositoryID below to claim ownership.
+# (Repo-level description and display name are configured in the ArtifactHub
+# control panel, not in this file — its schema only accepts repositoryID,
+# owners, and ignoreFalseInput.)
 repositoryID: "ff5c8ef8-c94e-43de-aff0-3ecf2d21d5b8"
 owners:
   - name: somaz94

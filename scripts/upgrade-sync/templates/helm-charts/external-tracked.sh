@@ -64,6 +64,10 @@ Commands:
   (default)           Check latest version and bump
   --version <VER>     Bump to a specific version (skips upstream query)
   --dry-run           Preview changes only (no files will be modified)
+  --json              With --dry-run, emit a single-line JSON record on stdout
+                      (schema: helm-charts.upgrade.dryrun.v1). Human progress
+                      output is redirected to stderr. Consumed by
+                      scripts/check-version/check-version.sh.
   --rollback          Restore files from a previous backup
   --list-backups      List available backups
   --cleanup-backups   Keep only the last $KEEP_BACKUPS backups, remove older ones
@@ -72,6 +76,7 @@ Commands:
 Examples:
   $(basename "$0")                                # Bump to latest GA
   $(basename "$0") --dry-run                      # Preview without changes
+  $(basename "$0") --dry-run --json               # Machine-readable preview
   $(basename "$0") --version 26.6.1               # Pin to a specific version
   $(basename "$0") --rollback                     # Restore files from backup
 
@@ -342,6 +347,7 @@ PYEOF
 # Argument parsing
 # -----------------------------------------------
 DRY_RUN=false
+JSON_OUTPUT=false
 TARGET_VERSION=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -350,6 +356,7 @@ while [[ $# -gt 0 ]]; do
     --rollback)         do_rollback; exit 0 ;;
     --cleanup-backups)  cleanup_backups; exit 0 ;;
     --dry-run)          DRY_RUN=true; shift ;;
+    --json)             JSON_OUTPUT=true; shift ;;
     --version)
       TARGET_VERSION="${2:-}"
       [ -z "$TARGET_VERSION" ] && { echo "ERROR: --version requires a version number"; exit 1; }
@@ -357,6 +364,68 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown option: $1"; echo ""; usage ;;
   esac
 done
+
+if $JSON_OUTPUT && ! $DRY_RUN; then
+  echo "ERROR: --json requires --dry-run" >&2
+  exit 1
+fi
+
+# JSON state — populated at each natural exit point so the EXIT trap can emit
+# a structured one-line record on stdout. Schema: helm-charts.upgrade.dryrun.v1.
+# This template never produces "blocked" (no sibling check) so the sibling
+# fields stay empty.
+JSON_STATUS="error"
+JSON_LATEST=""
+JSON_UPSTREAM_LATEST=""
+JSON_SIBLING_NAME=""
+JSON_SIBLING_VERSION=""
+JSON_ERROR="unexpected exit before JSON status was set"
+
+emit_json() {
+  $JSON_OUTPUT || return 0
+  python3 - \
+    "$(basename "$CHART_DIR")" \
+    "$JSON_STATUS" \
+    "${CURRENT_VERSION:-}" \
+    "$JSON_LATEST" \
+    "$JSON_UPSTREAM_LATEST" \
+    "$JSON_SIBLING_NAME" \
+    "$JSON_SIBLING_VERSION" \
+    "$JSON_ERROR" \
+    <<'PYEOF' >&3 || true
+import json, sys
+chart, status, current, latest, upstream, sib_name, sib_ver, err = sys.argv[1:9]
+def _major(v):
+    if not v or "." not in v:
+        return None
+    return v.split(".", 1)[0]
+major_bump = bool(
+    status == "drift" and current and latest
+    and _major(current) != _major(latest)
+)
+sibling = None
+if status == "blocked" and sib_name:
+    sibling = {"name": sib_name, "version": sib_ver or None}
+doc = {
+    "schema": "helm-charts.upgrade.dryrun.v1",
+    "chart": chart,
+    "status": status,
+    "current": current or None,
+    "latest": latest or None,
+    "upstream_latest": upstream or None,
+    "major_bump": major_bump,
+    "sibling": sibling,
+    "error": err or None,
+}
+print(json.dumps(doc))
+PYEOF
+}
+
+if $JSON_OUTPUT; then
+  exec 3>&1
+  exec 1>&2
+  trap emit_json EXIT
+fi
 
 # -----------------------------------------------
 # Main
@@ -371,7 +440,11 @@ echo "================================================"
 echo ""
 echo "[Step 1/5] Reading current version..."
 CURRENT_VERSION=$(grep '^version:' "$CHART_DIR/values.yaml" | awk '{print $2}' | tr -d '"')
-[ -z "$CURRENT_VERSION" ] && { echo "  ERROR: could not read 'version' from values.yaml"; exit 1; }
+if [ -z "$CURRENT_VERSION" ]; then
+  JSON_ERROR="could not read 'version' from values.yaml"
+  echo "  ERROR: could not read 'version' from values.yaml"
+  exit 1
+fi
 CURRENT_APP_VERSION=$(grep '^appVersion:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
 echo "  values.yaml version:    $CURRENT_VERSION"
 echo "  Chart.yaml appVersion:  $CURRENT_APP_VERSION"
@@ -384,11 +457,19 @@ if [ -n "$TARGET_VERSION" ]; then
   echo "  Using explicit target: $TARGET_VERSION"
 else
   LATEST_VERSION=$(fetch_latest_release)
-  [ -z "$LATEST_VERSION" ] && { echo "  ERROR: failed to fetch latest release"; exit 1; }
+  if [ -z "$LATEST_VERSION" ]; then
+    JSON_ERROR="failed to fetch latest release from $GITHUB_REPO"
+    echo "  ERROR: failed to fetch latest release"
+    exit 1
+  fi
   echo "  Latest available:      $LATEST_VERSION"
 fi
 
 if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ] && [ "$CURRENT_APP_VERSION" = "$LATEST_VERSION" ]; then
+  JSON_STATUS="uptodate"
+  JSON_LATEST="$LATEST_VERSION"
+  JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+  JSON_ERROR=""
   echo ""
   echo "  Already up to date! Nothing to do."
   exit 0
@@ -401,6 +482,13 @@ echo "  Checking: ${CONTAINER_IMAGE}:${LATEST_VERSION}"
 if verify_image_exists "$LATEST_VERSION"; then
   echo "  Image verified OK."
 else
+  # Treat "image not yet published in registry" as no-image (same semantic as
+  # chart-appversion's image-fallback exhausted state). check-version.sh
+  # consumers see status=no-image and wait for upstream to publish.
+  JSON_STATUS="no-image"
+  JSON_LATEST=""
+  JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+  JSON_ERROR="${CONTAINER_IMAGE}:${LATEST_VERSION} not found in registry"
   echo "  ERROR: ${CONTAINER_IMAGE}:${LATEST_VERSION} not found in registry."
   echo "  Refusing to bump. Retry once the image is published or pick another version."
   exit 1
@@ -422,6 +510,10 @@ fi
 
 # Step 4: dry-run or apply
 if $DRY_RUN; then
+  JSON_STATUS="drift"
+  JSON_LATEST="$LATEST_VERSION"
+  JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+  JSON_ERROR=""
   echo ""
   echo "[Step 4/5] DRY-RUN. Would refresh:"
   for entry in "${CRD_FILES[@]}"; do

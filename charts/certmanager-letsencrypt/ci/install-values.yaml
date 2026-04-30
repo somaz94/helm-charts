@@ -1,0 +1,59 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — credentials below are dummy and
+# must not be reused.
+secrets:
+  - name: cloudflare-api-token
+    namespace: default
+    stringData:
+      api-token: ci-test-token
+clusterIssuers:
+  - name: letsencrypt-staging
+    email: dummy-ci@example.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef: letsencrypt-staging-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+issuers:
+  - name: letsencrypt-staging-ns
+    namespace: default
+    email: dummy-ci@example.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef: letsencrypt-staging-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+certificates:
+  - name: ci-cert
+    namespace: default
+    secretName: ci-cert-tls
+    issuerRef:
+      name: letsencrypt-staging-ns
+      kind: Issuer
+    dnsNames:
+      - ci.example.com
+ingresses:
+  - name: ci-ingress
+    namespace: default
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/issuer: letsencrypt-staging-ns
+    rules:
+      - host: ci.example.com
+        http:
+          paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: ci-svc
+                  port:
+                    number: 80
+    tls:
+      - secretName: ci-cert-tls
+        hosts:
+          - ci.example.com
