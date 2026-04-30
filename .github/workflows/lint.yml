@@ -31,17 +31,19 @@ jobs:
           base_ref: ${{ github.event.repository.default_branch }}
           helm_version: v3.16.4
           ct_check_version_increment: 'true'
-          # The action's standalone helm template step does not honor
-          # charts/<chart>/ci/*.yaml — it would render with empty values and
-          # trip charts that fail-fast on missing required input (ghost,
-          # unity-mcp-server). ct lint already runs helm install --dry-run
-          # against ci/*.yaml as part of chart-testing, so this redundant
-          # template step is disabled.
+          # The action's standalone helm template + kubeconform steps render
+          # each changed chart with empty values (they do not honor
+          # charts/<chart>/ci/*.yaml in changed-charts mode), so charts that
+          # fail-fast on missing required input (ghost, unity-mcp-server) trip
+          # them. ct lint (run by the action's "Helm lint" step in
+          # changed-charts mode) already does helm install --dry-run against
+          # each ci/*.yaml via chart-testing's standard convention, so the
+          # rendering check is preserved. Schema validation (kubeconform with
+          # ci values) is covered by `make ci` — invoked locally by
+          # contributors and inside .github/workflows/check-versions.yml
+          # before each auto-bump PR is opened.
           run_template: 'false'
-          run_kubeconform: 'true'
-          kubeconform_schema_locations: |
-            default
-            https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+          run_kubeconform: 'false'
 
   changelog-check:
     name: CHANGELOG.md updated for version bumps
