@@ -22,7 +22,10 @@
 #                           overwrite canonical-body regions to match templates;
 #                           refuses to run when the working tree is dirty
 #                           (use --force to override at your own risk)
-#   sync.sh --list          list every chart and its template
+#   sync.sh --list          list every managed chart and its template
+#   sync.sh --status        list every chart, including charts that are
+#                           unmanaged (no header) or whose declared template
+#                           does not exist on disk
 
 set -euo pipefail
 
@@ -74,7 +77,7 @@ ensure_clean_tree() {
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--check|--apply [--force]|--list]
+Usage: $(basename "$0") [--check|--apply [--force]|--list|--status]
 
 Propagates the canonical upgrade.sh body from
   scripts/upgrade-sync/templates/<NAME>.sh
@@ -86,20 +89,64 @@ Commands:
   --apply    Rewrite canonical-body region of each chart's upgrade.sh to match.
              Refuses to run when the working tree is dirty.
     --force  Skip the dirty-tree guard (CI / clean-checkout use only)
-  --list     List detected charts, their template, and whether they are in sync
+  --list     List managed charts (header present + template file exists)
+  --status   List every chart with one of the following classifications:
+               managed              header present, template file exists
+               unmanaged-no-header  upgrade.sh exists, no header (intentional opt-out)
+               missing-template     header references a template that does not
+                                    exist on disk -> warning, exit 1 from --check
   -h, --help Show this help
 EOF
   exit 0
 }
 
-find_charts_with_template() {
+# Read the "# upgrade-template: <name>" header. Stdout: template name, or
+# empty string when no header is present.
+read_template_header() {
+  grep -m1 '^# upgrade-template:' "$1" 2>/dev/null \
+    | awk -F': ' '{print $2}' \
+    | awk '{print $1}'
+}
+
+# Yield every charts/*/upgrade.sh as one tab-separated record:
+#   <script-path>\t<status>\t<tmpl-or-empty>
+# where <status> is one of: managed, unmanaged-no-header, missing-template.
+classify_all_charts() {
   while IFS= read -r script; do
     local tmpl
-    tmpl=$(grep -m1 '^# upgrade-template:' "$script" | awk -F': ' '{print $2}' | awk '{print $1}')
-    if [ -n "$tmpl" ] && [ -f "$TEMPLATES_DIR/$tmpl.sh" ]; then
-      printf '%s\t%s\n' "$script" "$tmpl"
+    tmpl=$(read_template_header "$script")
+    if [ -z "$tmpl" ]; then
+      printf '%s\t%s\t\n' "$script" "unmanaged-no-header"
+    elif [ -f "$TEMPLATES_DIR/$tmpl.sh" ]; then
+      printf '%s\t%s\t%s\n' "$script" "managed" "$tmpl"
+    else
+      printf '%s\t%s\t%s\n' "$script" "missing-template" "$tmpl"
     fi
   done < <(find "$CHARTS_DIR" -mindepth 2 -maxdepth 2 -name 'upgrade.sh' | sort)
+}
+
+# Yield only managed charts (legacy interface used by check_or_apply):
+#   <script-path>\t<tmpl>
+find_charts_with_template() {
+  classify_all_charts | awk -F'\t' '$2 == "managed" { printf "%s\t%s\n", $1, $3 }'
+}
+
+# Print stderr warnings for charts whose declared template does not exist.
+# Returns the count of such charts (via the global MISSING_TEMPLATE_COUNT).
+MISSING_TEMPLATE_COUNT=0
+warn_missing_templates() {
+  MISSING_TEMPLATE_COUNT=0
+  while IFS=$'\t' read -r script status tmpl; do
+    if [ "$status" = "missing-template" ]; then
+      MISSING_TEMPLATE_COUNT=$((MISSING_TEMPLATE_COUNT + 1))
+      echo "WARNING: ${script#$REPO_ROOT/} declares template '$tmpl' but $TEMPLATES_DIR/$tmpl.sh does not exist." >&2
+    fi
+  done < <(classify_all_charts)
+  if [ "$MISSING_TEMPLATE_COUNT" -gt 0 ]; then
+    echo "" >&2
+    echo "These charts are silently skipped by --check/--apply. Either add the missing template, remove the header, or fix the typo." >&2
+    echo "" >&2
+  fi
 }
 
 extract_body() {
@@ -195,6 +242,45 @@ check_or_apply() {
   return 0
 }
 
+# Wide listing covering every charts/*/upgrade.sh, including unmanaged ones.
+# Used by --status. Body sameness is computed only for managed charts.
+print_status() {
+  local managed=0 unmanaged=0 missing=0 drift=0
+  printf "  %-50s %-20s %s\n" "CHART" "STATUS" "TEMPLATE / NOTE"
+  while IFS=$'\t' read -r script st tmpl; do
+    case "$st" in
+      managed)
+        managed=$((managed + 1))
+        local tmpl_file="$TEMPLATES_DIR/$tmpl.sh" body_tmp tmpl_tmp
+        body_tmp=$(mktemp_tracked)
+        tmpl_tmp=$(mktemp_tracked)
+        extract_body < "$script" > "$body_tmp"
+        extract_body < "$tmpl_file" > "$tmpl_tmp"
+        local sub="in sync"
+        if ! diff -q "$body_tmp" "$tmpl_tmp" >/dev/null 2>&1; then
+          sub="DRIFT"
+          drift=$((drift + 1))
+        fi
+        printf "  %-50s %-20s template=%s (%s)\n" "${script#$REPO_ROOT/}" "managed" "$tmpl" "$sub"
+        ;;
+      missing-template)
+        missing=$((missing + 1))
+        printf "  %-50s %-20s template=%s NOT FOUND\n" "${script#$REPO_ROOT/}" "missing-template" "$tmpl"
+        ;;
+      unmanaged-no-header)
+        unmanaged=$((unmanaged + 1))
+        printf "  %-50s %-20s %s\n" "${script#$REPO_ROOT/}" "unmanaged-no-header" "(no '# upgrade-template:' header)"
+        ;;
+    esac
+  done < <(classify_all_charts)
+  echo ""
+  echo "Summary: $managed managed ($drift drift), $unmanaged unmanaged-no-header, $missing missing-template."
+  if [ "$missing" -gt 0 ]; then
+    return 1
+  fi
+  return 0
+}
+
 FORCE=0
 MODE="list"
 while [ $# -gt 0 ]; do
@@ -203,6 +289,7 @@ while [ $# -gt 0 ]; do
     --list)    MODE="list"; shift ;;
     --check)   MODE="check"; shift ;;
     --apply)   MODE="apply"; shift ;;
+    --status)  MODE="status"; shift ;;
     --force)   FORCE=1; shift ;;
     *) echo "Unknown option: $1"; echo; usage ;;
   esac
@@ -212,4 +299,25 @@ if [ "$MODE" = "apply" ]; then
   ensure_clean_tree "$FORCE"
 fi
 
-check_or_apply "$MODE"
+# For --status, the dedicated wide listing both classifies and warns about
+# missing templates inline. For other modes, surface the warnings before the
+# regular run so silent skips become visible.
+if [ "$MODE" != "status" ]; then
+  warn_missing_templates
+fi
+
+case "$MODE" in
+  status)
+    print_status
+    ;;
+  *)
+    rc=0
+    check_or_apply "$MODE" || rc=$?
+    # Missing-template warnings escalate --check to a non-zero exit so CI
+    # surfaces the silent-skip case. --list / --apply only warn.
+    if [ "$MODE" = "check" ] && [ "$MISSING_TEMPLATE_COUNT" -gt 0 ] && [ "$rc" -eq 0 ]; then
+      rc=1
+    fi
+    exit "$rc"
+    ;;
+esac

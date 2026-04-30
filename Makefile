@@ -157,3 +157,31 @@ changelog: ## Sync CHART CHANGELOG.md from Chart.yaml. Usage: make changelog CHA
 .PHONY: changelog-all
 changelog-all: ## Sync CHANGELOG.md for every chart (used for backfill / CI sanity).
 	@./scripts/changelog/sync-changelog.sh $(if $(DRY_RUN),--dry-run) --all
+
+##@ Upgrade-sync (chart upgrade.sh body propagation)
+
+.PHONY: sync-check
+sync-check: ## Verify each chart's upgrade.sh body matches its declared template (CI guard).
+	@./scripts/upgrade-sync/sync.sh --check
+
+.PHONY: sync-apply
+sync-apply: ## Rewrite each chart's upgrade.sh body from its template. Refuses on dirty tree.
+	@./scripts/upgrade-sync/sync.sh --apply
+
+.PHONY: sync-list
+sync-list: ## List managed charts and their templates.
+	@./scripts/upgrade-sync/sync.sh --list
+
+.PHONY: sync-status
+sync-status: ## List every chart with classification (managed / unmanaged / missing-template).
+	@./scripts/upgrade-sync/sync.sh --status
+
+##@ Version drift (upstream tracking + auto-bump)
+
+.PHONY: version-check
+version-check: ## Drift-only report (read-only, no file or branch changes).
+	@./scripts/check-version/check-version.sh --check
+
+.PHONY: version-apply
+version-apply: ## For each drifted chart: bump + ci + branch + commit + push + open PR.
+	@./scripts/check-version/check-version.sh --apply
