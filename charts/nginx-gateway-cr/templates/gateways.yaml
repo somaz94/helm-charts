@@ -40,7 +40,9 @@ spec:
     - name: https
       protocol: HTTPS
       port: {{ $https.port }}
-      hostname: {{ $https.hostname | quote }}
+      {{- with $https.hostname }}
+      hostname: {{ . | quote }}
+      {{- end }}
       tls:
         mode: Terminate
         certificateRefs:

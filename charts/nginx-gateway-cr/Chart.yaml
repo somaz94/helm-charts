@@ -2,7 +2,7 @@ apiVersion: v2
 name: nginx-gateway-cr
 description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
 type: application
-version: 0.3.0
+version: 0.3.1
 appVersion: "0.1.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -27,8 +27,8 @@ annotations:
     - name: NGINX Gateway Fabric
       url: https://github.com/nginx/nginx-gateway-fabric
   artifacthub.io/changes: |
-    - kind: added
-      description: PodMonitor templates (controller + dataplane) — recommended for NGF 2.x where the controller exposes /metrics on the Pod, not the Service
-    - kind: added
-      description: podMonitor.controller / podMonitor.dataplane values blocks (mirror serviceMonitor.* shape)
+    - kind: changed
+      description: Add ci/install-values.yaml for kubeconform/chart-testing CI coverage; set https.tlsSecretName in CI values to satisfy the Gateway listener `certificateRefs.name` schema.
+    - kind: fixed
+      description: Omit empty `hostname` from the Gateway https listener instead of emitting `hostname: ""` (Gateway v1 schema requires `minLength: 1`; a missing hostname is a valid catch-all).
   artifacthub.io/prerelease: "false"

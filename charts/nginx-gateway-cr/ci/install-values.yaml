@@ -10,6 +10,7 @@ gateways:
     https:
       enabled: true
       port: 443
+      tlsSecretName: ngf-tls
 referenceGrants:
   - name: ngf-grant
     namespace: default
