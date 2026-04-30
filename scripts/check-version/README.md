@@ -132,6 +132,24 @@ cd charts/<name> && ./upgrade.sh --rollback
 The workflow installs `helm`, `chart-testing`, and `kubeconform`, then invokes
 this script with `--apply --output github`.
 
+### Required repo setting: allow GitHub Actions to create PRs
+
+For the workflow to call `gh pr create` with the default `GITHUB_TOKEN`, the repo must have **Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests"** turned **on**. The setting defaults to OFF on new repos, and the resulting `gh pr create` failure looks like:
+
+```
+ERROR: gh pr create failed: GitHub Actions is not permitted to create or approve pull requests
+```
+
+The branches are still pushed in this state, so you can recover by either toggling the setting and re-running the workflow (after deleting the orphan branches), or by opening the PRs manually with `gh pr create --head chore/auto-bump/<chart>-<version>`.
+
+Toggle the setting from the CLI (alternative to the UI checkbox):
+
+```bash
+gh api -X PUT repos/<owner>/<repo>/actions/permissions/workflow \
+  -F default_workflow_permissions=read \
+  -F can_approve_pull_request_reviews=true
+```
+
 ### Why the workflow runs `make ci` itself
 
 PRs created by the default `GITHUB_TOKEN` do **not** re-trigger other workflows
