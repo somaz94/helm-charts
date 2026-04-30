@@ -185,3 +185,42 @@ version-check: ## Drift-only report (read-only, no file or branch changes).
 .PHONY: version-apply
 version-apply: ## For each drifted chart: bump + ci + branch + commit + push + open PR.
 	@./scripts/check-version/check-version.sh --apply
+
+##@ Shell scripts
+
+# Discovered once at make startup. Captures every maintainer script under
+# scripts/ plus the per-chart upgrade.sh files that get propagated from the
+# templates. STRICT=1 turns the "shellcheck not installed" warning into a
+# hard failure (e.g. STRICT=1 make shell-lint in CI).
+SHELL_SCRIPTS := $(shell find scripts -type f -name '*.sh' 2>/dev/null | sort) $(wildcard $(CHARTS_DIR)/*/upgrade.sh)
+
+.PHONY: shell-lint
+shell-lint: ## Lint repo shell scripts: bash -n + zsh -n (cross-shell) + shellcheck (if installed). STRICT=1 to require shellcheck.
+	@if [ -z "$(SHELL_SCRIPTS)" ]; then \
+		echo "shell-lint: no scripts found"; exit 0; \
+	fi; \
+	rc=0; \
+	echo "==> bash -n  ($(words $(SHELL_SCRIPTS)) files)"; \
+	for f in $(SHELL_SCRIPTS); do \
+		bash -n "$$f" || { echo "FAIL bash -n: $$f"; rc=1; }; \
+	done; \
+	if command -v zsh >/dev/null 2>&1; then \
+		echo "==> zsh -n   ($(words $(SHELL_SCRIPTS)) files)"; \
+		for f in $(SHELL_SCRIPTS); do \
+			zsh -n "$$f" || { echo "FAIL zsh -n: $$f"; rc=1; }; \
+		done; \
+	else \
+		echo "==> zsh -n   skipped (zsh not installed)"; \
+	fi; \
+	if command -v shellcheck >/dev/null 2>&1; then \
+		echo "==> shellcheck ($(words $(SHELL_SCRIPTS)) files)"; \
+		shellcheck $(SHELL_SCRIPTS) || rc=1; \
+	else \
+		msg="shellcheck not installed (brew install shellcheck)"; \
+		if [ -n "$(STRICT)" ]; then \
+			echo "==> shellcheck FAIL: $$msg (STRICT=1)"; rc=1; \
+		else \
+			echo "==> shellcheck skipped: $$msg"; \
+		fi; \
+	fi; \
+	exit $$rc

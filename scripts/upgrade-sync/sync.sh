@@ -136,8 +136,9 @@ find_charts_with_template() {
 MISSING_TEMPLATE_COUNT=0
 warn_missing_templates() {
   MISSING_TEMPLATE_COUNT=0
-  while IFS=$'\t' read -r script status tmpl; do
-    if [ "$status" = "missing-template" ]; then
+  # `state` instead of `status`: zsh treats $status as a read-only alias for $?.
+  while IFS=$'\t' read -r script state tmpl; do
+    if [ "$state" = "missing-template" ]; then
       MISSING_TEMPLATE_COUNT=$((MISSING_TEMPLATE_COUNT + 1))
       echo "WARNING: ${script#$REPO_ROOT/} declares template '$tmpl' but $TEMPLATES_DIR/$tmpl.sh does not exist." >&2
     fi
@@ -196,31 +197,34 @@ check_or_apply() {
   while IFS=$'\t' read -r script tmpl; do
     count=$((count + 1))
     local tmpl_file="$TEMPLATES_DIR/$tmpl.sh"
-    local script_body_tmp tmpl_body_tmp
+    # Initialise locals with `=` to avoid zsh's `typeset name` behaviour, which
+    # prints the current value when re-declaring an already-set local in a loop.
+    local script_body_tmp= tmpl_body_tmp=
     script_body_tmp=$(mktemp_tracked)
     tmpl_body_tmp=$(mktemp_tracked)
     extract_body < "$script" > "$script_body_tmp"
     extract_body < "$tmpl_file" > "$tmpl_body_tmp"
 
-    local status="in sync"
+    # `sync_state` instead of `status`: zsh's $status is read-only ($? alias).
+    local sync_state="in sync"
     if ! diff -q "$script_body_tmp" "$tmpl_body_tmp" >/dev/null 2>&1; then
-      status="DRIFT"
+      sync_state="DRIFT"
       drift=$((drift + 1))
     fi
 
     case "$mode" in
       list)
-        printf "  %-50s template=%-20s %s\n" "${script#$REPO_ROOT/}" "$tmpl" "$status"
+        printf "  %-50s template=%-20s %s\n" "${script#$REPO_ROOT/}" "$tmpl" "$sync_state"
         ;;
       check)
-        if [ "$status" = "DRIFT" ]; then
+        if [ "$sync_state" = "DRIFT" ]; then
           echo "DRIFT: ${script#$REPO_ROOT/}"
           diff -u "$script_body_tmp" "$tmpl_body_tmp" | head -40 || true
           echo ""
         fi
         ;;
       apply)
-        if [ "$status" = "DRIFT" ]; then
+        if [ "$sync_state" = "DRIFT" ]; then
           echo "Applying canonical body to ${script#$REPO_ROOT/} (template: $tmpl)"
           replace_body "$script" "$tmpl_body_tmp"
           applied=$((applied + 1))
@@ -251,7 +255,8 @@ print_status() {
     case "$st" in
       managed)
         managed=$((managed + 1))
-        local tmpl_file="$TEMPLATES_DIR/$tmpl.sh" body_tmp tmpl_tmp
+        # Init with `=` so zsh does not echo existing values on re-declare.
+        local tmpl_file="$TEMPLATES_DIR/$tmpl.sh" body_tmp= tmpl_tmp=
         body_tmp=$(mktemp_tracked)
         tmpl_tmp=$(mktemp_tracked)
         extract_body < "$script" > "$body_tmp"

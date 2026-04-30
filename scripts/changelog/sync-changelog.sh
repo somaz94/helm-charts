@@ -14,7 +14,11 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve script path portably across bash and zsh.
+# bash: ${BASH_SOURCE[0]}; zsh executed: $0 (these scripts are not sourced).
+_SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
+SCRIPT_DIR="$(cd "$(dirname "$_SCRIPT_PATH")" && pwd)"
+unset _SCRIPT_PATH
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CHARTS_DIR="$REPO_ROOT/charts"
 
@@ -215,8 +219,10 @@ require_yq
 if [ "$ALL" -eq 1 ]; then
     [ -z "$CHART_DIR" ] || die "--all and <chart-dir> are mutually exclusive"
     [ -d "$CHARTS_DIR" ] || die "charts dir not found: $CHARTS_DIR"
-    shopt -s nullglob
+    # Skip the literal unexpanded glob when no directory matches. Avoids the
+    # bash-only `shopt -s nullglob` so the script works under zsh too.
     for d in "$CHARTS_DIR"/*/; do
+        [ -d "$d" ] || continue
         process_chart "${d%/}"
     done
 else

@@ -1,0 +1,33 @@
+name: Shell Lint
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'charts/*/upgrade.sh'
+      - 'Makefile'
+      - '.github/workflows/shell-lint.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shell-lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shell-lint:
+    name: bash + zsh syntax + shellcheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install zsh and shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh shellcheck
+
+      - name: Run shell-lint (STRICT=1 fails if shellcheck is missing)
+        run: STRICT=1 make shell-lint
