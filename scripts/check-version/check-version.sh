@@ -21,7 +21,11 @@
 # --include-major to opt in.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve script path portably across bash and zsh.
+# bash: ${BASH_SOURCE[0]}; zsh executed: $0 (these scripts are not sourced).
+_SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
+SCRIPT_DIR="$(cd "$(dirname "$_SCRIPT_PATH")" && pwd)"
+unset _SCRIPT_PATH
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CHARTS_DIR="$REPO_ROOT/charts"
 
@@ -100,12 +104,12 @@ done
 # Helpers
 # -----------------------------------------------
 
-# Check whether $1 is in the array passed via $2 (var name).
+# Check whether $1 is in the remaining args (passed by value).
+# Avoids `local -n` nameref so it works in both bash and zsh.
 contains() {
-  local needle="$1" arr_name="$2"
-  local -n arr_ref="$arr_name"
+  local needle="$1"; shift
   local x
-  for x in "${arr_ref[@]:-}"; do
+  for x in "$@"; do
     [ "$x" = "$needle" ] && return 0
   done
   return 1
@@ -123,10 +127,10 @@ discover_charts() {
   local c kept=()
   for c in "${found[@]}"; do
     if [ "${#INCLUDE_CHARTS[@]}" -gt 0 ]; then
-      contains "$c" INCLUDE_CHARTS || continue
+      contains "$c" "${INCLUDE_CHARTS[@]}" || continue
     fi
     if [ "${#EXCLUDE_CHARTS[@]}" -gt 0 ]; then
-      contains "$c" EXCLUDE_CHARTS && continue
+      contains "$c" "${EXCLUDE_CHARTS[@]}" && continue
     fi
     kept+=("$c")
   done
@@ -240,7 +244,9 @@ record_result() {
 #   JSON status=error             -> error <upgrade.sh's error message>
 detect_drift() {
   local chart="$1"
-  local raw json_record status current latest upstream major sibling err
+  # NOTE: avoid `status` as a local — zsh treats $status as a read-only alias
+  # for $? and assigning to it errors out under zsh.
+  local raw json_record drift_status current latest upstream major sibling err
 
   # Capture the JSON line on stdout regardless of exit code — upgrade.sh
   # exits non-zero on `blocked` / `no-image-exhausted`, but the EXIT trap
@@ -257,9 +263,9 @@ detect_drift() {
     return 0
   }
 
-  IFS=$'\x01' read -r status current latest upstream major sibling err <<< "$json_record"
+  IFS=$'\x01' read -r drift_status current latest upstream major sibling err <<< "$json_record"
 
-  case "$status" in
+  case "$drift_status" in
     uptodate)
       echo "uptodate"
       ;;
@@ -337,7 +343,7 @@ EOF
 process_chart() {
   local chart="$1" idx="$2" total="$3"
   local upgrade_sh="$CHARTS_DIR/$chart/upgrade.sh"
-  local current latest line major
+  local current latest line major _tag _rest
 
   echo ""
   echo "[$idx/$total] $chart"
@@ -363,25 +369,22 @@ process_chart() {
       return 0
       ;;
     blocked\ *)
-      # shellcheck disable=SC2086
-      set -- $line
-      current="$2"; latest="$3"; local sibling="$4"
+      # `read` instead of `set -- $line`: zsh does not word-split unquoted
+      # expansions by default, so `set --` would receive one argument.
+      local sibling
+      IFS=' ' read -r _tag current latest sibling _rest <<< "$line"
       echo "  BLOCKED: bump $sibling to $latest first"
       record_result "$chart" "$current" "$latest" "no" "blocked" "waiting on $sibling"
       return 0
       ;;
     no-image\ *)
-      # shellcheck disable=SC2086
-      set -- $line
-      current="$2"; latest="$3"
+      IFS=' ' read -r _tag current latest _rest <<< "$line"
       echo "  NO-IMAGE: upstream feed shows $latest but no published container image yet"
       record_result "$chart" "$current" "$latest" "no" "no-image" "image not published yet"
       return 0
       ;;
     drift\ *)
-      # shellcheck disable=SC2086
-      set -- $line
-      current="$2"; latest="$3"
+      IFS=' ' read -r _tag current latest _rest <<< "$line"
       ;;
   esac
 
@@ -619,7 +622,13 @@ $NO_CI && echo " --no-ci: skipping make ci"
 echo "================================================"
 
 # Discover and validate charts list.
-mapfile -t CHARTS < <(discover_charts)
+# Use a portable while-read loop instead of `mapfile` (bash 4+ only) so the
+# script works under zsh and bash 3.2.
+CHARTS=()
+while IFS= read -r _line; do
+  CHARTS+=("$_line")
+done < <(discover_charts)
+unset _line
 if [ "${#CHARTS[@]}" -eq 0 ]; then
   echo ""
   echo "No charts to process (after filters). Exiting."

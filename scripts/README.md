@@ -84,6 +84,7 @@ All three sub-systems are exposed through the top-level `Makefile`:
 | `make version-apply` | `scripts/check-version/check-version.sh --apply` |
 | `make changelog CHART=<name>` | `scripts/changelog/sync-changelog.sh charts/<name>` |
 | `make changelog-all` | `scripts/changelog/sync-changelog.sh --all` |
+| `make shell-lint` | `bash -n` + `zsh -n` on every `scripts/**/*.sh` and `charts/*/upgrade.sh`; `shellcheck --severity=error` (if installed) on `scripts/**/*.sh` only — `charts/*/upgrade.sh` is the sync output of the templates and is checked at the template level. Warning/info-level shellcheck output is shown advisory-only. `STRICT=1 make shell-lint` requires `shellcheck`. |
 
 <br/>
 
@@ -91,7 +92,9 @@ All three sub-systems are exposed through the top-level `Makefile`:
 
 Shared by all three sub-systems:
 
-- `bash` ≥ 4 (Homebrew bash on macOS)
+- `bash` ≥ 4 (Homebrew bash on macOS) **or** `zsh` ≥ 5 — scripts are written
+  for both shells; the shebang is `#!/usr/bin/env bash`, so direct execution
+  uses bash, but `zsh path/to/script.sh` works equivalently
 - `python3` (used by every script for JSON / YAML manipulation)
 - `git`
 
@@ -100,6 +103,8 @@ Additional, per sub-system:
 - `helm` ≥ 3.16 (`upgrade-sync` template smoke-test, `check-version` indirectly via `make ci`)
 - `chart-testing` + `kubeconform` (`check-version --apply` runs `make ci` per chart)
 - `gh` (`check-version --apply` without `--no-pr`)
+- `shellcheck` (optional; `make shell-lint` runs it when available, and
+  `STRICT=1 make shell-lint` requires it for CI)
 - `yq` is **not** required — every YAML touch goes through inline `python3` to
   avoid an extra dependency.
 
