@@ -17,6 +17,7 @@ jobs:
   lint:
     name: Lint and validate charts
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -48,6 +49,7 @@ jobs:
   changelog-check:
     name: CHANGELOG.md updated for version bumps
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -90,6 +92,7 @@ jobs:
   kubeconform-check:
     name: Schema validation (kubeconform) for changed charts
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6

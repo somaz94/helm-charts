@@ -11,6 +11,7 @@ jobs:
   auto-merge:
     name: Auto Merge
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: github.actor == 'dependabot[bot]'
     steps:
       - name: Fetch Dependabot metadata

@@ -22,6 +22,26 @@ DRY_RUN=0
 ALL=0
 CHART_DIR=""
 
+# Track every mktemp this script allocates and clean them up on EXIT — the
+# previous code only `mv`'d the temp into place on the success path; SIGTERM
+# or `set -e` exits between mktemp and mv would leak.
+TMP_FILES=()
+cleanup_tmp() {
+    local f
+    for f in "${TMP_FILES[@]:-}"; do
+        [ -n "$f" ] && rm -f "$f"
+    done
+    return 0
+}
+trap cleanup_tmp EXIT
+
+mktemp_tracked() {
+    local f
+    f=$(mktemp)
+    TMP_FILES+=("$f")
+    printf '%s' "$f"
+}
+
 usage() {
     cat <<'EOF'
 sync-changelog.sh — sync a chart's CHANGELOG.md from its Chart.yaml.
@@ -170,7 +190,7 @@ process_chart() {
         return 0
     fi
 
-    tmp="$(mktemp)"
+    tmp="$(mktemp_tracked)"
     printf '%s\n' "$new_content" > "$tmp"
     mv "$tmp" "$changelog"
     if [ -f "$changelog" ] && [ "$(wc -l < "$changelog")" -gt 0 ]; then
