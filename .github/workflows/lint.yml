@@ -38,10 +38,10 @@ jobs:
           # them. ct lint (run by the action's "Helm lint" step in
           # changed-charts mode) already does helm install --dry-run against
           # each ci/*.yaml via chart-testing's standard convention, so the
-          # rendering check is preserved. Schema validation (kubeconform with
-          # ci values) is covered by `make ci` — invoked locally by
-          # contributors and inside .github/workflows/check-versions.yml
-          # before each auto-bump PR is opened.
+          # rendering check is preserved. Schema validation against the
+          # rendered manifests is handled by the kubeconform-check job below,
+          # which runs `make validate` per changed chart (honors
+          # charts/<chart>/ci/*.yaml).
           run_template: 'false'
           run_kubeconform: 'false'
 
@@ -86,3 +86,66 @@ jobs:
             exit 1
           fi
           echo "All version-bumped charts have a corresponding CHANGELOG.md update."
+
+  kubeconform-check:
+    name: Schema validation (kubeconform) for changed charts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: v3.16.4
+
+      - name: Install kubeconform
+        run: |
+          set -euo pipefail
+          KUBECONFORM_VERSION=v0.6.7
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+          kubeconform -v
+
+      - name: Detect changed charts
+        id: changed
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          base="origin/${BASE_REF}"
+          git fetch origin "${BASE_REF}" --depth=0 >/dev/null 2>&1 || git fetch origin "${BASE_REF}"
+          # Charts whose tracked files (anything under charts/<name>/) changed
+          # in this PR. Deleted charts are filtered out so we never try to
+          # render a directory that no longer exists.
+          changed=$(git diff --name-only "${base}...HEAD" -- 'charts/*' \
+            | awk -F/ '$1 == "charts" && NF >= 2 { print $2 }' \
+            | sort -u)
+          existing=()
+          for c in $changed; do
+            [ -d "charts/$c" ] && existing+=("$c")
+          done
+          if [ ${#existing[@]} -eq 0 ]; then
+            echo "No chart changes detected — skipping schema validation."
+            echo "list=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Charts to validate:"
+            printf '  - %s\n' "${existing[@]}"
+            echo "list=${existing[*]}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run kubeconform on changed charts
+        if: steps.changed.outputs.list != ''
+        env:
+          CHANGED: ${{ steps.changed.outputs.list }}
+        run: |
+          set -euo pipefail
+          # `make validate` already runs helm template (with charts/<chart>/ci/*.yaml
+          # if present) and pipes into kubeconform with the standard schema
+          # locations + CRD catalog. Same code path as local `make ci`.
+          for c in $CHANGED; do
+            echo "==> validating $c"
+            make validate CHART="$c"
+          done
