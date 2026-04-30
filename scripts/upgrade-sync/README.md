@@ -97,9 +97,10 @@ VERSION_SOURCE_ARG="library/ghost"
 
 ## Available templates
 
-| Template | Use case | Required `VERSION_SOURCE` | `VERSION_SOURCE_ARG` |
-|---|---|---|---|
-| `chart-appversion.sh` | Chart maintainers tracking an upstream GA version to bump `Chart.yaml.appVersion` (and optionally `values.yaml.<key>`) | one of: `elastic-artifacts`, `docker-hub`, `github-release` | source-specific (see below) |
+| Template | Use case | Required CONFIG |
+|---|---|---|
+| `chart-appversion` | Chart maintainers tracking an upstream GA version to bump `Chart.yaml.appVersion` (and optionally `values.yaml.<key>`). Used by `ghost`, `unity-mcp-server`, `elasticsearch-eck`, `kibana-eck`. | `VERSION_SOURCE` ∈ {`elastic-artifacts`, `docker-hub`, `github-release`}, plus source-specific args (see below). |
+| `helm-charts/external-tracked` | Chart maintainers tracking an upstream GitHub repo that ships **both** a versioned image **and** companion CRD manifests. Refreshes `Chart.yaml.appVersion`, `values.yaml.version`, and `templates/crd-*.yaml`. Used by `keycloak-operator`. | `GITHUB_REPO`, `CONTAINER_IMAGE`, `CRD_FILES` (array), plus the helm-template gate vars (`GATE_OPEN`/`GATE_CLOSE`/`LABELS_ANN_BLOCK`). |
 
 ### `VERSION_SOURCE` options (inside `chart-appversion.sh`)
 

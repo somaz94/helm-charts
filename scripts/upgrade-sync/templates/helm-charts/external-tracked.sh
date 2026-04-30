@@ -1,50 +1,51 @@
-#!/bin/bash
-# upgrade-template: helm-charts/external-tracked
+#!/usr/bin/env bash
+# CANONICAL TEMPLATE — do not run directly, and do not hand-edit the body
+# of a per-chart upgrade.sh that uses this template.
 #
-# Purpose: as a chart maintainer, track new keycloak-k8s-resources releases
-# (https://github.com/keycloak/keycloak-k8s-resources) and refresh:
-#   - templates/crd-keycloaks.yaml
-#   - templates/crd-realmimports.yaml
+# Purpose: as a chart maintainer, track new upstream releases of a third-party
+# component that ships BOTH a versioned image AND companion CRDs (manifests
+# fetched from a GitHub repo). Refreshes:
 #   - Chart.yaml `appVersion`
 #   - values.yaml `version`
+#   - templates/crd-*.yaml (downloaded from upstream and patched with the
+#     chart's helm gate + labels/annotations block)
 #   - artifacthub.io/changes annotation
 #
-# Chart's own SemVer (Chart.yaml `version`) is NOT mirrored — bump manually
-# with `make bump CHART=keycloak-operator LEVEL=patch|minor|major` after
-# reviewing the diff. No cluster-side operations are performed; rollback
-# restores files from backup/<timestamp>/ only.
+# Used today by `charts/keycloak-operator/`. The body below (between the
+# BEGIN/END CANONICAL BODY markers) is the source of truth propagated to
+# per-chart upgrade.sh via `scripts/upgrade-sync/sync.sh --apply`. Each
+# chart's upgrade.sh keeps its own Configuration block above the BEGIN
+# marker and receives the same body.
+#
+# Required CONFIG values (per-chart upgrade.sh defines these):
+#   SCRIPT_NAME, COMPONENT_LABEL, GITHUB_REPO, CHANGELOG_URL,
+#   CONTAINER_IMAGE, CHART_DIR, BACKUP_DIR, TIMESTAMP, KEEP_BACKUPS,
+#   GATE_OPEN, GATE_CLOSE, LABELS_ANN_BLOCK, CRD_FILES (array of
+#   "upstream-name:local-path" entries).
 set -euo pipefail
 
 # ============================================================
-# Configuration — keycloak-operator specific
+# Configuration (per-chart placeholders — replaced in real upgrade.sh)
 # ============================================================
-SCRIPT_NAME="keycloak-operator Helm Chart upgrade"
-COMPONENT_LABEL="keycloak"
-GITHUB_REPO="keycloak/keycloak-k8s-resources"
-CHANGELOG_URL="https://www.keycloak.org/docs/latest/release_notes/index.html"
-CONTAINER_IMAGE="quay.io/keycloak/keycloak-operator"
+SCRIPT_NAME="__SCRIPT_NAME__"
+COMPONENT_LABEL="__COMPONENT_LABEL__"
+GITHUB_REPO="__GITHUB_REPO__"
+CHANGELOG_URL="__CHANGELOG_URL__"
+CONTAINER_IMAGE="__CONTAINER_IMAGE__"
 CHART_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_DIR="$CHART_DIR/backup"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 KEEP_BACKUPS="${KEEP_BACKUPS:-5}"
 
-# Helm template gate header injected at the very top of each downloaded CRD.
-GATE_OPEN='{{- if .Values.crds.install }}'
-GATE_CLOSE='{{- end }}'
-LABELS_ANN_BLOCK=$(cat <<'EOF'
-  labels:
-    {{- include "keycloak-operator.labels" . | nindent 4 }}
-  {{- $crdAnn := include "keycloak-operator.crdAnnotations" . }}
-  {{- if $crdAnn }}
-  annotations:
-    {{- $crdAnn | nindent 4 }}
-  {{- end }}
-EOF
+GATE_OPEN='__GATE_OPEN__'
+GATE_CLOSE='__GATE_CLOSE__'
+LABELS_ANN_BLOCK=$(cat <<'INNEREOF'
+__LABELS_ANN_BLOCK__
+INNEREOF
 )
 
 CRD_FILES=(
-  "keycloaks.k8s.keycloak.org-v1.yml:templates/crd-keycloaks.yaml"
-  "keycloakrealmimports.k8s.keycloak.org-v1.yml:templates/crd-realmimports.yaml"
+  "__UPSTREAM_NAME__:__LOCAL_PATH__"
 )
 
 # ============================================================
