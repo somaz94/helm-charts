@@ -84,7 +84,7 @@ All three sub-systems are exposed through the top-level `Makefile`:
 | `make version-apply` | `scripts/check-version/check-version.sh --apply` |
 | `make changelog CHART=<name>` | `scripts/changelog/sync-changelog.sh charts/<name>` |
 | `make changelog-all` | `scripts/changelog/sync-changelog.sh --all` |
-| `make shell-lint` | `bash -n` + `zsh -n` + `shellcheck` (if installed) over every `scripts/**/*.sh` and `charts/*/upgrade.sh`. `STRICT=1 make shell-lint` requires `shellcheck`. |
+| `make shell-lint` | `bash -n` + `zsh -n` on every `scripts/**/*.sh` and `charts/*/upgrade.sh`; `shellcheck --severity=error` (if installed) on `scripts/**/*.sh` only — `charts/*/upgrade.sh` is the sync output of the templates and is checked at the template level. Warning/info-level shellcheck output is shown advisory-only. `STRICT=1 make shell-lint` requires `shellcheck`. |
 
 <br/>
 

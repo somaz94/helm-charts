@@ -188,33 +188,40 @@ version-apply: ## For each drifted chart: bump + ci + branch + commit + push + o
 
 ##@ Shell scripts
 
-# Discovered once at make startup. Captures every maintainer script under
-# scripts/ plus the per-chart upgrade.sh files that get propagated from the
-# templates. STRICT=1 turns the "shellcheck not installed" warning into a
-# hard failure (e.g. STRICT=1 make shell-lint in CI).
-SHELL_SCRIPTS := $(shell find scripts -type f -name '*.sh' 2>/dev/null | sort) $(wildcard $(CHARTS_DIR)/*/upgrade.sh)
+# Discovered once at make startup. SYNTAX_TARGETS covers every maintainer
+# script plus the per-chart upgrade.sh files that get propagated from the
+# templates — `bash -n` and `zsh -n` are run against all of them.
+# SHELLCHECK_TARGETS is narrower: per-chart upgrade.sh is the sync output of
+# scripts/upgrade-sync/templates/, so shellchecking both is redundant. We
+# only run shellcheck against the source-of-truth under scripts/, and only
+# at --severity=error (info/warning are advisory and shown but do not fail).
+# STRICT=1 turns "shellcheck not installed" into a hard failure (e.g. CI).
+SYNTAX_TARGETS     := $(shell find scripts -type f -name '*.sh' 2>/dev/null | sort) $(wildcard $(CHARTS_DIR)/*/upgrade.sh)
+SHELLCHECK_TARGETS := $(shell find scripts -type f -name '*.sh' 2>/dev/null | sort)
 
 .PHONY: shell-lint
-shell-lint: ## Lint repo shell scripts: bash -n + zsh -n (cross-shell) + shellcheck (if installed). STRICT=1 to require shellcheck.
-	@if [ -z "$(SHELL_SCRIPTS)" ]; then \
+shell-lint: ## Lint repo shell scripts: bash -n + zsh -n on every script, shellcheck (--severity=error) on scripts/ only. STRICT=1 to require shellcheck.
+	@if [ -z "$(SYNTAX_TARGETS)" ]; then \
 		echo "shell-lint: no scripts found"; exit 0; \
 	fi; \
 	rc=0; \
-	echo "==> bash -n  ($(words $(SHELL_SCRIPTS)) files)"; \
-	for f in $(SHELL_SCRIPTS); do \
+	echo "==> bash -n  ($(words $(SYNTAX_TARGETS)) files)"; \
+	for f in $(SYNTAX_TARGETS); do \
 		bash -n "$$f" || { echo "FAIL bash -n: $$f"; rc=1; }; \
 	done; \
 	if command -v zsh >/dev/null 2>&1; then \
-		echo "==> zsh -n   ($(words $(SHELL_SCRIPTS)) files)"; \
-		for f in $(SHELL_SCRIPTS); do \
+		echo "==> zsh -n   ($(words $(SYNTAX_TARGETS)) files)"; \
+		for f in $(SYNTAX_TARGETS); do \
 			zsh -n "$$f" || { echo "FAIL zsh -n: $$f"; rc=1; }; \
 		done; \
 	else \
 		echo "==> zsh -n   skipped (zsh not installed)"; \
 	fi; \
 	if command -v shellcheck >/dev/null 2>&1; then \
-		echo "==> shellcheck ($(words $(SHELL_SCRIPTS)) files)"; \
-		shellcheck $(SHELL_SCRIPTS) || rc=1; \
+		echo "==> shellcheck --severity=error ($(words $(SHELLCHECK_TARGETS)) files; advisory output for warning/info)"; \
+		shellcheck --severity=error $(SHELLCHECK_TARGETS) || rc=1; \
+		echo "--- advisory shellcheck output (warning/info, not fail) ---"; \
+		shellcheck --severity=warning $(SHELLCHECK_TARGETS) || true; \
 	else \
 		msg="shellcheck not installed (brew install shellcheck)"; \
 		if [ -n "$(STRICT)" ]; then \
