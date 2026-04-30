@@ -106,7 +106,9 @@ make changelog CHART=<chart-name> DRY_RUN=1  # preview without writing
 make changelog-all                           # sync every chart (backfill / sanity)
 ```
 
-The script reads `Chart.yaml` `version` + `annotations.artifacthub.io/changes`, maps each entry's `kind` (`added` / `changed` / `deprecated` / `removed` / `fixed` / `security`) to a [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) section, and prepends a `## [vX.Y.Z] - YYYY-MM-DD` block to `charts/<chart-name>/CHANGELOG.md`. The annotation in `Chart.yaml` remains the source of truth — `CHANGELOG.md` is a regenerable mirror, never edit it directly. See [`scripts/changelog/README.md`](scripts/changelog/README.md) for details.
+The script reads `Chart.yaml` `version` + `annotations.artifacthub.io/changes`, maps each entry's `kind` (`added` / `changed` / `deprecated` / `removed` / `fixed` / `security`) to a [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) section, and prepends a `## [vX.Y.Z] - YYYY-MM-DD` block to `charts/<chart-name>/CHANGELOG.md`. See [`scripts/changelog/README.md`](scripts/changelog/README.md) for details.
+
+**RESET model (annotation lifecycle)**: `artifacthub.io/changes` only describes the changes for the release **currently being cut** — it is **not** an ever-growing log. Each release cycle starts from a single-entry baseline (`Bump appVersion ...`) left over by the previous bump, with humans adding new entries during PR review; the annotation is then wiped and replaced with the next bump's single entry by `update_artifacthub_changes()` in `scripts/upgrade-sync/templates/chart-appversion.sh` (and the equivalent function inlined in `charts/keycloak-operator/upgrade.sh`). `CHANGELOG.md` is the cumulative historical record — every section is prepended once and never rewritten — so the annotation can stay small without losing history. Never hand-edit `CHANGELOG.md`; let `make changelog` regenerate it from the annotation.
 
 A CI guard (`.github/workflows/lint.yml`, job `changelog-check`) fails any PR that bumps a chart's `version:` line without also updating that chart's `CHANGELOG.md`.
 
@@ -181,7 +183,7 @@ Required for:
 
 1. **Bump the chart version** in `Chart.yaml` for any change to chart contents (`templates/`, `values.yaml`, `values.schema.json`, `Chart.yaml` itself).
    - Use [SemVer](https://semver.org/): patch for fixes, minor for additive features, major for breaking changes.
-2. **Add an entry to `artifacthub.io/changes`** annotation in `Chart.yaml` describing the change. Format:
+2. **Add an entry to `artifacthub.io/changes`** annotation in `Chart.yaml` describing the change. Append your entry to whatever is already in the block (typically the `Bump appVersion ...` entry left by the previous auto-bump). The annotation is wiped and replaced at the next auto-bump under the [RESET model](#sync-the-charts-changelogmd) — do not try to keep a manual history here, that is what `CHANGELOG.md` is for. Format:
    ```yaml
    artifacthub.io/changes: |
      - kind: added | changed | deprecated | removed | fixed | security
