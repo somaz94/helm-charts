@@ -1090,6 +1090,62 @@ entries:
           description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Useful when the BYOI image lives in a private registry."
         - kind: changed
           description: "Pod-spec `imagePullSecrets:` rendering moved into a single `unity-mcp-server.imagePullSecretsBlock` helper. Default behavior unchanged when `imagePullSecret.create` is false."
+        - kind: changed
+          description: Bump appVersion from 9.6.6 to 9.6.8
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.6.8
+    created: "2026-04-30T02:39:55.931161065Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: 42d32dc26a5a8938b82abe7efc37de8e9bd5070836739686b8814a917608aadf
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.4/unity-mcp-server-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
+        - kind: fixed
+          description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
+        - kind: added
+          description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Useful when the BYOI image lives in a private registry."
+        - kind: changed
+          description: "Pod-spec `imagePullSecrets:` rendering moved into a single `unity-mcp-server.imagePullSecretsBlock` helper. Default behavior unchanged when `imagePullSecret.create` is false."
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
         - name: Source
@@ -1223,4 +1279,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-30T02:38:43.838150325Z"
+generated: "2026-04-30T02:39:55.93120435Z"
