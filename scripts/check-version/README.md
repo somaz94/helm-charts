@@ -1,0 +1,150 @@
+# scripts/check-version
+
+<br/>
+
+Automate upstream-version drift detection and chart bumping for every chart
+under `charts/` that ships an `upgrade.sh`.
+
+This is a thin orchestrator on top of each chart's `upgrade.sh`. It does **not**
+duplicate the per-chart logic for fetching upstream versions, verifying images,
+or rewriting `Chart.yaml`/`values.yaml` — it just composes the existing pieces:
+
+```
+check-version.sh
+  └─ for each chart:
+       ./upgrade.sh --dry-run         (drift detection)
+       ./upgrade.sh --version <new>   (bump files)
+       make bump CHART=<name>         (chart SemVer +1)
+       make ci CHART=<name>           (lint / template / validate)
+       git commit + branch + push + gh pr create
+```
+
+<br/>
+
+## Quick start
+
+```bash
+# Drift report only (safe, no file or branch changes)
+./scripts/check-version/check-version.sh
+
+# Drift report for one chart
+./scripts/check-version/check-version.sh --check --chart ghost
+
+# Bump a single chart locally (commit only, no push, no PR)
+./scripts/check-version/check-version.sh --apply --chart ghost --no-pr
+
+# Bump every drifted chart and open one PR per chart
+./scripts/check-version/check-version.sh --apply
+```
+
+<br/>
+
+## Command reference
+
+| Flag | Purpose |
+|------|---------|
+| `--check` | Drift-only report (default). No files or branches change. |
+| `--apply` | Run bump + ci + branch + commit + push + PR for each drifted chart. |
+| `--chart <name>` | Limit to one chart. Repeatable. |
+| `--skip-chart <name>` | Exclude one chart. Repeatable. |
+| `--include-major` | Include major-version bumps in `--apply` (default: skip). |
+| `--no-pr` | Stop after local commit (no `git push`, no `gh pr create`). |
+| `--no-ci` | Skip `make ci` (debug only). |
+| `--output <text\|github>` | `text` (default) or `github` (markdown for `$GITHUB_STEP_SUMMARY`). |
+
+Environment variables:
+
+- `BRANCH_PREFIX` — branch name prefix (default `chore/auto-bump`)
+- `BASE_BRANCH` — base branch (default `main`)
+- `GITHUB_TOKEN` — used by `gh` and by `upgrade.sh` for GitHub-based version sources
+
+<br/>
+
+## Status codes in the summary
+
+| Status | Meaning |
+|--------|---------|
+| `uptodate` | Chart's `appVersion` already matches latest upstream GA. |
+| `drift` | Newer GA exists; would bump on `--apply`. |
+| `drift-major` | Newer GA crosses a major version. Skipped by default; opt in with `--include-major`. |
+| `blocked` | A sibling-chart constraint (e.g. `kibana-eck` ≤ `elasticsearch-eck`) is preventing this bump until the sibling is bumped first. Re-run after the sibling PR merges. |
+| `no-image` | Upstream feed advertises a newer GA, but the container image isn't published yet (and the script's image-fallback search couldn't find a newer published image either). Wait for the upstream registry push and re-run. Common for `elastic-artifacts` source where the artifacts API publishes the version slightly before the Docker image. |
+| `pr-created` | `--apply` succeeded: branch pushed and PR opened. |
+| `local-only` | `--apply --no-pr` succeeded: local branch + commit only. |
+| `skipped` | Branch already exists on local or `origin`, or no diff after bump. |
+| `error` | A step failed (dry-run, upgrade.sh, make bump, make ci, push, or PR). The chart is left clean — any partial work is reverted. |
+
+<br/>
+
+## Failure handling
+
+- **Working tree must be clean** before `--apply` runs. The script aborts otherwise.
+- **`make ci` failure** → the chart's working copy is reset (`git checkout -- charts/<name>`), the per-chart branch is deleted, and the script moves on to the next chart with an `error` status.
+- **`gh pr create` failure** → the branch stays pushed so a human can open the PR manually; only the PR step is marked `error`.
+- Errors in any chart cause the script to exit with code `2` so CI surfaces the failure.
+
+<br/>
+
+## Backups
+
+`upgrade.sh` writes a snapshot to `charts/<name>/backup/<timestamp>/` before
+mutating files. These backups are **tracked in git** as a rollback trail and are
+preserved across PRs — do not gitignore them. Rolling back manually:
+
+```bash
+cd charts/<name> && ./upgrade.sh --rollback
+```
+
+<br/>
+
+## GitHub Actions
+
+`.github/workflows/check-versions.yml` runs:
+
+- **Schedule:** every Monday 00:00 UTC (09:00 KST) in `apply` mode.
+- **Manual:** `workflow_dispatch` with a chart filter and an opt-in for major bumps.
+
+The workflow installs `helm`, `chart-testing`, and `kubeconform`, then invokes
+this script with `--apply --output github`.
+
+### Why the workflow runs `make ci` itself
+
+PRs created by the default `GITHUB_TOKEN` do **not** re-trigger other workflows
+(such as `lint.yml`). To keep auto-PRs validated end-to-end, this workflow runs
+`make ci` (the same `helm lint`, `chart-testing`, `helm template`, and
+`kubeconform` checks the lint workflow runs) **before** opening the PR.
+
+If the repo's branch protection on `main` requires a green check from
+`lint.yml`, you have a few options:
+
+1. **Add a check exception** for PRs labeled `auto-bump` (recommended for low-friction merges).
+2. **Re-trigger lint** by closing and reopening the auto-PR, or by pushing an empty commit (lint runs because the closer event came from a user, not a bot).
+3. **Switch to a PAT or GitHub App token** in the workflow so PRs are authored as a regular identity and trigger downstream workflows. This requires storing a secret and is left as an explicit upgrade path rather than the default.
+
+<br/>
+
+## Sibling-chart ordering
+
+`kibana-eck` carries a sibling constraint (`appVersion` must be ≤
+`elasticsearch-eck`'s `appVersion`). When both charts have new upstream versions
+in the same week, `check-version.sh` will:
+
+1. Bump `elasticsearch-eck` and open its PR.
+2. Mark `kibana-eck` as `blocked` (the working tree off `main` still has the
+   old elasticsearch-eck version).
+3. Once the elasticsearch-eck PR merges, the next workflow run unblocks
+   `kibana-eck` and opens its PR.
+
+So a "tied" version pair takes two workflow ticks (or one extra manual run via
+`workflow_dispatch`) to reach `main`.
+
+<br/>
+
+## Local prerequisites
+
+- `bash` ≥ 4 (Homebrew bash on macOS)
+- `helm` ≥ 3.16
+- `chart-testing` (`brew install chart-testing`) — needed for `make ci` (`ct-lint`)
+- `kubeconform` (`brew install kubeconform`) — needed for `make ci` (`validate`)
+- `gh` — needed for `--apply` without `--no-pr`
+- `python3` — used by `upgrade.sh` for JSON parsing

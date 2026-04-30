@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # CANONICAL TEMPLATE — do not run directly, and do not hand-edit the body
 # of a per-chart upgrade.sh that uses this template.
 #

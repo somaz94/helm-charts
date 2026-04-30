@@ -1,0 +1,82 @@
+name: Check upstream versions
+
+on:
+  schedule:
+    # Every Monday 00:00 UTC = 09:00 KST
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode'
+        type: choice
+        default: apply
+        options:
+          - check
+          - apply
+      chart:
+        description: 'Limit to a single chart (leave empty for all)'
+        required: false
+      include_major:
+        description: 'Include major-version bumps'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: check-versions
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Detect upstream drift and open PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          # Use the workflow GITHUB_TOKEN; PRs created with this token will
+          # not re-trigger lint.yml (a known GitHub Actions limitation), so
+          # we run `make ci` inside this workflow before opening the PR.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2
+
+      - name: Install kubeconform
+        run: |
+          set -e
+          KUBECONFORM_VERSION=v0.6.7
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+          kubeconform -v
+
+      - name: Run check-version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          MODE="${{ github.event.inputs.mode || 'apply' }}"
+          FLAGS="--$MODE --output github"
+          if [ -n "${{ github.event.inputs.chart }}" ]; then
+            FLAGS="$FLAGS --chart ${{ github.event.inputs.chart }}"
+          fi
+          if [ "${{ github.event.inputs.include_major }}" = "true" ]; then
+            FLAGS="$FLAGS --include-major"
+          fi
+          echo "Invoking: ./scripts/check-version/check-version.sh $FLAGS"
+          ./scripts/check-version/check-version.sh $FLAGS
