@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-cr
 description: Custom resources (Keycloak, KeycloakRealmImport) for the Keycloak Operator, with optional HTTPRoute, DB-credentials Secret and bootstrap-admin Secret. Defaults to a single-instance Keycloak with edge-proxy mode.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "1.0.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -32,5 +32,5 @@ annotations:
       url: https://github.com/keycloak/keycloak-k8s-resources
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: Initial release. Keycloak CR (k8s.keycloak.org/v2beta1) with hostname/db/http/proxy/scheduling/resources surfaced explicitly, KeycloakRealmImport with inline-spec or ConfigMap source, optional HTTPRoute, optional DB credentials Secret, optional bootstrap admin Secret, escape-hatch keycloakSpecExtra/realmSpecExtra blocks. Pure CR wrapper — requires the Keycloak Operator and CRDs to be installed in the cluster (e.g. via the keycloak-operator chart).
+    - kind: fixed
+      description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."

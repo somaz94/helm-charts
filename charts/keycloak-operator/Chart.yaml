@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-operator
 description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: "26.6.1"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -38,5 +38,5 @@ annotations:
   artifacthub.io/operatorCapabilities: Seamless Upgrades
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: Sync upgrade.sh from canonical helm-charts/external-tracked template (RESET annotation model + JSON dry-run schema v1).
+    - kind: fixed
+      description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
