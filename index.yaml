@@ -1,1507 +1,1620 @@
 apiVersion: v1
 entries:
   certmanager-letsencrypt:
-    - annotations:
-        artifacthub.io/category: security
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: cert-manager
-            url: https://cert-manager.io/
-          - name: Let's Encrypt
-            url: https://letsencrypt.org/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 1.0.0
-      created: "2026-05-04T02:04:11.52125189Z"
-      description: Helm chart for Let's Encrypt certificates with cert-manager — manages ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place. Requires cert-manager already installed.
-      digest: 824a374211d6be14ad1535af73821bbddbdaf92a1f45e0095e3a588b12360017
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - cert-manager
-        - letsencrypt
-        - acme
-        - tls
-        - certificates
-        - dns-01
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: certmanager-letsencrypt
-      sources:
-        - https://github.com/somaz94/helm-charts
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/certmanager-letsencrypt-0.2.2/certmanager-letsencrypt-0.2.2.tgz
-      version: 0.2.2
-    - annotations:
-        artifacthub.io/category: security
-        artifacthub.io/changes: |
-          - kind: added
-            description: Optional `ingresses[]` block — emits Ingress resources alongside the Certificate for the one-shot install pattern (cert-manager.io/cluster-issuer annotation already wired up).
-          - kind: added
-            description: Per-provider end-to-end examples (Cloudflare, AWS Route53, Google Cloud DNS) in README — secret + ClusterIssuer + Certificate + Ingress in one values file.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: cert-manager
-            url: https://cert-manager.io/
-          - name: Let's Encrypt
-            url: https://letsencrypt.org/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 1.0.0
-      created: "2026-04-20T06:03:33.930938926Z"
-      description: Helm chart for Let's Encrypt certificates with cert-manager — manages ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place. Requires cert-manager already installed.
-      digest: de9809bc1835063c6942a3c70c4b29886b35c3c83718915754e2119f72aa04e1
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - cert-manager
-        - letsencrypt
-        - acme
-        - tls
-        - certificates
-        - dns-01
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: certmanager-letsencrypt
-      sources:
-        - https://github.com/somaz94/helm-charts
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/certmanager-letsencrypt-0.2.0/certmanager-letsencrypt-0.2.0.tgz
-      version: 0.2.0
-    - annotations:
-        artifacthub.io/category: security
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Multi-issuer / multi-certificate / multi-secret support.
-          - kind: added
-            description: Built-in Let's Encrypt prod / staging ACME server presets.
-          - kind: added
-            description: Supports DNS-01 solvers for Cloudflare, Route53, Cloud DNS, and any other cert-manager-supported provider via passthrough.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: cert-manager
-            url: https://cert-manager.io/
-          - name: Let's Encrypt
-            url: https://letsencrypt.org/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 1.0.0
-      created: "2026-04-20T05:29:24.247642701Z"
-      description: Helm chart for Let's Encrypt certificates with cert-manager — manages ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place. Requires cert-manager already installed.
-      digest: 4152dfceb5f72d61ad970d92f518d112b8b15a11555efa74c0ca14ad228b6a7f
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - cert-manager
-        - letsencrypt
-        - acme
-        - tls
-        - certificates
-        - dns-01
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: certmanager-letsencrypt
-      sources:
-        - https://github.com/somaz94/helm-charts
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/certmanager-letsencrypt-0.1.0/certmanager-letsencrypt-0.1.0.tgz
-      version: 0.1.0
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: cert-manager
+          url: https://cert-manager.io/
+        - name: Let's Encrypt
+          url: https://letsencrypt.org/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-05-04T02:04:11.52125189Z"
+    description: Helm chart for Let's Encrypt certificates with cert-manager — manages
+      ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place.
+      Requires cert-manager already installed.
+    digest: 824a374211d6be14ad1535af73821bbddbdaf92a1f45e0095e3a588b12360017
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - cert-manager
+    - letsencrypt
+    - acme
+    - tls
+    - certificates
+    - dns-01
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: certmanager-letsencrypt
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/certmanager-letsencrypt-0.2.2/certmanager-letsencrypt-0.2.2.tgz
+    version: 0.2.2
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: Optional `ingresses[]` block — emits Ingress resources alongside the Certificate for the one-shot install pattern (cert-manager.io/cluster-issuer annotation already wired up).
+        - kind: added
+          description: Per-provider end-to-end examples (Cloudflare, AWS Route53, Google Cloud DNS) in README — secret + ClusterIssuer + Certificate + Ingress in one values file.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: cert-manager
+          url: https://cert-manager.io/
+        - name: Let's Encrypt
+          url: https://letsencrypt.org/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-04-20T06:03:33.930938926Z"
+    description: Helm chart for Let's Encrypt certificates with cert-manager — manages
+      ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place.
+      Requires cert-manager already installed.
+    digest: de9809bc1835063c6942a3c70c4b29886b35c3c83718915754e2119f72aa04e1
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - cert-manager
+    - letsencrypt
+    - acme
+    - tls
+    - certificates
+    - dns-01
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: certmanager-letsencrypt
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/certmanager-letsencrypt-0.2.0/certmanager-letsencrypt-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Multi-issuer / multi-certificate / multi-secret support.
+        - kind: added
+          description: Built-in Let's Encrypt prod / staging ACME server presets.
+        - kind: added
+          description: Supports DNS-01 solvers for Cloudflare, Route53, Cloud DNS, and any other cert-manager-supported provider via passthrough.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: cert-manager
+          url: https://cert-manager.io/
+        - name: Let's Encrypt
+          url: https://letsencrypt.org/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-04-20T05:29:24.247642701Z"
+    description: Helm chart for Let's Encrypt certificates with cert-manager — manages
+      ClusterIssuers / Issuers / Certificates / DNS-01 credential Secrets in one place.
+      Requires cert-manager already installed.
+    digest: 4152dfceb5f72d61ad970d92f518d112b8b15a11555efa74c0ca14ad228b6a7f
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - cert-manager
+    - letsencrypt
+    - acme
+    - tls
+    - certificates
+    - dns-01
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: certmanager-letsencrypt
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/certmanager-letsencrypt-0.1.0/certmanager-letsencrypt-0.1.0.tgz
+    version: 0.1.0
   elasticsearch-eck:
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Elasticsearch Release Notes
-            url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-05-04T02:04:11.640428349Z"
-      description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
-      digest: a65ebaecbe4f7733645b8fef991cfb568e849e9c666f2ba8f5e3afeb9831df7d
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - elasticsearch
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: elasticsearch-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.6/elasticsearch-eck-0.1.6.tgz
-      version: 0.1.6
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
-          - kind: fixed
-            description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
-          - kind: removed
-            description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
-          - kind: changed
-            description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-es-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band (e.g. via Reflector or External Secrets)."
-          - kind: removed
-            description: The auto-generated `<name>-ca` ConfigMap and the `caConfigMapName` helper. Existing installs will leave an orphaned ConfigMap — safe to delete manually once BackendTLSPolicy is reconciled against the Secret.
-          - kind: fixed
-            description: "DO NOT USE 0.1.3 — NGINX Gateway Fabric rejects `type: Opaque` Secrets for `caCertificateRefs`, so the 0.1.3 default (`kind: Secret`) breaks BTP resolution against ECK (which ships Opaque Secrets). 0.1.4 reverts to the 0.1.2 behavior: `caCertificateRef.kind: ConfigMap` with chart-rendered CA ConfigMap via `helm lookup`. The `caCertificateRef` values block is retained for advanced consumers — `kind: Secret` + `type: kubernetes.io/tls`, or consumer-managed external ConfigMap via `name: <custom>`. README documents the helm-diff lookup limitation as a known trade-off."
-          - kind: added
-            description: '`caConfigMapName` helper restored in `_helpers.tpl`. `_helpers.tpl` comments clarify the ConfigMap source-of-truth relationship.'
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Elasticsearch Release Notes
-            url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-04-24T01:51:29.944021436Z"
-      description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
-      digest: 2c0c846b43b0833ff0fc2b62fa60602e5d5b758451ae555a9db2fdaf44357c05
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - elasticsearch
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: elasticsearch-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.4/elasticsearch-eck-0.1.4.tgz
-      version: 0.1.4
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
-          - kind: fixed
-            description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
-          - kind: removed
-            description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
-          - kind: changed
-            description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-es-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band (e.g. via Reflector or External Secrets)."
-          - kind: removed
-            description: The auto-generated `<name>-ca` ConfigMap and the `caConfigMapName` helper. Existing installs will leave an orphaned ConfigMap — safe to delete manually once BackendTLSPolicy is reconciled against the Secret.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Elasticsearch Release Notes
-            url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-04-24T01:34:04.202808165Z"
-      description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
-      digest: 88b6652ce20d8104aae4a690e1354afad64732f94ebb1f7acc684c359cf7c0f5
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - elasticsearch
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: elasticsearch-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.3/elasticsearch-eck-0.1.3.tgz
-      version: 0.1.3
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
-          - kind: fixed
-            description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
-          - kind: removed
-            description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Elasticsearch Release Notes
-            url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-04-23T08:35:29.733312008Z"
-      description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
-      digest: 9998f50a66fc4abe82624b1710db0177b1e6b31e0b7987c901e66f535e22327a
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - elasticsearch
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: elasticsearch-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.2/elasticsearch-eck-0.1.2.tgz
-      version: 0.1.2
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
-          - kind: fixed
-            description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Elasticsearch Release Notes
-            url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-04-21T01:15:08.436427409Z"
-      description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
-      digest: 1daf6d0b1b6d8d681e9d6d6d59df770b9e88d826ee9bc418e0783c84506442fc
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - elasticsearch
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: elasticsearch-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.1/elasticsearch-eck-0.1.1.tgz
-      version: 0.1.1
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: changed
+          description: Bump appVersion from 9.3.3 to 9.3.4
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.4
+    created: "2026-05-04T05:06:29.656922576Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 9ebdf3b54f67c55d2eec9a38d57ebb93fd4a77d9e436c3ba5b2bd7c20f3e0dd7
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.7/elasticsearch-eck-0.1.7.tgz
+    version: 0.1.7
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-05-04T02:04:11.640428349Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: a65ebaecbe4f7733645b8fef991cfb568e849e9c666f2ba8f5e3afeb9831df7d
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.6/elasticsearch-eck-0.1.6.tgz
+    version: 0.1.6
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: removed
+          description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
+        - kind: changed
+          description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-es-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band (e.g. via Reflector or External Secrets)."
+        - kind: removed
+          description: The auto-generated `<name>-ca` ConfigMap and the `caConfigMapName` helper. Existing installs will leave an orphaned ConfigMap — safe to delete manually once BackendTLSPolicy is reconciled against the Secret.
+        - kind: fixed
+          description: "DO NOT USE 0.1.3 — NGINX Gateway Fabric rejects `type: Opaque` Secrets for `caCertificateRefs`, so the 0.1.3 default (`kind: Secret`) breaks BTP resolution against ECK (which ships Opaque Secrets). 0.1.4 reverts to the 0.1.2 behavior: `caCertificateRef.kind: ConfigMap` with chart-rendered CA ConfigMap via `helm lookup`. The `caCertificateRef` values block is retained for advanced consumers — `kind: Secret` + `type: kubernetes.io/tls`, or consumer-managed external ConfigMap via `name: <custom>`. README documents the helm-diff lookup limitation as a known trade-off."
+        - kind: added
+          description: '`caConfigMapName` helper restored in `_helpers.tpl`. `_helpers.tpl` comments clarify the ConfigMap source-of-truth relationship.'
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-24T01:51:29.944021436Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 2c0c846b43b0833ff0fc2b62fa60602e5d5b758451ae555a9db2fdaf44357c05
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.4/elasticsearch-eck-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: removed
+          description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
+        - kind: changed
+          description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-es-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band (e.g. via Reflector or External Secrets)."
+        - kind: removed
+          description: The auto-generated `<name>-ca` ConfigMap and the `caConfigMapName` helper. Existing installs will leave an orphaned ConfigMap — safe to delete manually once BackendTLSPolicy is reconciled against the Secret.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-24T01:34:04.202808165Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 88b6652ce20d8104aae4a690e1354afad64732f94ebb1f7acc684c359cf7c0f5
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.3/elasticsearch-eck-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: removed
+          description: Unused `elasticsearch-eck.resourceLabels` helper in `_helpers.tpl`. Dead code since 0.1.0 — templates use inline `with .Values.resourceMetadata.<key>.labels`. Pure refactor, zero functional change.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-23T08:35:29.733312008Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 9998f50a66fc4abe82624b1710db0177b1e6b31e0b7987c901e66f535e22327a
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.2/elasticsearch-eck-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Elasticsearch ECK CR with nodeSets[] array, optional elastic-user Secret, HTTPRoute, BackendTLSPolicy, PodDisruptionBudget and ServiceMonitor.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-21T01:15:08.436427409Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 1daf6d0b1b6d8d681e9d6d6d59df770b9e88d826ee9bc418e0783c84506442fc
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.1/elasticsearch-eck-0.1.1.tgz
+    version: 0.1.1
   ghost:
-    - annotations:
-        artifacthub.io/category: integration-delivery
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Ghost
-            url: https://ghost.org/
-          - name: Ghost Docker image
-            url: https://hub.docker.com/_/ghost
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 5.130.6
-      created: "2026-05-04T02:04:11.765073629Z"
-      description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
-      digest: c0a71b1c987252368f6b104a0f98dc1fc2d8fea5776a95d833191af1b2a73d77
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - ghost
-        - blog
-        - cms
-        - publishing
-        - mysql
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: ghost
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/TryGhost/Ghost
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.6/ghost-0.1.6.tgz
-      version: 0.1.6
-    - annotations:
-        artifacthub.io/category: integration-delivery
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
-          - kind: fixed
-            description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
-          - kind: changed
-            description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
-          - kind: added
-            description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
-          - kind: changed
-            description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
-          - kind: added
-            description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
-          - kind: changed
-            description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."
-          - kind: changed
-            description: Bump appVersion from 5.117.0 to 5.130.6
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Ghost
-            url: https://ghost.org/
-          - name: Ghost Docker image
-            url: https://hub.docker.com/_/ghost
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 5.130.6
-      created: "2026-04-30T02:38:42.467915985Z"
-      description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
-      digest: 1fff66ef79282958077bec8915237b050b49979172c79d916275a1b36f7e1f8f
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - ghost
-        - blog
-        - cms
-        - publishing
-        - mysql
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: ghost
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/TryGhost/Ghost
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.4/ghost-0.1.4.tgz
-      version: 0.1.4
-    - annotations:
-        artifacthub.io/category: integration-delivery
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
-          - kind: fixed
-            description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
-          - kind: changed
-            description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
-          - kind: added
-            description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
-          - kind: changed
-            description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
-          - kind: added
-            description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
-          - kind: changed
-            description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Ghost
-            url: https://ghost.org/
-          - name: Ghost Docker image
-            url: https://hub.docker.com/_/ghost
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 5.117.0
-      created: "2026-04-27T05:03:48.1330735Z"
-      description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
-      digest: b1852b47c0c93f66c6dbdc36b35690e7c31257c7a6f61dd9ea28226e4d4009b7
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - ghost
-        - blog
-        - cms
-        - publishing
-        - mysql
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: ghost
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/TryGhost/Ghost
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.3/ghost-0.1.3.tgz
-      version: 0.1.3
-    - annotations:
-        artifacthub.io/category: integration-delivery
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
-          - kind: fixed
-            description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
-          - kind: changed
-            description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
-          - kind: added
-            description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
-          - kind: changed
-            description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Ghost
-            url: https://ghost.org/
-          - name: Ghost Docker image
-            url: https://hub.docker.com/_/ghost
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 5.117.0
-      created: "2026-04-27T03:34:08.665284885Z"
-      description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
-      digest: 42e25b74614b848c46cc3d10acb327b92299e5a4085d142ff8b5b2640f2c3d8b
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - ghost
-        - blog
-        - cms
-        - publishing
-        - mysql
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: ghost
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/TryGhost/Ghost
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.2/ghost-0.1.2.tgz
-      version: 0.1.2
-    - annotations:
-        artifacthub.io/category: integration-delivery
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
-          - kind: fixed
-            description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
-          - kind: changed
-            description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Ghost
-            url: https://ghost.org/
-          - name: Ghost Docker image
-            url: https://hub.docker.com/_/ghost
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 5.117.0
-      created: "2026-04-24T03:58:51.133600266Z"
-      description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
-      digest: 02a8c8c48bdccccb03f82ce27209f2a4bc51dd5de1994740dda906d828da467c
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - ghost
-        - blog
-        - cms
-        - publishing
-        - mysql
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: ghost
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/TryGhost/Ghost
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.1/ghost-0.1.1.tgz
-      version: 0.1.1
-    - annotations:
-        artifacthub.io/category: integration-delivery
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Ghost
-            url: https://ghost.org/
-          - name: Ghost Docker image
-            url: https://hub.docker.com/_/ghost
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 5.117.0
-      created: "2026-04-24T03:47:18.916455028Z"
-      description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
-      digest: 396af457a7a4b02a327ea38e7d36ed59e9d9dbe0d3b25e87aa87e24484ca858f
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - ghost
-        - blog
-        - cms
-        - publishing
-        - mysql
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: ghost
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/TryGhost/Ghost
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.0/ghost-0.1.0.tgz
-      version: 0.1.0
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.130.6
+    created: "2026-05-04T02:04:11.765073629Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: c0a71b1c987252368f6b104a0f98dc1fc2d8fea5776a95d833191af1b2a73d77
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.6/ghost-0.1.6.tgz
+    version: 0.1.6
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
+        - kind: added
+          description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
+        - kind: changed
+          description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
+        - kind: added
+          description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
+        - kind: changed
+          description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."
+        - kind: changed
+          description: Bump appVersion from 5.117.0 to 5.130.6
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.130.6
+    created: "2026-04-30T02:38:42.467915985Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: 1fff66ef79282958077bec8915237b050b49979172c79d916275a1b36f7e1f8f
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.4/ghost-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
+        - kind: added
+          description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
+        - kind: changed
+          description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
+        - kind: added
+          description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Lets users pull from a private registry with a single chart install instead of hand-managing the Secret."
+        - kind: changed
+          description: "Pod-spec `imagePullSecrets:` rendering moved into a single `ghost.imagePullSecretsBlock` helper used by Ghost Deployment, MySQL Deployment and backup CronJob. Default behavior unchanged when `imagePullSecret.create` is false."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.117.0
+    created: "2026-04-27T05:03:48.1330735Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: b1852b47c0c93f66c6dbdc36b35690e7c31257c7a6f61dd9ea28226e4d4009b7
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.3/ghost-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
+        - kind: added
+          description: "`mysql.fullnameOverride` and `mysql.configMap.nameOverride` to control the MySQL Deployment/Service/ConfigMap/Secret base names. Lets users adopt pre-existing resources whose names do not match the default `<fullname>-mysql` pattern (typical when migrating off legacy raw-YAML deployments)."
+        - kind: changed
+          description: "`ghost.mysql.secretName` and `ghost.mysql.configMapName` helpers now derive from `ghost.mysql.fullname` instead of inlining the `<fullname>-mysql` pattern. No effect on default users; enables the new overrides above to propagate consistently."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.117.0
+    created: "2026-04-27T03:34:08.665284885Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: 42e25b74614b848c46cc3d10acb327b92299e5a4085d142ff8b5b2640f2c3d8b
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.2/ghost-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`backup.image.{repository,tag,pullPolicy}` now default to `mysql.image.*` when left empty (DRY). Bumping `mysql.image.tag` auto-syncs the backup CronJob image. Set `backup.image.*` explicitly to pin a different client."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.117.0
+    created: "2026-04-24T03:58:51.133600266Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: 02a8c8c48bdccccb03f82ce27209f2a4bc51dd5de1994740dda906d828da467c
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.1/ghost-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Ghost Deployment with optional bundled MySQL (ConfigMap, Secret, PVC, Deployment, Service), backup CronJob, HTTPRoute (Gateway API), Ingress, NGINX Gateway Fabric ClientSettingsPolicy and Prometheus ServiceMonitor.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.117.0
+    created: "2026-04-24T03:47:18.916455028Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: 396af457a7a4b02a327ea38e7d36ed59e9d9dbe0d3b25e87aa87e24484ca858f
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.0/ghost-0.1.0.tgz
+    version: 0.1.0
   keycloak-cr:
-    - annotations:
-        artifacthub.io/category: security
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Keycloak Operator Documentation
-            url: https://www.keycloak.org/operator/installation
-          - name: Keycloak Operator Resources
-            url: https://github.com/keycloak/keycloak-k8s-resources
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 1.0.0
-      created: "2026-05-04T02:04:11.87946553Z"
-      description: Custom resources (Keycloak, KeycloakRealmImport) for the Keycloak Operator, with optional HTTPRoute, DB-credentials Secret and bootstrap-admin Secret. Defaults to a single-instance Keycloak with edge-proxy mode.
-      digest: 0e930c1c51e5921ccf86ea212e8862ffdf3329aababda643c6bda2a57465383a
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - keycloak
-        - sso
-        - oidc
-        - oauth2
-        - identity
-        - kubernetes
-        - security
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: keycloak-cr
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/keycloak/keycloak-k8s-resources
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/keycloak-cr-0.1.1/keycloak-cr-0.1.1.tgz
-      version: 0.1.1
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-05-04T02:04:11.87946553Z"
+    description: Custom resources (Keycloak, KeycloakRealmImport) for the Keycloak
+      Operator, with optional HTTPRoute, DB-credentials Secret and bootstrap-admin
+      Secret. Defaults to a single-instance Keycloak with edge-proxy mode.
+    digest: 0e930c1c51e5921ccf86ea212e8862ffdf3329aababda643c6bda2a57465383a
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-cr-0.1.1/keycloak-cr-0.1.1.tgz
+    version: 0.1.1
   keycloak-operator:
-    - annotations:
-        artifacthub.io/category: security
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Keycloak Operator Documentation
-            url: https://www.keycloak.org/operator/installation
-          - name: Keycloak Operator Resources
-            url: https://github.com/keycloak/keycloak-k8s-resources
-          - name: Keycloak Release Notes
-            url: https://www.keycloak.org/docs/latest/release_notes/index.html
-        artifacthub.io/operator: "true"
-        artifacthub.io/operatorCapabilities: Seamless Upgrades
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 26.6.1
-      created: "2026-05-04T02:04:11.984978855Z"
-      description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
-      digest: 05dec358e43245ed1262d304ee14d2695b3a5f1434e4dddd9a3e16c6f757da8d
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - keycloak
-        - keycloak-operator
-        - sso
-        - oidc
-        - oauth2
-        - identity
-        - kubernetes
-        - security
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: keycloak-operator
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/keycloak/keycloak-k8s-resources
-        - https://github.com/keycloak/keycloak
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.1.3/keycloak-operator-0.1.3.tgz
-      version: 0.1.3
-    - annotations:
-        artifacthub.io/category: security
-        artifacthub.io/changes: |
-          - kind: added
-            description: rbac.useClusterBindings option (default false) to bind keycloakcontroller-cluster-role and keycloakrealmimportcontroller-cluster-role via ClusterRoleBinding instead of in-namespace RoleBinding. Required for any cross-namespace watchNamespaces value because RoleBindings only grant their bound rules within their own namespace, so the operator silently 403s on list/watch in other namespaces otherwise.
-          - kind: changed
-            description: Documented the correct Quarkus Operator SDK constants for watchNamespaces — JOSDK_WATCH_CURRENT (own ns) and JOSDK_ALL_NAMESPACES (cluster-wide). The previous JOSDK_WATCH_ALL example was not a valid constant and the operator interpreted that string as a namespace name, returning 403 on startup.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Keycloak Operator Documentation
-            url: https://www.keycloak.org/operator/installation
-          - name: Keycloak Operator Resources
-            url: https://github.com/keycloak/keycloak-k8s-resources
-          - name: Keycloak Release Notes
-            url: https://www.keycloak.org/docs/latest/release_notes/index.html
-        artifacthub.io/operator: "true"
-        artifacthub.io/operatorCapabilities: Seamless Upgrades
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 26.6.1
-      created: "2026-04-28T08:18:38.149420397Z"
-      description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
-      digest: a9e83a5ab61fac17a1ad878ed26fb8a0a113117bf61d28b6f2c9bc4ccf479eb2
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - keycloak
-        - keycloak-operator
-        - sso
-        - oidc
-        - oauth2
-        - identity
-        - kubernetes
-        - security
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: keycloak-operator
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/keycloak/keycloak-k8s-resources
-        - https://github.com/keycloak/keycloak
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.1.1/keycloak-operator-0.1.1.tgz
-      version: 0.1.1
-    - annotations:
-        artifacthub.io/category: security
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Keycloak Operator (CRDs Keycloak + KeycloakRealmImport, ServiceAccount, Role/RoleBinding, ClusterRole/ClusterRoleBinding, Deployment, Service) wrapped from the upstream keycloak-k8s-resources raw YAML at tag 26.6.1. upgrade.sh tracks the keycloak/keycloak-k8s-resources GitHub Releases feed and refreshes both CRDs + the operator manifest in templates/ on bump.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Keycloak Operator Documentation
-            url: https://www.keycloak.org/operator/installation
-          - name: Keycloak Operator Resources
-            url: https://github.com/keycloak/keycloak-k8s-resources
-          - name: Keycloak Release Notes
-            url: https://www.keycloak.org/docs/latest/release_notes/index.html
-        artifacthub.io/operator: "true"
-        artifacthub.io/operatorCapabilities: Seamless Upgrades
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 26.6.1
-      created: "2026-04-28T07:08:59.037990846Z"
-      description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
-      digest: d8380f473f5b52d8b0a50faf4cae412ad76291291e162710645ea46611f94d67
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - keycloak
-        - keycloak-operator
-        - sso
-        - oidc
-        - oauth2
-        - identity
-        - kubernetes
-        - security
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: keycloak-operator
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/keycloak/keycloak-k8s-resources
-        - https://github.com/keycloak/keycloak
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.1.0/keycloak-operator-0.1.0.tgz
-      version: 0.1.0
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+        - name: Keycloak Release Notes
+          url: https://www.keycloak.org/docs/latest/release_notes/index.html
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Seamless Upgrades
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 26.6.1
+    created: "2026-05-04T02:04:11.984978855Z"
+    description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped
+      from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via
+      upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+    digest: 05dec358e43245ed1262d304ee14d2695b3a5f1434e4dddd9a3e16c6f757da8d
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - keycloak-operator
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-operator
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    - https://github.com/keycloak/keycloak
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.1.3/keycloak-operator-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: rbac.useClusterBindings option (default false) to bind keycloakcontroller-cluster-role and keycloakrealmimportcontroller-cluster-role via ClusterRoleBinding instead of in-namespace RoleBinding. Required for any cross-namespace watchNamespaces value because RoleBindings only grant their bound rules within their own namespace, so the operator silently 403s on list/watch in other namespaces otherwise.
+        - kind: changed
+          description: Documented the correct Quarkus Operator SDK constants for watchNamespaces — JOSDK_WATCH_CURRENT (own ns) and JOSDK_ALL_NAMESPACES (cluster-wide). The previous JOSDK_WATCH_ALL example was not a valid constant and the operator interpreted that string as a namespace name, returning 403 on startup.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+        - name: Keycloak Release Notes
+          url: https://www.keycloak.org/docs/latest/release_notes/index.html
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Seamless Upgrades
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 26.6.1
+    created: "2026-04-28T08:18:38.149420397Z"
+    description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped
+      from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via
+      upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+    digest: a9e83a5ab61fac17a1ad878ed26fb8a0a113117bf61d28b6f2c9bc4ccf479eb2
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - keycloak-operator
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-operator
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    - https://github.com/keycloak/keycloak
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.1.1/keycloak-operator-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Keycloak Operator (CRDs Keycloak + KeycloakRealmImport, ServiceAccount, Role/RoleBinding, ClusterRole/ClusterRoleBinding, Deployment, Service) wrapped from the upstream keycloak-k8s-resources raw YAML at tag 26.6.1. upgrade.sh tracks the keycloak/keycloak-k8s-resources GitHub Releases feed and refreshes both CRDs + the operator manifest in templates/ on bump.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+        - name: Keycloak Release Notes
+          url: https://www.keycloak.org/docs/latest/release_notes/index.html
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Seamless Upgrades
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 26.6.1
+    created: "2026-04-28T07:08:59.037990846Z"
+    description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped
+      from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via
+      upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+    digest: d8380f473f5b52d8b0a50faf4cae412ad76291291e162710645ea46611f94d67
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - keycloak-operator
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-operator
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    - https://github.com/keycloak/keycloak
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.1.0/keycloak-operator-0.1.0.tgz
+    version: 0.1.0
   kibana-eck:
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Kibana Release Notes
-            url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-05-04T02:04:12.11873634Z"
-      description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed via elasticsearch-eck.
-      digest: df592a7be8ea8fd6556d3233e644a19d4a06d2912fa685e67f3d031900c1ef97
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - kibana
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - dashboard
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: kibana-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.5/kibana-eck-0.1.5.tgz
-      version: 0.1.5
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Kibana ECK CR with podTemplate extensibility, HTTPRoute, legacy Ingress, PodDisruptionBudget, and elasticsearchRef auto-wiring.
-          - kind: fixed
-            description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
-          - kind: changed
-            description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-kb-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band."
-          - kind: removed
-            description: The auto-generated `<name>-ca` ConfigMap. Existing installs will leave an orphaned ConfigMap — helm garbage-collects it on upgrade.
-          - kind: fixed
-            description: "DO NOT USE 0.1.2 — same NGF Opaque Secret rejection as elasticsearch-eck 0.1.3. 0.1.3 reverts to the 0.1.1 behavior: `caCertificateRef.kind: ConfigMap` with chart-rendered CA ConfigMap via `helm lookup`. The `caCertificateRef` values block is retained for advanced consumers — `kind: Secret` requires a `kubernetes.io/tls`-typed Secret, or use consumer-managed external ConfigMap via `name: <custom>`. README documents the helm-diff lookup limitation as a known trade-off."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Kibana Release Notes
-            url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-04-24T01:51:30.075073719Z"
-      description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed via elasticsearch-eck.
-      digest: d3bfadbc06ecf0fec511c75d2a24a28910bebb04facf8a010f5932015a82868a
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - kibana
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - dashboard
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: kibana-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.3/kibana-eck-0.1.3.tgz
-      version: 0.1.3
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Kibana ECK CR with podTemplate extensibility, HTTPRoute, legacy Ingress, PodDisruptionBudget, and elasticsearchRef auto-wiring.
-          - kind: fixed
-            description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
-          - kind: changed
-            description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-kb-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band."
-          - kind: removed
-            description: The auto-generated `<name>-ca` ConfigMap. Existing installs will leave an orphaned ConfigMap — helm garbage-collects it on upgrade.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Kibana Release Notes
-            url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-04-24T01:34:04.39108118Z"
-      description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed via elasticsearch-eck.
-      digest: e8a171d95529bd95203d57ebd7bf8ca7f29487e602980e001f24957b113f3c0b
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - kibana
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - dashboard
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: kibana-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.2/kibana-eck-0.1.2.tgz
-      version: 0.1.2
-    - annotations:
-        artifacthub.io/category: monitoring-logging
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Kibana ECK CR with podTemplate extensibility, HTTPRoute, legacy Ingress, PodDisruptionBudget, and elasticsearchRef auto-wiring.
-          - kind: fixed
-            description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: ECK Documentation
-            url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
-          - name: Kibana Release Notes
-            url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.3.3
-      created: "2026-04-21T01:15:08.594452644Z"
-      description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed via elasticsearch-eck.
-      digest: bdd02da2b915e589ad021cbfb1f85b247354ed2ba34f325e39df2ef7fdbee5bf
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - kibana
-        - elastic
-        - eck
-        - elastic-cloud-on-kubernetes
-        - observability
-        - logging
-        - dashboard
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: kibana-eck
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/elastic/cloud-on-k8s
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.1/kibana-eck-0.1.1.tgz
-      version: 0.1.1
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Kibana Release Notes
+          url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-05-04T02:04:12.11873634Z"
+    description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with
+      HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed
+      via elasticsearch-eck.
+    digest: df592a7be8ea8fd6556d3233e644a19d4a06d2912fa685e67f3d031900c1ef97
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - kibana
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - dashboard
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: kibana-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.5/kibana-eck-0.1.5.tgz
+    version: 0.1.5
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Kibana ECK CR with podTemplate extensibility, HTTPRoute, legacy Ingress, PodDisruptionBudget, and elasticsearchRef auto-wiring.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: changed
+          description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-kb-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band."
+        - kind: removed
+          description: The auto-generated `<name>-ca` ConfigMap. Existing installs will leave an orphaned ConfigMap — helm garbage-collects it on upgrade.
+        - kind: fixed
+          description: "DO NOT USE 0.1.2 — same NGF Opaque Secret rejection as elasticsearch-eck 0.1.3. 0.1.3 reverts to the 0.1.1 behavior: `caCertificateRef.kind: ConfigMap` with chart-rendered CA ConfigMap via `helm lookup`. The `caCertificateRef` values block is retained for advanced consumers — `kind: Secret` requires a `kubernetes.io/tls`-typed Secret, or use consumer-managed external ConfigMap via `name: <custom>`. README documents the helm-diff lookup limitation as a known trade-off."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Kibana Release Notes
+          url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-24T01:51:30.075073719Z"
+    description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with
+      HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed
+      via elasticsearch-eck.
+    digest: d3bfadbc06ecf0fec511c75d2a24a28910bebb04facf8a010f5932015a82868a
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - kibana
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - dashboard
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: kibana-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.3/kibana-eck-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Kibana ECK CR with podTemplate extensibility, HTTPRoute, legacy Ingress, PodDisruptionBudget, and elasticsearchRef auto-wiring.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+        - kind: changed
+          description: "BREAKING for non-NGF Gateway implementations. BackendTLSPolicy now references the ECK-managed Secret `<name>-kb-http-certs-public` directly via `caCertificateRefs`, eliminating the `lookup`-based CA ConfigMap copy. `helm diff` / `helmfile diff` now render deterministically. Migration: NGINX Gateway Fabric users — no action. Gateway API Core-only implementations (which do not support Secret kind in caCertificateRefs) — set `backendTLSPolicy.caCertificateRef.kind: ConfigMap` and provision the ConfigMap out-of-band."
+        - kind: removed
+          description: The auto-generated `<name>-ca` ConfigMap. Existing installs will leave an orphaned ConfigMap — helm garbage-collects it on upgrade.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Kibana Release Notes
+          url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-24T01:34:04.39108118Z"
+    description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with
+      HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed
+      via elasticsearch-eck.
+    digest: e8a171d95529bd95203d57ebd7bf8ca7f29487e602980e001f24957b113f3c0b
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - kibana
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - dashboard
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: kibana-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.2/kibana-eck-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Kibana ECK CR with podTemplate extensibility, HTTPRoute, legacy Ingress, PodDisruptionBudget, and elasticsearchRef auto-wiring.
+        - kind: fixed
+          description: Correct artifacthub.io/category to `monitoring-logging` (was `monitoring`, rejected by ArtifactHub).
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Kibana Release Notes
+          url: https://www.elastic.co/guide/en/kibana/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.3.3
+    created: "2026-04-21T01:15:08.594452644Z"
+    description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with
+      HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed
+      via elasticsearch-eck.
+    digest: bdd02da2b915e589ad021cbfb1f85b247354ed2ba34f325e39df2ef7fdbee5bf
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - kibana
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - dashboard
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: kibana-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.1/kibana-eck-0.1.1.tgz
+    version: 0.1.1
   mysql:
-    - annotations:
-        artifacthub.io/category: database
-        artifacthub.io/changes: |
-          - kind: added
-            description: "Initial release. Standalone single-node MySQL 8 with ConfigMap (custom.cnf), Secret, PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), optional backup CronJob (mysqldump + retention), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS, additive), kubernetesExtra escape hatch."
-          - kind: added
-            description: "`auth.existingSecret` + `auth.secretKeys.{user,password,rootPassword,database}` for adopting legacy Secrets that use non-standard key names (e.g. `DB_USERNAME` instead of `MYSQL_USER`) without re-keying."
-          - kind: added
-            description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default (typical when migrating off raw-YAML deployments)."
-          - kind: added
-            description: "`persistence.existingClaim` for PVC reuse — the chart will not render or modify the PVC when set, preserving the underlying volume on uninstall."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: MySQL Docker image
-            url: https://hub.docker.com/_/mysql
-          - name: MySQL 8.0 Reference Manual
-            url: https://dev.mysql.com/doc/refman/8.0/en/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 8.0.43
-      created: "2026-04-27T06:00:51.335829522Z"
-      description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
-      digest: c68e6915cbaf42bae5cf68e20a7aba01e8d984b921fa8d12d7debc36fbae4bf2
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - mysql
-        - database
-        - rdbms
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: mysql
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://hub.docker.com/_/mysql
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/mysql-0.1.0/mysql-0.1.0.tgz
-      version: 0.1.0
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Initial release. Standalone single-node MySQL 8 with ConfigMap (custom.cnf), Secret, PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), optional backup CronJob (mysqldump + retention), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS, additive), kubernetesExtra escape hatch."
+        - kind: added
+          description: "`auth.existingSecret` + `auth.secretKeys.{user,password,rootPassword,database}` for adopting legacy Secrets that use non-standard key names (e.g. `DB_USERNAME` instead of `MYSQL_USER`) without re-keying."
+        - kind: added
+          description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default (typical when migrating off raw-YAML deployments)."
+        - kind: added
+          description: "`persistence.existingClaim` for PVC reuse — the chart will not render or modify the PVC when set, preserving the underlying volume on uninstall."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: MySQL Docker image
+          url: https://hub.docker.com/_/mysql
+        - name: MySQL 8.0 Reference Manual
+          url: https://dev.mysql.com/doc/refman/8.0/en/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 8.0.43
+    created: "2026-04-27T06:00:51.335829522Z"
+    description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret
+      + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount.
+      Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML
+      migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: c68e6915cbaf42bae5cf68e20a7aba01e8d984b921fa8d12d7debc36fbae4bf2
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mysql
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: mysql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/mysql
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/mysql-0.1.0/mysql-0.1.0.tgz
+    version: 0.1.0
   nginx-gateway-cr:
-    - annotations:
-        artifacthub.io/category: networking
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the 0.3.1 release content (the prior unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: NGINX Gateway Fabric
-            url: https://github.com/nginx/nginx-gateway-fabric
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 0.1.0
-      created: "2026-05-04T02:04:12.241073688Z"
-      description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
-      digest: 45204e25e3492b807e7061d617436da2d79940dc1dc29c140748c7dd4babc353
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - nginx
-        - nginx-gateway-fabric
-        - ngf
-        - gateway-api
-        - kubernetes
-        - networking
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: nginx-gateway-cr
-      sources:
-        - https://github.com/somaz94/helm-charts
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.3.2/nginx-gateway-cr-0.3.2.tgz
-      version: 0.3.2
-    - annotations:
-        artifacthub.io/category: networking
-        artifacthub.io/changes: |
-          - kind: added
-            description: PodMonitor templates (controller + dataplane) — recommended for NGF 2.x where the controller exposes /metrics on the Pod, not the Service
-          - kind: added
-            description: podMonitor.controller / podMonitor.dataplane values blocks (mirror serviceMonitor.* shape)
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: NGINX Gateway Fabric
-            url: https://github.com/nginx/nginx-gateway-fabric
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 0.1.0
-      created: "2026-04-20T03:49:38.762624287Z"
-      description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
-      digest: 9a5b3f5b91cbfd7a7d0e512a3d85f0144c8d221c1009c924043f078a5f89fa7d
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - nginx
-        - nginx-gateway-fabric
-        - ngf
-        - gateway-api
-        - kubernetes
-        - networking
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: nginx-gateway-cr
-      sources:
-        - https://github.com/somaz94/helm-charts
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.3.0/nginx-gateway-cr-0.3.0.tgz
-      version: 0.3.0
-    - annotations:
-        artifacthub.io/category: networking
-        artifacthub.io/changes: |
-          - kind: added
-            description: values.schema.json (JSON Schema draft-07) for input validation and ArtifactHub form rendering
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: NGINX Gateway Fabric
-            url: https://github.com/nginx/nginx-gateway-fabric
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 0.1.0
-      created: "2026-04-20T02:51:38.872414195Z"
-      description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
-      digest: 0c0875cebb8a21dd6b018d3df60206230fa255a52903a0a79da73f0be090b966
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - nginx
-        - nginx-gateway-fabric
-        - ngf
-        - gateway-api
-        - kubernetes
-        - networking
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: nginx-gateway-cr
-      sources:
-        - https://github.com/somaz94/helm-charts
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.2.0/nginx-gateway-cr-0.2.0.tgz
-      version: 0.2.0
-    - annotations:
-        artifacthub.io/category: networking
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: NGINX Gateway Fabric
-            url: https://github.com/nginx/nginx-gateway-fabric
-      apiVersion: v2
-      appVersion: 0.1.0
-      created: "2026-04-20T02:10:29.866540449Z"
-      description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
-      digest: 67c6b5a01cb4e4d1614352692c56303aa1e0395116f28e006848b8bab61d6791
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - nginx
-        - nginx-gateway-fabric
-        - ngf
-        - gateway-api
-        - kubernetes
-        - networking
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: nginx-gateway-cr
-      sources:
-        - https://github.com/somaz94/helm-charts
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.1.0/nginx-gateway-cr-0.1.0.tgz
-      version: 0.1.0
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the 0.3.1 release content (the prior unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: NGINX Gateway Fabric
+          url: https://github.com/nginx/nginx-gateway-fabric
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-05-04T02:04:12.241073688Z"
+    description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX
+      Gateway Fabric, deployed alongside the upstream NGF controller chart.
+    digest: 45204e25e3492b807e7061d617436da2d79940dc1dc29c140748c7dd4babc353
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - nginx
+    - nginx-gateway-fabric
+    - ngf
+    - gateway-api
+    - kubernetes
+    - networking
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: nginx-gateway-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.3.2/nginx-gateway-cr-0.3.2.tgz
+    version: 0.3.2
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: added
+          description: PodMonitor templates (controller + dataplane) — recommended for NGF 2.x where the controller exposes /metrics on the Pod, not the Service
+        - kind: added
+          description: podMonitor.controller / podMonitor.dataplane values blocks (mirror serviceMonitor.* shape)
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: NGINX Gateway Fabric
+          url: https://github.com/nginx/nginx-gateway-fabric
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-04-20T03:49:38.762624287Z"
+    description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX
+      Gateway Fabric, deployed alongside the upstream NGF controller chart.
+    digest: 9a5b3f5b91cbfd7a7d0e512a3d85f0144c8d221c1009c924043f078a5f89fa7d
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - nginx
+    - nginx-gateway-fabric
+    - ngf
+    - gateway-api
+    - kubernetes
+    - networking
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: nginx-gateway-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.3.0/nginx-gateway-cr-0.3.0.tgz
+    version: 0.3.0
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: added
+          description: values.schema.json (JSON Schema draft-07) for input validation and ArtifactHub form rendering
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: NGINX Gateway Fabric
+          url: https://github.com/nginx/nginx-gateway-fabric
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-04-20T02:51:38.872414195Z"
+    description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX
+      Gateway Fabric, deployed alongside the upstream NGF controller chart.
+    digest: 0c0875cebb8a21dd6b018d3df60206230fa255a52903a0a79da73f0be090b966
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - nginx
+    - nginx-gateway-fabric
+    - ngf
+    - gateway-api
+    - kubernetes
+    - networking
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: nginx-gateway-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.2.0/nginx-gateway-cr-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: NGINX Gateway Fabric
+          url: https://github.com/nginx/nginx-gateway-fabric
+    apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-04-20T02:10:29.866540449Z"
+    description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX
+      Gateway Fabric, deployed alongside the upstream NGF controller chart.
+    digest: 67c6b5a01cb4e4d1614352692c56303aa1e0395116f28e006848b8bab61d6791
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - nginx
+    - nginx-gateway-fabric
+    - ngf
+    - gateway-api
+    - kubernetes
+    - networking
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: nginx-gateway-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.1.0/nginx-gateway-cr-0.1.0.tgz
+    version: 0.1.0
   postgresql:
-    - annotations:
-        artifacthub.io/category: database
-        artifacthub.io/changes: |
-          - kind: added
-            description: "Initial release. Standalone single-node PostgreSQL with ConfigMap (postgresql.conf + pg_hba.conf), Secret, PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), optional backup CronJob (pg_dump + retention), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), log emptyDir for logging_collector, kubernetesExtra escape hatch."
-          - kind: added
-            description: "`auth.existingSecret` + `auth.secretKeys.{user,password,database}` for adopting legacy Secrets that use non-standard key names (e.g. `DB_USERNAME` instead of `POSTGRES_USER`) without re-keying."
-          - kind: added
-            description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default (typical when migrating off raw-YAML deployments)."
-          - kind: added
-            description: "`persistence.existingClaim` for PVC reuse — the chart will not render or modify the PVC when set, preserving the underlying volume on uninstall."
-          - kind: added
-            description: "`logCollector.enabled` toggles the `/var/log/postgresql` emptyDir mount for logging_collector=on workloads (default off — stderr to stdout)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: PostgreSQL Docker image
-            url: https://hub.docker.com/_/postgres
-          - name: PostgreSQL documentation
-            url: https://www.postgresql.org/docs/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 18-alpine
-      created: "2026-04-27T06:00:51.48912754Z"
-      description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump), NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
-      digest: 16923fb9203d0dbbee4bb343f202a24366fd9706e502aa71e430c3e3f589c3c8
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - postgresql
-        - postgres
-        - database
-        - rdbms
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: postgresql
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://hub.docker.com/_/postgres
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/postgresql-0.1.0/postgresql-0.1.0.tgz
-      version: 0.1.0
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Initial release. Standalone single-node PostgreSQL with ConfigMap (postgresql.conf + pg_hba.conf), Secret, PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), optional backup CronJob (pg_dump + retention), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), log emptyDir for logging_collector, kubernetesExtra escape hatch."
+        - kind: added
+          description: "`auth.existingSecret` + `auth.secretKeys.{user,password,database}` for adopting legacy Secrets that use non-standard key names (e.g. `DB_USERNAME` instead of `POSTGRES_USER`) without re-keying."
+        - kind: added
+          description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default (typical when migrating off raw-YAML deployments)."
+        - kind: added
+          description: "`persistence.existingClaim` for PVC reuse — the chart will not render or modify the PVC when set, preserving the underlying volume on uninstall."
+        - kind: added
+          description: "`logCollector.enabled` toggles the `/var/log/postgresql` emptyDir mount for logging_collector=on workloads (default off — stderr to stdout)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: PostgreSQL Docker image
+          url: https://hub.docker.com/_/postgres
+        - name: PostgreSQL documentation
+          url: https://www.postgresql.org/docs/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 18-alpine
+    created: "2026-04-27T06:00:51.48912754Z"
+    description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf
+      + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump),
+      NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate
+      strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations
+      (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: 16923fb9203d0dbbee4bb343f202a24366fd9706e502aa71e430c3e3f589c3c8
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: postgresql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/postgres
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/postgresql-0.1.0/postgresql-0.1.0.tgz
+    version: 0.1.0
   redis:
-    - annotations:
-        artifacthub.io/category: database
-        artifacthub.io/changes: |
-          - kind: added
-            description: "Initial release. Standalone single-node Redis with optional ConfigMap (redis.conf), optional Secret (auth password), PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), kubernetesExtra escape hatch. Default image tracks Redis 8.2 (RSALv2/SSPL); pin `image.tag: 7.4-alpine` to remain on the last BSD-licensed release."
-          - kind: added
-            description: "`auth.existingSecret` + `auth.passwordKey` for adopting legacy Secrets that hold the Redis password under non-standard keys."
-          - kind: added
-            description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default."
-          - kind: added
-            description: "`persistence.{enabled,existingClaim,mountPath}` for PVC reuse and non-standard mount paths (e.g. `/redis-master-data` from legacy raw YAML)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: Redis Docker image
-            url: https://hub.docker.com/_/redis
-          - name: Redis documentation
-            url: https://redis.io/docs/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 8.2-alpine
-      created: "2026-04-27T06:00:51.644081883Z"
-      description: Standalone single-node Redis — Deployment + optional Secret + optional ConfigMap (redis.conf) + PVC + Service, NetworkPolicy, ServiceAccount. Recreate strategy. No backup CronJob (Redis is typically a cache; if you need persistence + offsite backups, prefer Sentinel/Cluster topology). Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption). Sibling chart to `valkey-cr` — choose by license / compatibility preference.
-      digest: f942f374d331161a6def0515d47ef4affee8cd03c86e10efe2ec6a88547df3fc
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - redis
-        - cache
-        - kv-store
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: redis
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://hub.docker.com/_/redis
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/redis-0.1.0/redis-0.1.0.tgz
-      version: 0.1.0
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Initial release. Standalone single-node Redis with optional ConfigMap (redis.conf), optional Secret (auth password), PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), kubernetesExtra escape hatch. Default image tracks Redis 8.2 (RSALv2/SSPL); pin `image.tag: 7.4-alpine` to remain on the last BSD-licensed release."
+        - kind: added
+          description: "`auth.existingSecret` + `auth.passwordKey` for adopting legacy Secrets that hold the Redis password under non-standard keys."
+        - kind: added
+          description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default."
+        - kind: added
+          description: "`persistence.{enabled,existingClaim,mountPath}` for PVC reuse and non-standard mount paths (e.g. `/redis-master-data` from legacy raw YAML)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Redis Docker image
+          url: https://hub.docker.com/_/redis
+        - name: Redis documentation
+          url: https://redis.io/docs/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 8.2-alpine
+    created: "2026-04-27T06:00:51.644081883Z"
+    description: Standalone single-node Redis — Deployment + optional Secret + optional
+      ConfigMap (redis.conf) + PVC + Service, NetworkPolicy, ServiceAccount. Recreate
+      strategy. No backup CronJob (Redis is typically a cache; if you need persistence
+      + offsite backups, prefer Sentinel/Cluster topology). Suits dev/staging single-replica
+      installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride
+      for in-place adoption). Sibling chart to `valkey-cr` — choose by license / compatibility
+      preference.
+    digest: f942f374d331161a6def0515d47ef4affee8cd03c86e10efe2ec6a88547df3fc
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - redis
+    - cache
+    - kv-store
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: redis
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/redis
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/redis-0.1.0/redis-0.1.0.tgz
+    version: 0.1.0
   unity-mcp-server:
-    - annotations:
-        artifacthub.io/category: ai-machine-learning
-        artifacthub.io/changes: |
-          - kind: fixed
-            description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: unity-mcp (upstream)
-            url: https://github.com/CoplayDev/unity-mcp
-          - name: FastMCP
-            url: https://gofastmcp.com/
-          - name: Model Context Protocol spec
-            url: https://modelcontextprotocol.io/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.6.8
-      created: "2026-05-04T02:04:12.379258635Z"
-      description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
-      digest: eba85d1012f576fe7c5b202c0fb155ded6e77911747d40d73b9b7b25a76bbb53
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - mcp
-        - model-context-protocol
-        - unity
-        - fastmcp
-        - ai
-        - llm
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: unity-mcp-server
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/CoplayDev/unity-mcp
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.6/unity-mcp-server-0.1.6.tgz
-      version: 0.1.6
-    - annotations:
-        artifacthub.io/category: ai-machine-learning
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
-          - kind: fixed
-            description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
-          - kind: fixed
-            description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
-          - kind: changed
-            description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
-          - kind: added
-            description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Useful when the BYOI image lives in a private registry."
-          - kind: changed
-            description: "Pod-spec `imagePullSecrets:` rendering moved into a single `unity-mcp-server.imagePullSecretsBlock` helper. Default behavior unchanged when `imagePullSecret.create` is false."
-          - kind: changed
-            description: Bump appVersion from 9.6.6 to 9.6.8
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: unity-mcp (upstream)
-            url: https://github.com/CoplayDev/unity-mcp
-          - name: FastMCP
-            url: https://gofastmcp.com/
-          - name: Model Context Protocol spec
-            url: https://modelcontextprotocol.io/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.6.8
-      created: "2026-04-30T02:39:55.931161065Z"
-      description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
-      digest: 42d32dc26a5a8938b82abe7efc37de8e9bd5070836739686b8814a917608aadf
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - mcp
-        - model-context-protocol
-        - unity
-        - fastmcp
-        - ai
-        - llm
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: unity-mcp-server
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/CoplayDev/unity-mcp
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.4/unity-mcp-server-0.1.4.tgz
-      version: 0.1.4
-    - annotations:
-        artifacthub.io/category: ai-machine-learning
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
-          - kind: fixed
-            description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
-          - kind: fixed
-            description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
-          - kind: changed
-            description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
-          - kind: added
-            description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Useful when the BYOI image lives in a private registry."
-          - kind: changed
-            description: "Pod-spec `imagePullSecrets:` rendering moved into a single `unity-mcp-server.imagePullSecretsBlock` helper. Default behavior unchanged when `imagePullSecret.create` is false."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: unity-mcp (upstream)
-            url: https://github.com/CoplayDev/unity-mcp
-          - name: FastMCP
-            url: https://gofastmcp.com/
-          - name: Model Context Protocol spec
-            url: https://modelcontextprotocol.io/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.6.6
-      created: "2026-04-27T05:03:48.300336547Z"
-      description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
-      digest: a2028d030fed143f2c3a593bcb37ca9f4fe0428131b753664d8577b4ab882944
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - mcp
-        - model-context-protocol
-        - unity
-        - fastmcp
-        - ai
-        - llm
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: unity-mcp-server
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/CoplayDev/unity-mcp
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.3/unity-mcp-server-0.1.3.tgz
-      version: 0.1.3
-    - annotations:
-        artifacthub.io/category: ai-machine-learning
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
-          - kind: fixed
-            description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
-          - kind: fixed
-            description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
-          - kind: changed
-            description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: unity-mcp (upstream)
-            url: https://github.com/CoplayDev/unity-mcp
-          - name: FastMCP
-            url: https://gofastmcp.com/
-          - name: Model Context Protocol spec
-            url: https://modelcontextprotocol.io/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 9.6.6
-      created: "2026-04-24T03:58:51.34754526Z"
-      description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
-      digest: 280c2db5ecee75a246c82dc535be7af662018784adf8d3ad759af5a49a62dd72
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - mcp
-        - model-context-protocol
-        - unity
-        - fastmcp
-        - ai
-        - llm
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: unity-mcp-server
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/CoplayDev/unity-mcp
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.2/unity-mcp-server-0.1.2.tgz
-      version: 0.1.2
-    - annotations:
-        artifacthub.io/category: ai-machine-learning
-        artifacthub.io/changes: |
-          - kind: added
-            description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
-        artifacthub.io/license: Apache-2.0
-        artifacthub.io/links: |
-          - name: Source
-            url: https://github.com/somaz94/helm-charts
-          - name: unity-mcp (upstream)
-            url: https://github.com/CoplayDev/unity-mcp
-          - name: FastMCP
-            url: https://gofastmcp.com/
-          - name: Model Context Protocol spec
-            url: https://modelcontextprotocol.io/
-        artifacthub.io/prerelease: "false"
-      apiVersion: v2
-      appVersion: 3.0.0
-      created: "2026-04-24T03:47:19.172159273Z"
-      description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
-      digest: 369f0a72daa6c5da3f2ff62d50e38ae90d57e6bd851ea4b504213035189a7b09
-      home: https://github.com/somaz94/helm-charts
-      keywords:
-        - mcp
-        - model-context-protocol
-        - unity
-        - fastmcp
-        - ai
-        - llm
-        - kubernetes
-      kubeVersion: '>=1.25.0-0'
-      maintainers:
-        - name: somaz94
-          url: https://github.com/somaz94
-      name: unity-mcp-server
-      sources:
-        - https://github.com/somaz94/helm-charts
-        - https://github.com/CoplayDev/unity-mcp
-      type: application
-      urls:
-        - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
-      version: 0.1.0
-generated: "2026-05-04T02:04:12.379399568Z"
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.6.8
+    created: "2026-05-04T02:04:12.379258635Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: eba85d1012f576fe7c5b202c0fb155ded6e77911747d40d73b9b7b25a76bbb53
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.6/unity-mcp-server-0.1.6.tgz
+    version: 0.1.6
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
+        - kind: fixed
+          description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
+        - kind: added
+          description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Useful when the BYOI image lives in a private registry."
+        - kind: changed
+          description: "Pod-spec `imagePullSecrets:` rendering moved into a single `unity-mcp-server.imagePullSecretsBlock` helper. Default behavior unchanged when `imagePullSecret.create` is false."
+        - kind: changed
+          description: Bump appVersion from 9.6.6 to 9.6.8
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.6.8
+    created: "2026-04-30T02:39:55.931161065Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: 42d32dc26a5a8938b82abe7efc37de8e9bd5070836739686b8814a917608aadf
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.4/unity-mcp-server-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
+        - kind: fixed
+          description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
+        - kind: added
+          description: "`imagePullSecret.{create,name,dockerconfigjson}` for chart-managed `kubernetes.io/dockerconfigjson` Secret rendering. Combines with `imagePullSecrets[]` (BYOIPS, additive). Useful when the BYOI image lives in a private registry."
+        - kind: changed
+          description: "Pod-spec `imagePullSecrets:` rendering moved into a single `unity-mcp-server.imagePullSecretsBlock` helper. Default behavior unchanged when `imagePullSecret.create` is false."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.6.6
+    created: "2026-04-27T05:03:48.300336547Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: a2028d030fed143f2c3a593bcb37ca9f4fe0428131b753664d8577b4ab882944
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.3/unity-mcp-server-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
+        - kind: fixed
+          description: Replace hardcoded `v9.6.6` image tag in README and values.yaml examples with `YOUR_TAG` placeholder. The chart is bring-your-own-image — examples should not reference a specific upstream release that will go stale.
+        - kind: fixed
+          description: "`.helmignore` now excludes `upgrade.sh`, `backup/` and `ci/` from packaged chart tarballs (chart-maintainer tooling + CI values should not ship to consumers)."
+        - kind: changed
+          description: "`Chart.yaml` `appVersion` bumped from `3.0.0` (FastMCP library version, wrong) to `9.6.6` to match the upstream `CoplayDev/unity-mcp` release the chart was tested against. Aligns with what `upgrade.sh` (`github-release` source) reports."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.6.6
+    created: "2026-04-24T03:58:51.34754526Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: 280c2db5ecee75a246c82dc535be7af662018784adf8d3ad759af5a49a62dd72
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.2/unity-mcp-server-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release. Deployment + Service + optional Secret (MCP API key), HTTPRoute (Gateway API), Ingress, and NGINX Gateway Fabric ProxySettingsPolicy (SSE buffering off) wrappers. Image is bring-your-own — see README.
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 3.0.0
+    created: "2026-04-24T03:47:19.172159273Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: 369f0a72daa6c5da3f2ff62d50e38ae90d57e6bd851ea4b504213035189a7b09
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-05-04T05:06:29.656982237Z"
