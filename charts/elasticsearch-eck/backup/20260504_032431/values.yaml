@@ -71,7 +71,7 @@ name: ""
 
 # Elastic Stack version. Bump with upgrade.sh to stay in sync with Elastic's
 # latest GA. Kept in the CR spec.version field.
-version: "9.3.4"
+version: "9.3.3"
 
 # Optional override for the Elasticsearch container image. ECK defaults to
 # docker.elastic.co/elasticsearch/elasticsearch:<version>. Override for
