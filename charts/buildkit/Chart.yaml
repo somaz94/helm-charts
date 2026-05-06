@@ -2,7 +2,7 @@ apiVersion: v2
 name: buildkit
 description: Standalone BuildKit StatefulSet — moby/buildkit pod (rootful, privileged) with optional CA-bundle Secret + optional buildkitd.toml ConfigMap, cache PVC via volumeClaimTemplates, ClusterIP Service on TCP 1234. Suits dev/staging container builds where ephemeral buildx builders fail to verify a self-signed registry's OAuth token endpoint — bake the registry CA into the BuildKit pod's trust store so multi-arch buildx (kubernetes/remote driver) succeeds. NetworkPolicy, ServiceAccount, kubernetesExtra escape hatch.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "v0.29.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -31,8 +31,8 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Initial release. Standalone BuildKit StatefulSet with optional buildkitd.toml ConfigMap (registry trust + cache config), optional Secret (CA bundle for self-signed registries), volumeClaimTemplates cache PVC, ClusterIP Service (port 1234), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), kubernetesExtra escape hatch. Default appVersion v0.29.0; container runs rootful with privileged securityContext for cgroup mount (rootless mode left to a future toggle)."
+      description: "`registry.caBundle.installToTrustStore` (default false) — when true, an init container `install-ca` concatenates the base image's `/etc/ssl/certs/ca-certificates.crt` with the supplied registry CA into an emptyDir volume, and the main container's `SSL_CERT_FILE` env points at it. This makes BuildKit trust the registry CA at the OAuth token endpoint (`/service/token`), which buildkitd.toml's `[registry.<host>].ca` does NOT cover. Required for self-signed Harbor and similar registries with token-based auth."
     - kind: added
-      description: "`registry.caBundle.{enabled,existingSecret,key,host,ca}` for mounting a self-signed registry CA into BuildKit's trust store. When `existingSecret` is empty and `ca` is non-empty, the chart renders a Secret containing the CA file."
+      description: "`registry.caBundle.initContainerImage` / `initContainerImageTag` / `trustBundlePath` knobs to override the trust-store init container's image and the merged bundle's mount path."
     - kind: added
-      description: "`buildkitdConfig` opaque string mapped to `buildkitd.toml`. When empty the chart auto-renders a minimal config that wires `registry.caBundle.host` to the mounted CA path."
+      description: "NOTES.txt now flags whether the trust store has been installed and warns on the OAuth verification failure mode if it has not."

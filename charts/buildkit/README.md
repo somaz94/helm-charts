@@ -230,6 +230,19 @@ The default rootful BuildKit listener has no auth — restrict the Service via N
 | `registry.caBundle.host` | `""` | registry FQDN — used by the auto-rendered `buildkitd.toml` and to label the Secret |
 | `registry.caBundle.ca` | `""` | inline PEM bytes; required when `enabled=true` and `existingSecret` is empty |
 | `registry.caBundle.caPath` | `/etc/buildkit/certs/ca.crt` | mount path inside the pod |
+| `registry.caBundle.installToTrustStore` | `false` | when true (with `enabled=true`), an init container concatenates the base image's `/etc/ssl/certs/ca-certificates.crt` with the supplied CA into an emptyDir volume, and the main container's `SSL_CERT_FILE` env points at it. **Required for self-signed registries with OAuth token auth** — BuildKit's OAuth call uses the OS trust store, not `buildkitd.toml`'s `[registry.<host>].ca`. |
+| `registry.caBundle.initContainerImage` | `""` (= main image) | override init container image repository |
+| `registry.caBundle.initContainerImageTag` | `""` (= main image tag) | override init container image tag |
+| `registry.caBundle.trustBundlePath` | `/etc/ssl/certs-merged/ca-certificates.crt` | mount path of the merged bundle inside the main container |
+
+When does `installToTrustStore: true` matter? Two endpoints have different verification paths:
+
+| Endpoint | What buildkit uses | Effect of `[registry.<host>].ca` | Effect of `SSL_CERT_FILE` |
+|---|---|---|---|
+| Registry pull/push (`<host>/v2/...`) | `buildkitd.toml` registry config | trusted | trusted |
+| OAuth token (`<host>/service/token`) | OS trust store | **NOT used** | trusted |
+
+For Harbor (token-auth), without `installToTrustStore: true` you get `x509: certificate signed by unknown authority` at the OAuth step even though `caBundle.enabled: true` is set.
 
 <br/>
 

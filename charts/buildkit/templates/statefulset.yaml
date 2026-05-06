@@ -43,6 +43,25 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if eq (include "buildkit.useTrustStore" .) "true" }}
+      initContainers:
+        - name: install-ca
+          image: {{ include "buildkit.initContainerImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              cat /etc/ssl/certs/ca-certificates.crt /input/{{ .Values.registry.caBundle.key }} \
+                > /shared/{{ base .Values.registry.caBundle.trustBundlePath }}
+          volumeMounts:
+            - name: registry-ca
+              mountPath: /input
+              readOnly: true
+            - name: trust-bundle
+              mountPath: /shared
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -87,6 +106,11 @@ spec:
               containerPort: {{ .Values.listener.tcp.port }}
               protocol: TCP
           {{- end }}
+          {{- if eq (include "buildkit.useTrustStore" .) "true" }}
+          env:
+            - name: SSL_CERT_FILE
+              value: {{ .Values.registry.caBundle.trustBundlePath | quote }}
+          {{- end }}
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -112,6 +136,11 @@ spec:
               mountPath: {{ dir .Values.registry.caBundle.caPath | quote }}
               readOnly: true
             {{- end }}
+            {{- if eq (include "buildkit.useTrustStore" .) "true" }}
+            - name: trust-bundle
+              mountPath: {{ dir .Values.registry.caBundle.trustBundlePath | quote }}
+              readOnly: true
+            {{- end }}
       volumes:
         {{- if not .Values.persistence.enabled }}
         - name: cache
@@ -129,6 +158,10 @@ spec:
             items:
               - key: {{ .Values.registry.caBundle.key | quote }}
                 path: {{ base .Values.registry.caBundle.caPath | quote }}
+        {{- end }}
+        {{- if eq (include "buildkit.useTrustStore" .) "true" }}
+        - name: trust-bundle
+          emptyDir: {}
         {{- end }}
       {{- with .Values.podTemplateExtra }}
       {{- toYaml . | nindent 6 }}

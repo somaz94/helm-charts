@@ -5,6 +5,13 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.1] - 2026-05-06
+
+### Added
+- `registry.caBundle.installToTrustStore` (default false) — when true, an init container `install-ca` concatenates the base image's `/etc/ssl/certs/ca-certificates.crt` with the supplied registry CA into an emptyDir volume, and the main container's `SSL_CERT_FILE` env points at it. This makes BuildKit trust the registry CA at the OAuth token endpoint (`/service/token`), which buildkitd.toml's `[registry.<host>].ca` does NOT cover. Required for self-signed Harbor and similar registries with token-based auth.
+- `registry.caBundle.initContainerImage` / `initContainerImageTag` / `trustBundlePath` knobs to override the trust-store init container's image and the merged bundle's mount path.
+- NOTES.txt now flags whether the trust store has been installed and warns on the OAuth verification failure mode if it has not.
+
 ## [v0.1.0] - 2026-05-06
 
 ### Added

@@ -66,6 +66,26 @@ True when the chart should mount a CA Secret into the pod.
 {{- end -}}
 
 {{/*
+True when an init container should merge the registry CA into the OS trust
+store (concat with the base image's ca-certificates.crt) and the main
+container should point SSL_CERT_FILE at the result. Requires caBundle to be
+enabled.
+*/}}
+{{- define "buildkit.useTrustStore" -}}
+{{- if and .Values.registry.caBundle.enabled .Values.registry.caBundle.installToTrustStore -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{/*
+Image reference for the trust-store init container. Defaults to the chart's
+main image (alpine-based, ships system CA bundle + sh + cat).
+*/}}
+{{- define "buildkit.initContainerImage" -}}
+{{- $repo := default .Values.image.repository .Values.registry.caBundle.initContainerImage -}}
+{{- $tag := default (include "buildkit.imageTag" .) .Values.registry.caBundle.initContainerImageTag -}}
+{{- printf "%s:%s" $repo $tag -}}
+{{- end -}}
+
+{{/*
 True when a buildkitd.toml ConfigMap should be rendered. Either the user
 supplied an explicit `buildkitdConfig`, or the CA bundle is enabled and we
 auto-render a minimal config that wires the CA path.
