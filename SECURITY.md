@@ -14,6 +14,7 @@ Charts in scope:
 
 | Chart |
 |---|
+| buildkit |
 | certmanager-letsencrypt |
 | elasticsearch-eck |
 | ghost |

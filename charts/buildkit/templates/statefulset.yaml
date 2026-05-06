@@ -1,0 +1,192 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "buildkit.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "buildkit.labels" . | nindent 4 }}
+    app.kubernetes.io/component: buildkit
+    {{- with .Values.resourceMetadata.statefulSet.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "buildkit.annotations" (dict "top" . "extra" .Values.resourceMetadata.statefulSet.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "buildkit.serviceName" . }}
+  {{- with .Values.updateStrategy }}
+  updateStrategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "buildkit.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "buildkit.selectorLabels" . | nindent 8 }}
+      {{- if eq (include "buildkit.useConfigFile" .) "true" }}
+      annotations:
+        checksum/config: {{ include "buildkit.effectiveConfig" . | sha256sum }}
+      {{- end }}
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ .Values.serviceAccount.name | default (include "buildkit.fullname" .) }}
+      {{- else if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- include "buildkit.imagePullSecretsBlock" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      containers:
+        - name: buildkitd
+          image: "{{ .Values.image.repository }}:{{ include "buildkit.imageTag" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+            - --addr
+            - unix://{{ .Values.listener.unixSocket }}
+            {{- if .Values.listener.tcp.enabled }}
+            - --addr
+            - tcp://0.0.0.0:{{ .Values.listener.tcp.port }}
+            {{- end }}
+            {{- if eq (include "buildkit.useConfigFile" .) "true" }}
+            - --config
+            - /etc/buildkit/buildkitd.toml
+            {{- end }}
+          {{- if .Values.listener.tcp.enabled }}
+          ports:
+            - name: buildkitd
+              containerPort: {{ .Values.listener.tcp.port }}
+              protocol: TCP
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: cache
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+            {{- if eq (include "buildkit.useConfigFile" .) "true" }}
+            - name: config
+              mountPath: /etc/buildkit
+              readOnly: true
+            {{- end }}
+            {{- if eq (include "buildkit.useCaBundle" .) "true" }}
+            - name: registry-ca
+              mountPath: {{ dir .Values.registry.caBundle.caPath | quote }}
+              readOnly: true
+            {{- end }}
+      volumes:
+        {{- if not .Values.persistence.enabled }}
+        - name: cache
+          emptyDir: {}
+        {{- end }}
+        {{- if eq (include "buildkit.useConfigFile" .) "true" }}
+        - name: config
+          configMap:
+            name: {{ include "buildkit.configMapName" . }}
+        {{- end }}
+        {{- if eq (include "buildkit.useCaBundle" .) "true" }}
+        - name: registry-ca
+          secret:
+            secretName: {{ include "buildkit.caSecretName" . }}
+            items:
+              - key: {{ .Values.registry.caBundle.key | quote }}
+                path: {{ base .Values.registry.caBundle.caPath | quote }}
+        {{- end }}
+      {{- with .Values.podTemplateExtra }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: cache
+        labels:
+          {{- include "buildkit.labels" . | nindent 10 }}
+          app.kubernetes.io/component: buildkit
+          {{- with .Values.resourceMetadata.pvc.labels }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- $pvcAnn := include "buildkit.annotations" (dict "top" . "extra" (merge (deepCopy (default (dict) .Values.persistence.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.pvc.annotations)))) }}
+        {{- if $pvcAnn }}
+        annotations:
+          {{- $pvcAnn | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- with .Values.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+  {{- end }}
+  {{- with .Values.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "buildkit.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "buildkit.labels" . | nindent 4 }}
+    app.kubernetes.io/component: buildkit
+    {{- with .Values.resourceMetadata.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $svcAnn := include "buildkit.annotations" (dict "top" . "extra" (merge (deepCopy (default (dict) .Values.service.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.service.annotations)))) }}
+  {{- if $svcAnn }}
+  annotations:
+    {{- $svcAnn | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: buildkitd
+      port: {{ .Values.service.port }}
+      targetPort: buildkitd
+      protocol: TCP
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "buildkit.selectorLabels" . | nindent 4 }}

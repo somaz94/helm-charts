@@ -1,0 +1,235 @@
+# Default values for buildkit.
+#
+# The chart renders a single (or multi) replica BuildKit StatefulSet plus a
+# ClusterIP Service (port 1234) and a cache PVC via volumeClaimTemplates. An
+# optional ConfigMap (`buildkitd.toml`) and an optional Secret (registry CA
+# bundle) are rendered when their inputs are set.
+#
+# Topology: StatefulSet, default replicas=1, volumeClaimTemplates RWO. Suits
+# dev / staging buildx clusters where the registry is private and uses a
+# self-signed certificate (the ephemeral buildx buildkit container cannot bake
+# in a custom CA, so the standalone StatefulSet is the canonical workaround).
+#
+# Notes:
+#   - Default `securityContext.privileged: true`. BuildKit needs cgroup mount
+#     for the OCI worker; rootful is the simplest path. A rootless toggle is
+#     intentionally left for a future release — see Chart.yaml changes.
+#   - No backup CronJob — the cache PVC is rebuildable, not authoritative
+#     state. Resize / re-create freely.
+#   - Default Service is ClusterIP. Expose externally via `service.type:
+#     LoadBalancer` only inside trust boundaries (BuildKit's TCP listener has
+#     no auth in the default config).
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+commonLabels: {}
+commonAnnotations: {}
+
+resourceMetadata:
+  statefulSet:
+    labels: {}
+    annotations: {}
+  service:
+    labels: {}
+    annotations: {}
+  pvc:
+    labels: {}
+    annotations: {}
+  configMap:
+    labels: {}
+    annotations: {}
+  secret:
+    labels: {}
+    annotations: {}
+  serviceAccount:
+    labels: {}
+    annotations: {}
+  networkPolicy:
+    labels: {}
+    annotations: {}
+
+# ---------------------------------------------------------------------------
+# Naming
+# ---------------------------------------------------------------------------
+nameOverride: ""
+
+# Override the base name for the StatefulSet / Service / default ConfigMap /
+# default Secret. Use this to adopt pre-existing resources whose names do not
+# match the default `<release>-buildkit` pattern.
+fullnameOverride: ""
+
+configMap:
+  nameOverride: ""
+
+# ---------------------------------------------------------------------------
+# Image
+# ---------------------------------------------------------------------------
+image:
+  repository: moby/buildkit
+  tag: ""                         # empty → defaults to .Chart.AppVersion (v0.29.0).
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+imagePullSecret:
+  create: false
+  name: ""
+  dockerconfigjson: ""
+
+# ---------------------------------------------------------------------------
+# Replicas + StatefulSet update strategy
+# ---------------------------------------------------------------------------
+replicaCount: 1
+
+# StatefulSet's serviceName — must match the headless / ClusterIP Service that
+# fronts the pods. Defaults to the chart fullname.
+serviceName: ""
+
+updateStrategy:
+  type: RollingUpdate
+
+# ---------------------------------------------------------------------------
+# Service
+# ---------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 1234
+  nodePort: null
+  annotations: {}
+
+# ---------------------------------------------------------------------------
+# Persistence (volumeClaimTemplates entry)
+# ---------------------------------------------------------------------------
+# StatefulSet creates one PVC per replica via volumeClaimTemplates. There is
+# no `existingClaim` knob — the StatefulSet owns its PVCs. To carry cache
+# across reinstall, leave the PVC behind (default `helm uninstall` leaves
+# volumeClaimTemplates PVCs in place — unlike a chart-rendered standalone PVC).
+persistence:
+  enabled: true
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 20Gi
+  annotations: {}
+
+  # Mount path inside the buildkitd container. Default `/var/lib/buildkit`
+  # matches the upstream's documented cache directory.
+  mountPath: /var/lib/buildkit
+
+# ---------------------------------------------------------------------------
+# Registry trust (CA bundle for self-signed registries)
+# ---------------------------------------------------------------------------
+# When `enabled: true`, the chart mounts a CA file at `caPath` inside the
+# pod and (when `buildkitdConfig` is empty) auto-wires `registry."<host>".ca`
+# in the rendered buildkitd.toml. Source the CA from one of:
+#
+#   - existingSecret: the chart skips rendering its own Secret and mounts the
+#     given Secret. The key (default `ca.crt`) holds the PEM bytes.
+#   - ca:             chart renders a Secret containing the PEM bytes you
+#     supply inline (or via `--set-file`).
+#
+# `host` is the hostname BuildKit should associate the CA with — typically
+# the registry FQDN (e.g. `harbor.example.com`). It's used both when
+# auto-rendering buildkitd.toml and to label the rendered Secret.
+registry:
+  caBundle:
+    enabled: false
+    existingSecret: ""
+    key: ca.crt
+    host: ""
+    ca: ""
+    caPath: /etc/buildkit/certs/ca.crt
+
+# ---------------------------------------------------------------------------
+# buildkitd.toml
+# ---------------------------------------------------------------------------
+# When non-empty, the chart renders a ConfigMap with this content as
+# `buildkitd.toml` and starts buildkitd with `--config /etc/buildkit/buildkitd.toml`.
+# When empty AND `registry.caBundle.enabled` is true, the chart auto-renders
+# a minimal buildkitd.toml that wires the CA path.
+# When empty AND `registry.caBundle.enabled` is false, no ConfigMap is
+# rendered and buildkitd runs with its built-in defaults.
+buildkitdConfig: ""
+
+# ---------------------------------------------------------------------------
+# Buildkitd listener (--addr)
+# ---------------------------------------------------------------------------
+# Default unix socket is fine for `docker buildx --driver kubernetes` (which
+# uses `kubectl exec` under the hood) but the remote driver expects a TCP
+# listener. Enable `tcp.enabled: true` to add a TCP listener on `tcp.port`.
+listener:
+  unixSocket: /run/buildkit/buildkitd.sock
+  tcp:
+    enabled: true
+    port: 1234
+
+# ---------------------------------------------------------------------------
+# Pod scheduling + Resources
+# ---------------------------------------------------------------------------
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+
+podSecurityContext: {}
+
+# Default rootful + privileged. BuildKit needs cgroup mount for the OCI worker.
+# Override (e.g. drop `privileged`) only when running in a host environment
+# that pre-mounts the cgroup hierarchy and you understand the consequence.
+securityContext:
+  privileged: true
+
+# Probe defaults — `buildctl debug workers` exec probe. Confirms the worker
+# is registered, not just that the binary started.
+livenessProbe:
+  exec:
+    command:
+      - buildctl
+      - debug
+      - workers
+  initialDelaySeconds: 20
+  periodSeconds: 30
+readinessProbe:
+  exec:
+    command:
+      - buildctl
+      - debug
+      - workers
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+specExtra: {}
+podTemplateExtra: {}
+kubernetesExtra: {}
+
+# ---------------------------------------------------------------------------
+# ServiceAccount
+# ---------------------------------------------------------------------------
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+  imagePullSecrets: []
+  automountServiceAccountToken: true
+
+# ---------------------------------------------------------------------------
+# NetworkPolicy
+# ---------------------------------------------------------------------------
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+  podSelector: {}

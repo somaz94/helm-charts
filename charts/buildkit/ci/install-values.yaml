@@ -1,0 +1,43 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — credentials below are dummy and
+# must not be reused.
+registry:
+  caBundle:
+    enabled: true
+    host: registry.example.com
+    ca: |
+      -----BEGIN CERTIFICATE-----
+      MIICljCCAX4CCQDIyy0LdM3ngjANBgkqhkiG9w0BAQsFADANMQswCQYDVQQGEwJV
+      UzAeFw0yMzAxMDEwMDAwMDBaFw0zMzAxMDEwMDAwMDBaMA0xCzAJBgNVBAYTAlVT
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwxg4vQv7CIyy0LdM3ngj
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAA==
+      -----END CERTIFICATE-----
+buildkitdConfig: |
+  debug = false
+
+  [worker.oci]
+    max-parallelism = 2
+    gc = true
+
+  [registry."registry.example.com"]
+    ca = ["/etc/buildkit/certs/ca.crt"]
+serviceAccount:
+  create: true
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ci-app
+      ports:
+        - protocol: TCP
+          port: 1234
+imagePullSecret:
+  create: true
+  dockerconfigjson: eyJhdXRocyI6IHt9fQ==
