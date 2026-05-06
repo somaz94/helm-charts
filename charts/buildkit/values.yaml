@@ -141,6 +141,32 @@ registry:
     ca: ""
     caPath: /etc/buildkit/certs/ca.crt
 
+    # When true (and `enabled` is true), an init container concatenates the
+    # base image's system CA bundle with the supplied registry CA, writes the
+    # result to an emptyDir volume, and the main container points
+    # `SSL_CERT_FILE` at it. This makes BuildKit trust the registry CA at
+    # endpoints that bypass the `[registry.<host>].ca` config — most notably
+    # the OAuth token endpoint (`/service/token`), which uses the OS trust
+    # store rather than buildkitd.toml. Required for self-signed registries
+    # with token-based auth (typical Harbor setup).
+    #
+    # When false, the chart still mounts the CA at `caPath` for buildkitd's
+    # registry config — registry endpoints work, but the OAuth token call
+    # will fail cert verification.
+    installToTrustStore: false
+
+    # Image used by the init container that builds the merged trust bundle.
+    # Empty repository / tag inherit from `image.repository` and `image.tag`
+    # (the chart's main image is alpine-based and ships everything required:
+    # `cat`, system CA bundle at `/etc/ssl/certs/ca-certificates.crt`).
+    initContainerImage: ""
+    initContainerImageTag: ""
+
+    # Path inside the main container at which the merged trust bundle is
+    # exposed. The directory is mounted as an emptyDir volume; the file name
+    # at the end is the file the init container writes into it.
+    trustBundlePath: /etc/ssl/certs-merged/ca-certificates.crt
+
 # ---------------------------------------------------------------------------
 # buildkitd.toml
 # ---------------------------------------------------------------------------

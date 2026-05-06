@@ -4,6 +4,7 @@
 registry:
   caBundle:
     enabled: true
+    installToTrustStore: true
     host: registry.example.com
     ca: |
       -----BEGIN CERTIFICATE-----

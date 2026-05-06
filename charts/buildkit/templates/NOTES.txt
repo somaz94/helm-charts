@@ -16,6 +16,20 @@ Registry trust:
                   {{- else -}}
                   chart-rendered Secret `{{ include "buildkit.caSecretName" . }}` (key `{{ .Values.registry.caBundle.key }}`)
                   {{- end }}
+  {{- if eq (include "buildkit.useTrustStore" .) "true" }}
+  Trust store:    SSL_CERT_FILE={{ .Values.registry.caBundle.trustBundlePath }}
+                  (init container `install-ca` merges base image's
+                   /etc/ssl/certs/ca-certificates.crt with the registry CA;
+                   the merged bundle is used by buildkitd's OAuth token call)
+  {{- else }}
+  Trust store:    NOT installed — buildkitd will use the base image's stock
+                  trust store. The OAuth token endpoint
+                  (`{{ .Values.registry.caBundle.host | default "<registry>" }}/service/token`) ignores the
+                  `[registry.<host>].ca` config, so token auth against a
+                  self-signed registry will fail with
+                  `x509: certificate signed by unknown authority`.
+                  Set `registry.caBundle.installToTrustStore: true` to fix.
+  {{- end }}
 {{- end }}
 
 Use from buildx (kubernetes driver, in-cluster):
@@ -32,6 +46,17 @@ Use from buildx (remote driver, in-cluster TCP):
     --driver remote \
     --name {{ include "buildkit.name" . }} \
     tcp://{{ include "buildkit.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+  # IMPORTANT: `cluster.local` above is the standard Kubernetes default —
+  # confirm your cluster's actual DNS suffix before copying. Some clusters
+  # use a custom suffix configured in CoreDNS (`kubernetes <suffix>` line)
+  # and shown in pods at `/etc/resolv.conf`'s `search` list. Resolve from
+  # any pod with:
+  #   kubectl run dnstest --rm -it --image=alpine --restart=Never -- \
+  #     nslookup {{ include "buildkit.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  # If it returns NXDOMAIN, replace `cluster.local` with the suffix from
+  # `cat /etc/resolv.conf | grep search` inside any pod (e.g.
+  # `my-cluster.local`).
 
   # Note: the default rootful BuildKit listener has no auth. Restrict access
   # via NetworkPolicy / Service scope, or front it with mTLS (see upstream

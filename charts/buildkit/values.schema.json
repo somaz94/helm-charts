@@ -97,12 +97,16 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled":        { "type": "boolean" },
-            "existingSecret": { "type": "string" },
-            "key":            { "type": "string", "minLength": 1 },
-            "host":           { "type": "string" },
-            "ca":             { "type": "string" },
-            "caPath":         { "type": "string", "minLength": 1 }
+            "enabled":                { "type": "boolean" },
+            "existingSecret":         { "type": "string" },
+            "key":                    { "type": "string", "minLength": 1 },
+            "host":                   { "type": "string" },
+            "ca":                     { "type": "string" },
+            "caPath":                 { "type": "string", "minLength": 1 },
+            "installToTrustStore":    { "type": "boolean" },
+            "initContainerImage":     { "type": "string" },
+            "initContainerImageTag":  { "type": "string" },
+            "trustBundlePath":        { "type": "string", "minLength": 1 }
           }
         }
       }
