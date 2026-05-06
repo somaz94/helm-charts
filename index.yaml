@@ -5,6 +5,54 @@ entries:
       artifacthub.io/category: integration-delivery
       artifacthub.io/changes: |
         - kind: added
+          description: "`registry.caBundle.installToTrustStore` (default false) — when true, an init container `install-ca` concatenates the base image's `/etc/ssl/certs/ca-certificates.crt` with the supplied registry CA into an emptyDir volume, and the main container's `SSL_CERT_FILE` env points at it. This makes BuildKit trust the registry CA at the OAuth token endpoint (`/service/token`), which buildkitd.toml's `[registry.<host>].ca` does NOT cover. Required for self-signed Harbor and similar registries with token-based auth."
+        - kind: added
+          description: "`registry.caBundle.initContainerImage` / `initContainerImageTag` / `trustBundlePath` knobs to override the trust-store init container's image and the merged bundle's mount path."
+        - kind: added
+          description: "NOTES.txt now flags whether the trust store has been installed and warns on the OAuth verification failure mode if it has not."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: BuildKit upstream
+          url: https://github.com/moby/buildkit
+        - name: Buildx kubernetes driver
+          url: https://docs.docker.com/build/builders/drivers/kubernetes/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: v0.29.0
+    created: "2026-05-06T08:14:40.091932856Z"
+    description: Standalone BuildKit StatefulSet — moby/buildkit pod (rootful, privileged)
+      with optional CA-bundle Secret + optional buildkitd.toml ConfigMap, cache PVC
+      via volumeClaimTemplates, ClusterIP Service on TCP 1234. Suits dev/staging container
+      builds where ephemeral buildx builders fail to verify a self-signed registry's
+      OAuth token endpoint — bake the registry CA into the BuildKit pod's trust store
+      so multi-arch buildx (kubernetes/remote driver) succeeds. NetworkPolicy, ServiceAccount,
+      kubernetesExtra escape hatch.
+    digest: b7c58f37dab43d1d488104fac624c3146986d29e6650ea95cb19cf052c373207
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - buildkit
+    - buildx
+    - oci-build
+    - cicd
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: buildkit
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/moby/buildkit
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/buildkit-0.1.1/buildkit-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
           description: "Initial release. Standalone BuildKit StatefulSet with optional buildkitd.toml ConfigMap (registry trust + cache config), optional Secret (CA bundle for self-signed registries), volumeClaimTemplates cache PVC, ClusterIP Service (port 1234), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), kubernetesExtra escape hatch. Default appVersion v0.29.0; container runs rootful with privileged securityContext for cgroup mount (rootless mode left to a future toggle)."
         - kind: added
           description: "`registry.caBundle.{enabled,existingSecret,key,host,ca}` for mounting a self-signed registry CA into BuildKit's trust store. When `existingSecret` is empty and `ca` is non-empty, the chart renders a Secret containing the CA file."
@@ -1666,4 +1714,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-06T07:03:03.722306368Z"
+generated: "2026-05-06T08:14:40.092002486Z"
