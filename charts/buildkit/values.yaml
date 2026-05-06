@@ -164,8 +164,19 @@ registry:
 
     # Path inside the main container at which the merged trust bundle is
     # exposed. The directory is mounted as an emptyDir volume; the file name
-    # at the end is the file the init container writes into it.
+    # at the end is the file the init container writes into it. This path is
+    # also used as `SSL_CERT_FILE` for Go-native crypto/x509 consumers.
     trustBundlePath: /etc/ssl/certs-merged/ca-certificates.crt
+
+    # System trust store overlay path. When set, the merged bundle is also
+    # mounted (subPath) at this absolute path inside the main container,
+    # overlaying the OS's default trust store file. Required for BuildKit's
+    # OAuth token call against self-signed Harbor — containerd's resolver
+    # only reads the system trust store, never `SSL_CERT_FILE`. Leave empty
+    # to skip the overlay (only the directory mount + SSL_CERT_FILE env
+    # remain — sufficient for clients that honour the env var).
+    # Defaults to alpine's convention; set "" to disable.
+    systemTrustStorePath: /etc/ssl/certs/ca-certificates.crt
 
 # ---------------------------------------------------------------------------
 # buildkitd.toml

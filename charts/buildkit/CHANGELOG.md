@@ -5,6 +5,14 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.2] - 2026-05-06
+
+### Added
+- `registry.caBundle.systemTrustStorePath` (default `/etc/ssl/certs/ca-certificates.crt`) — when `installToTrustStore` is true, the merged bundle is also subPath-mounted at this absolute path inside the main container, overlaying the OS's default trust store file. Required for BuildKit's OAuth token call against self-signed Harbor: containerd's docker resolver only reads the system trust store and ignores `SSL_CERT_FILE`, so the previous 0.1.1 setup (env var + sibling directory mount) was insufficient. Set to empty string to disable the overlay.
+
+### Fixed
+- 0.1.1 set `installToTrustStore: true` but BuildKit OAuth still failed with `x509: certificate signed by unknown authority` because the env-var-only setup did not reach containerd. 0.1.2 ships the system path overlay by default (alpine-style `ca-certificates.crt`), so the OAuth client picks the merged bundle up automatically.
+
 ## [v0.1.1] - 2026-05-06
 
 ### Added
