@@ -1,0 +1,49 @@
+buildkit {{ .Chart.Version }} (BuildKit {{ include "buildkit.imageTag" . }}) installed.
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Service:
+  {{ include "buildkit.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+{{- if eq (include "buildkit.useCaBundle" .) "true" }}
+
+Registry trust:
+  CA mounted at:  {{ .Values.registry.caBundle.caPath }}
+  Configured for: {{ .Values.registry.caBundle.host | default "(host not set — buildkitdConfig is custom)" }}
+  Source:         {{ if .Values.registry.caBundle.existingSecret -}}
+                  existing Secret `{{ .Values.registry.caBundle.existingSecret }}` (key `{{ .Values.registry.caBundle.key }}`)
+                  {{- else -}}
+                  chart-rendered Secret `{{ include "buildkit.caSecretName" . }}` (key `{{ .Values.registry.caBundle.key }}`)
+                  {{- end }}
+{{- end }}
+
+Use from buildx (kubernetes driver, in-cluster):
+  docker buildx create \
+    --driver kubernetes \
+    --driver-opt namespace={{ .Release.Namespace }} \
+    --driver-opt qemu.install=true \
+    --name {{ include "buildkit.name" . }} --use
+
+{{- if .Values.listener.tcp.enabled }}
+
+Use from buildx (remote driver, in-cluster TCP):
+  docker buildx create \
+    --driver remote \
+    --name {{ include "buildkit.name" . }} \
+    tcp://{{ include "buildkit.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+  # Note: the default rootful BuildKit listener has no auth. Restrict access
+  # via NetworkPolicy / Service scope, or front it with mTLS (see upstream
+  # docs for `--tlscacert`/`--tlscert`/`--tlskey`).
+{{- end }}
+
+Inspect the running pod:
+  kubectl -n {{ .Release.Namespace }} get statefulset/{{ include "buildkit.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} logs sts/{{ include "buildkit.fullname" . }} -c buildkitd | tail -30
+  kubectl -n {{ .Release.Namespace }} exec sts/{{ include "buildkit.fullname" . }} -- buildctl debug workers
+
+NOTE: The default `securityContext.privileged: true` is required for the OCI
+worker's cgroup mount when running rootful. Drop it only when the host
+environment pre-mounts the cgroup hierarchy and you understand the
+consequence.
