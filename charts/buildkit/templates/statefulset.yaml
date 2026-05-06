@@ -140,6 +140,12 @@ spec:
             - name: trust-bundle
               mountPath: {{ dir .Values.registry.caBundle.trustBundlePath | quote }}
               readOnly: true
+            {{- if .Values.registry.caBundle.systemTrustStorePath }}
+            - name: trust-bundle
+              mountPath: {{ .Values.registry.caBundle.systemTrustStorePath | quote }}
+              subPath: {{ base .Values.registry.caBundle.trustBundlePath | quote }}
+              readOnly: true
+            {{- end }}
             {{- end }}
       volumes:
         {{- if not .Values.persistence.enabled }}

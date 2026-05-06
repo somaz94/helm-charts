@@ -106,7 +106,8 @@
             "installToTrustStore":    { "type": "boolean" },
             "initContainerImage":     { "type": "string" },
             "initContainerImageTag":  { "type": "string" },
-            "trustBundlePath":        { "type": "string", "minLength": 1 }
+            "trustBundlePath":        { "type": "string", "minLength": 1 },
+            "systemTrustStorePath":   { "type": "string" }
           }
         }
       }

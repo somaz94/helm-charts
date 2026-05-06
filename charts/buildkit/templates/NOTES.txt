@@ -18,9 +18,16 @@ Registry trust:
                   {{- end }}
   {{- if eq (include "buildkit.useTrustStore" .) "true" }}
   Trust store:    SSL_CERT_FILE={{ .Values.registry.caBundle.trustBundlePath }}
+  {{- if .Values.registry.caBundle.systemTrustStorePath }}
+                  System overlay: {{ .Values.registry.caBundle.systemTrustStorePath }}
+                  (subPath-mounted from the merged bundle — required for
+                   BuildKit's OAuth token call, which reads the OS trust
+                   store rather than $SSL_CERT_FILE)
+  {{- else }}
                   (init container `install-ca` merges base image's
                    /etc/ssl/certs/ca-certificates.crt with the registry CA;
-                   the merged bundle is used by buildkitd's OAuth token call)
+                   only Go-native crypto/x509 consumers will pick this up)
+  {{- end }}
   {{- else }}
   Trust store:    NOT installed — buildkitd will use the base image's stock
                   trust store. The OAuth token endpoint
