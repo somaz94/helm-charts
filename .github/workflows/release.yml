@@ -12,6 +12,10 @@ on:
         description: "Comma-separated chart paths to push to OCI (e.g. charts/foo,charts/bar). Leave empty to skip OCI step."
         required: false
         default: ""
+      dry_run:
+        description: "Detect-only run: skip the changelog-sync push, chart-releaser, and OCI push. Use to verify the sync logic without releasing."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,12 +35,81 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          # PAT_TOKEN so the changelog-sync step below can push back to main
+          # and re-trigger this workflow's safeguards. The re-triggered run
+          # is a no-op (no new version bumps in the sync commit, and
+          # chart-releaser skip_existing=true), so the loop costs ~30s of
+          # CI but never publishes twice.
+          token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 0
 
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      # Safety net for the case where a chart's Chart.yaml `version:` was
+      # bumped on main without a matching CHANGELOG.md update — typically
+      # an admin merge that bypassed PR review, a direct push, or a PR
+      # that pre-dated changelog-auto.yml. We sync here BEFORE
+      # chart-releaser so the published .tgz contains the correct
+      # CHANGELOG.md, then commit the sync back to main as a follow-up.
+      # changelog-auto.yml handles the PR flow; this step is the fallback.
+      - name: Detect charts needing CHANGELOG.md sync
+        id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          # workflow_dispatch has no before/after; fall back to HEAD~1...HEAD
+          # so the manual-trigger code path still runs the same detection.
+          ref_a="${BEFORE:-HEAD~1}"
+          ref_b="${AFTER:-HEAD}"
+          missing_list=$(bash scripts/changelog/detect-bumped-charts.sh "$ref_a" "$ref_b")
+          if [ -z "$missing_list" ]; then
+            echo "No charts need CHANGELOG.md sync at release time."
+            echo "charts=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Charts needing CHANGELOG sync (release-time fallback):"
+            while IFS= read -r c; do
+              [ -n "$c" ] && printf '  - %s\n' "$c"
+            done <<< "$missing_list"
+            charts_line=$(echo "$missing_list" | tr '\n' ' ' | sed 's/ *$//')
+            echo "charts=${charts_line}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sync CHANGELOG.md for detected charts
+        if: steps.detect.outputs.charts != ''
+        env:
+          CHARTS: ${{ steps.detect.outputs.charts }}
+        run: |
+          set -euo pipefail
+          # yq v4 (mikefarah/yq) is preinstalled on ubuntu-latest runners;
+          # sync-changelog.sh's require_yq aborts loudly if that ever changes.
+          for c in $CHARTS; do
+            echo "==> syncing charts/$c"
+            bash scripts/changelog/sync-changelog.sh "charts/$c"
+          done
+
+      # Skipped on dry_run — leaves the synced files in the working tree so
+      # the operator can inspect them via the workflow's "Sync CHANGELOG.md"
+      # log without a real commit landing on main.
+      - name: Commit and push sync to main
+        if: steps.detect.outputs.charts != '' && inputs.dry_run != true
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- charts/; then
+            echo "sync-changelog.sh produced no diff — skipping commit."
+            exit 0
+          fi
+          # Reuse github-actions[bot] identity rather than $GITHUB_ACTOR so
+          # the sync commit is clearly attributable to automation.
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'charts/*/CHANGELOG.md'
+          git commit -m "chore(changelog): sync from Chart.yaml"
+          git push origin HEAD:main
 
       - name: Set up Helm
         uses: azure/setup-helm@v5
@@ -45,6 +118,7 @@ jobs:
 
       - name: Run chart-releaser
         id: cr
+        if: inputs.dry_run != true
         uses: helm/chart-releaser-action@v1.7.0
         with:
           charts_dir: charts
@@ -53,15 +127,28 @@ jobs:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push released charts to GHCR (OCI)
-        if: steps.cr.outputs.changed_charts != ''
+        if: inputs.dry_run != true && steps.cr.outputs.changed_charts != ''
         uses: somaz94/helm-oci-push-action@v1
         with:
           charts: ${{ steps.cr.outputs.changed_charts }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push manually-specified charts to GHCR (OCI) [workflow_dispatch only]
-        if: github.event_name == 'workflow_dispatch' && inputs.charts != ''
+        if: inputs.dry_run != true && github.event_name == 'workflow_dispatch' && inputs.charts != ''
         uses: somaz94/helm-oci-push-action@v1
         with:
           charts: ${{ inputs.charts }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dry-run summary
+        if: inputs.dry_run == true
+        env:
+          CHARTS: ${{ steps.detect.outputs.charts }}
+        run: |
+          echo "=== DRY RUN ==="
+          if [ -n "${CHARTS}" ]; then
+            echo "Would have synced: ${CHARTS}"
+          else
+            echo "No charts needed sync."
+          fi
+          echo "Skipped: changelog commit/push, chart-releaser, OCI push."

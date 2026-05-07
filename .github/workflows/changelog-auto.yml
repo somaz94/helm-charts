@@ -1,0 +1,111 @@
+name: Changelog auto-sync
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'charts/**'
+      - 'scripts/changelog/**'
+      - '.github/workflows/changelog-auto.yml'
+
+# `contents: write` is needed for the bot to push a sync commit back to the
+# PR branch. lint.yml's `changelog-check` job is kept untouched as the
+# independent safeguard if this workflow can't run (e.g. fork PRs).
+permissions:
+  contents: write
+
+concurrency:
+  group: changelog-auto-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Generate and commit CHANGELOG.md updates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip:
+    #   - the bot's own follow-up sync push (loop guard).
+    #   - fork PRs — head repo is not writable from the workflow's
+    #     GITHUB_TOKEN, and `secrets.PAT_TOKEN` is sanitized away on fork
+    #     PRs. Fork contributors fall through to lint.yml's
+    #     `changelog-check` job, whose error message already instructs
+    #     them to run `make changelog CHART=<name>` and push.
+    if: |
+      github.actor != 'github-actions[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          # PAT_TOKEN (not GITHUB_TOKEN) so the resulting push re-triggers
+          # lint.yml — pushes made with GITHUB_TOKEN do not trigger other
+          # workflows (documented limitation; same constraint as
+          # check-versions.yml).
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Detect charts with version bumps but no CHANGELOG.md update
+        id: detect
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          base="origin/${BASE_REF}"
+          git fetch origin "${BASE_REF}" --depth=0 >/dev/null 2>&1 || git fetch origin "${BASE_REF}"
+          # detect-bumped-charts.sh prints one chart name per line. The same
+          # script is reused by .github/workflows/release.yml (push-to-main
+          # safeguard). lint.yml's changelog-check intentionally keeps its
+          # own inline copy as an independent guard.
+          missing_list=$(bash scripts/changelog/detect-bumped-charts.sh "${base}" "HEAD")
+          if [ -z "$missing_list" ]; then
+            echo "No charts need CHANGELOG.md sync."
+            echo "charts=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Charts needing CHANGELOG sync:"
+            while IFS= read -r c; do
+              [ -n "$c" ] && printf '  - %s\n' "$c"
+            done <<< "$missing_list"
+            # Space-separated form for downstream "for c in $CHARTS" consumers.
+            charts_line=$(echo "$missing_list" | tr '\n' ' ' | sed 's/ *$//')
+            echo "charts=${charts_line}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate CHANGELOG.md for each chart
+        if: steps.detect.outputs.charts != ''
+        env:
+          CHARTS: ${{ steps.detect.outputs.charts }}
+        run: |
+          set -euo pipefail
+          # yq v4 (mikefarah/yq) is preinstalled on ubuntu-latest runners.
+          # sync-changelog.sh's require_yq aborts loudly if that ever changes.
+          for c in $CHARTS; do
+            echo "==> syncing charts/$c"
+            bash scripts/changelog/sync-changelog.sh "charts/$c"
+          done
+
+      - name: Commit and push to PR branch
+        if: steps.detect.outputs.charts != ''
+        env:
+          PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          # Nothing to commit if sync was a no-op (e.g. all target sections
+          # were already present — sync-changelog.sh is idempotent).
+          if git diff --quiet -- charts/; then
+            echo "sync-changelog.sh produced no diff — skipping commit."
+            exit 0
+          fi
+          git add 'charts/*/CHANGELOG.md'
+          git commit -m "chore(changelog): sync from Chart.yaml"
+          # Race-tolerant push: rebase on top of any concurrent author
+          # commits, then push. If the rebase or push still fails, fail
+          # loud and let the author re-trigger.
+          git fetch origin "${PR_HEAD_BRANCH}"
+          git rebase "origin/${PR_HEAD_BRANCH}"
+          git push origin "HEAD:${PR_HEAD_BRANCH}"
