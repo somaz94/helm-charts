@@ -1647,6 +1647,50 @@ entries:
   - annotations:
       artifacthub.io/category: ai-machine-learning
       artifacthub.io/changes: |
+        - kind: changed
+          description: Bump appVersion from 9.6.8 to 9.7.1
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.7.1
+    created: "2026-05-26T01:33:58.415570856Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: 2d361dbfdf07702728061eb45fe502444459359fac91fd4a5758e729543486a2
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.7/unity-mcp-server-0.1.7.tgz
+    version: 0.1.7
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
         - kind: fixed
           description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
       artifacthub.io/license: Apache-2.0
@@ -1892,4 +1936,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-26T01:30:37.447169453Z"
+generated: "2026-05-26T01:33:58.41564188Z"
