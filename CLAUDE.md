@@ -93,7 +93,7 @@ Include a chart-local `upgrade.sh` **only** when the chart wraps a third-party c
 `upgrade.sh` must:
 
 - Live at `charts/<chart>/upgrade.sh`, marked executable, gitignored-from-packaging via `.helmignore` (add `upgrade.sh` and `backup/`).
-- Have a `# upgrade-template: helm-charts/<template-name>` header on line 2 for future aggregator (`check-versions.sh`) discovery.
+- Have a `# upgrade-template: <template-path>` header on line 2 for future aggregator (`check-versions.sh`) discovery. `<template-path>` is the canonical template's path **relative to `scripts/upgrade-sync/templates/`** — e.g. `chart-appversion` for `templates/chart-appversion.sh`, or `helm-charts/external-tracked` for `templates/helm-charts/external-tracked.sh`.
 - Be **file-only**: rewrite `Chart.yaml` `appVersion` and `values.yaml` `version`. **Never** call `kubectl`, `helm`, or `helmfile`.
 - Ship `--dry-run`, `--version <v>`, `--rollback`, `--list-backups`, `--cleanup-backups`.
 - Back up to `backup/<timestamp>/` before writing. Keep `KEEP_BACKUPS` (default 5).
