@@ -29,7 +29,16 @@ The chart renders the ECK `Kibana` Custom Resource plus optional siblings (Servi
 - `values.yaml` **version** — rendered into `spec.version` of the Kibana CR. Override to pin at install time.
 - `values.yaml` **image** — optional full image reference override.
 
-`upgrade.sh` enforces **Kibana version ≤ Elasticsearch version** by reading the sibling `../elasticsearch-eck/values.yaml`.
+<br/>
+
+### Sibling version lock
+
+`upgrade.sh` enforces **Kibana version ≤ Elasticsearch version** by reading the sibling chart `../elasticsearch-eck/values.yaml` and refusing any bump that would exceed the linked ES `version`. This matches ECK's own compatibility rule (Kibana must not run ahead of the Elasticsearch cluster it talks to).
+
+- Lookup target: `../elasticsearch-eck/values.yaml` (`version:` key), falling back to `../elasticsearch-eck/Chart.yaml` `appVersion`
+- If the sibling chart is unreachable (path missing or both lookups empty), the check is **skipped with a WARN** — the bump proceeds, so keep the sibling chart on disk during upgrades
+- If the resolved target exceeds the sibling version, `upgrade.sh` exits 1 and prints the exact `cd ../elasticsearch-eck && ./upgrade.sh --version <X.Y.Z>` command to run first
+- `./upgrade.sh --version <X.Y.Z>` still runs through the same sibling check; use it only when intentionally aligning to an ES version already deployed elsewhere
 
 <br/>
 

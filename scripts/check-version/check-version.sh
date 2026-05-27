@@ -29,6 +29,10 @@ unset _SCRIPT_PATH
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CHARTS_DIR="$REPO_ROOT/charts"
 
+# Shared helpers: log/warn/die/info. No tmp-file cleanup needed here —
+# this script writes branches/commits, not throwaway files.
+. "$SCRIPT_DIR/../lib/common.sh"
+
 # Defaults
 MODE="check"            # check | apply
 INCLUDE_MAJOR=false
@@ -83,20 +87,20 @@ while [[ $# -gt 0 ]]; do
     --check)          MODE="check"; shift ;;
     --apply)          MODE="apply"; shift ;;
     --chart)
-      [ -z "${2:-}" ] && { echo "ERROR: --chart requires a name" >&2; exit 1; }
+      [ -z "${2:-}" ] && die "--chart requires a name"
       INCLUDE_CHARTS+=("$2"); shift 2 ;;
     --skip-chart)
-      [ -z "${2:-}" ] && { echo "ERROR: --skip-chart requires a name" >&2; exit 1; }
+      [ -z "${2:-}" ] && die "--skip-chart requires a name"
       EXCLUDE_CHARTS+=("$2"); shift 2 ;;
     --include-major)  INCLUDE_MAJOR=true; shift ;;
     --no-pr)          NO_PR=true; shift ;;
     --no-ci)          NO_CI=true; shift ;;
     --output)
-      [ -z "${2:-}" ] && { echo "ERROR: --output requires a value" >&2; exit 1; }
-      case "$2" in text|github) OUTPUT="$2" ;; *) echo "ERROR: --output must be text or github" >&2; exit 1 ;; esac
+      [ -z "${2:-}" ] && die "--output requires a value"
+      case "$2" in text|github) OUTPUT="$2" ;; *) die "--output must be text or github" ;; esac
       shift 2 ;;
     -h|--help)        usage; exit 0 ;;
-    *)                echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
+    *)                log "Unknown option: $1"; usage >&2; exit 1 ;;
   esac
 done
 
@@ -194,7 +198,7 @@ print("\x01".join(fields))
 # Working tree must be clean before --apply touches anything.
 ensure_clean_tree() {
   if [ -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null)" ]; then
-    echo "ERROR: working tree is dirty. Commit or stash before running --apply." >&2
+    log "ERROR: working tree is dirty. Commit or stash before running --apply."
     git -C "$REPO_ROOT" status --short >&2
     exit 1
   fi
@@ -209,10 +213,8 @@ restore_chart() {
 
 # Switch back to BASE_BRANCH (used between charts in --apply mode).
 checkout_base() {
-  git -C "$REPO_ROOT" checkout "$BASE_BRANCH" >/dev/null 2>&1 || {
-    echo "ERROR: failed to checkout $BASE_BRANCH" >&2
-    exit 1
-  }
+  git -C "$REPO_ROOT" checkout "$BASE_BRANCH" >/dev/null 2>&1 \
+    || die "failed to checkout $BASE_BRANCH"
 }
 
 # -----------------------------------------------
@@ -641,13 +643,10 @@ echo "Charts to process: ${CHARTS[*]}"
 if [ "$MODE" = "apply" ]; then
   ensure_clean_tree
   current_branch=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)
-  if [ "$current_branch" != "$BASE_BRANCH" ]; then
-    echo "ERROR: must be on $BASE_BRANCH to run --apply (currently on $current_branch)" >&2
-    exit 1
-  fi
-  if ! $NO_PR && ! command -v gh >/dev/null 2>&1; then
-    echo "ERROR: gh CLI not found; install it or use --no-pr" >&2
-    exit 1
+  [ "$current_branch" = "$BASE_BRANCH" ] \
+    || die "must be on $BASE_BRANCH to run --apply (currently on $current_branch)"
+  if ! $NO_PR; then
+    require_command gh "install it or use --no-pr"
   fi
 fi
 

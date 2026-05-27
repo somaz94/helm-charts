@@ -10,7 +10,8 @@ in here touches a live cluster.
 scripts/
 ├─ upgrade-sync/    # canonical-body propagation for charts/*/upgrade.sh
 ├─ check-version/   # drift detection + auto-bump PR orchestration
-└─ changelog/       # Chart.yaml annotation -> charts/*/CHANGELOG.md mirror
+├─ changelog/       # Chart.yaml annotation -> charts/*/CHANGELOG.md mirror
+└─ lib/             # shared helpers sourced by the scripts above (NOT executed)
 ```
 
 <br/>
@@ -105,8 +106,9 @@ Additional, per sub-system:
 - `gh` (`check-version --apply` without `--no-pr`)
 - `shellcheck` (optional; `make shell-lint` runs it when available, and
   `STRICT=1 make shell-lint` requires it for CI)
-- `yq` is **not** required — every YAML touch goes through inline `python3` to
-  avoid an extra dependency.
+- `yq` v4 (mikefarah/yq) — required by `changelog/sync-changelog.sh` for
+  reading `annotations.artifacthub.io/changes`. The other two sub-systems do
+  not depend on it; their YAML touches go through inline `python3`.
 
 <br/>
 
@@ -115,3 +117,18 @@ Additional, per sub-system:
 - [upgrade-sync/README.md](upgrade-sync/README.md) — canonical-body markers, available templates, the publisher↔consumer flow with `kuberntes-infra`, and the `--dry-run --json` schema.
 - [check-version/README.md](check-version/README.md) — drift status codes, GitHub Actions wiring, sibling-chart ordering, and PR creation.
 - [changelog/README.md](changelog/README.md) — Chart.yaml annotation RESET semantics and the Keep a Changelog mapping.
+
+<br/>
+
+## Shared library — `scripts/lib/common.sh`
+
+Sourced (NOT executed) by every script above. Provides:
+
+| Helper | Purpose |
+|---|---|
+| `log` / `info` / `warn` / `die` | stderr logging with consistent prefixes — keeps stdout reserved for machine-readable output |
+| `init_tmp_cleanup` + `mktemp_tracked` | mktemp variants that auto-clean on `EXIT`, protecting against SIGTERM / `set -e` leaks between mktemp and the success-path mv |
+| `require_command <cmd> [hint]` | abort with a clear message + install hint when a CLI is missing |
+| `require_yq_v4` | yq presence + version 4.x guard (used by `sync-changelog.sh`) |
+
+Idempotent — guarded against double-sourcing. Does NOT call `set -euo pipefail` and does NOT install a trap unconditionally; callers decide their own strictness and opt into cleanup via `init_tmp_cleanup`.

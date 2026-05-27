@@ -36,23 +36,10 @@ CHARTS_DIR="$REPO_ROOT/charts"
 BEGIN_MARKER="# === BEGIN CANONICAL BODY ==="
 END_MARKER="# === END CANONICAL BODY ==="
 
-# All temp files allocated by this run; cleaned up on EXIT (success or error).
-TMP_FILES=()
-cleanup_tmp() {
-  local f
-  for f in "${TMP_FILES[@]:-}"; do
-    [ -n "$f" ] && rm -f "$f"
-  done
-  return 0
-}
-trap cleanup_tmp EXIT
-
-mktemp_tracked() {
-  local f
-  f=$(mktemp)
-  TMP_FILES+=("$f")
-  printf '%s' "$f"
-}
+# Shared helpers: log/warn/die/info, mktemp_tracked, EXIT-time cleanup of
+# every mktemp_tracked file (success or error).
+. "$SCRIPT_DIR/../lib/common.sh"
+init_tmp_cleanup
 
 # Refuse `--apply` when the working tree contains uncommitted changes that
 # touch files this script will rewrite (charts/*/upgrade.sh). `--force`

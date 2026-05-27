@@ -21,6 +21,27 @@ else
 TARGET_CHARTS := $(CHART)
 endif
 
+# Shared helm-template invocation used by `template` and `validate`. Collects
+# any charts/<c>/ci/*.yaml as `-f` flags before rendering. Expanded inside a
+# `for c in $(TARGET_CHARTS); do ... done` loop, so $$c is the current chart.
+HELM_TEMPLATE_CMD = ci_args=""; \
+	for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
+		[ -f "$$f" ] && ci_args="$$ci_args -f $$f"; \
+	done; \
+	helm template ci $(CHARTS_DIR)/$$c $$ci_args
+
+# Guards for chart-specific targets. Usage at recipe start:
+#   $(call require_chart,make bump CHART=<name> LEVEL=patch)
+# Emits a single line per error; example string is the user-facing hint.
+define require_chart
+	@if [ -z "$(CHART)" ]; then \
+		echo "ERROR: CHART is required (e.g. $(1))"; exit 1; \
+	fi
+	@if [ ! -d "$(CHARTS_DIR)/$(CHART)" ]; then \
+		echo "ERROR: chart not found: $(CHARTS_DIR)/$(CHART)"; exit 1; \
+	fi
+endef
+
 .PHONY: all
 all: lint template ## Default: lint + template all charts.
 
@@ -39,8 +60,7 @@ charts: ## List all charts and their current versions.
 
 .PHONY: version
 version: ## Show CHART current version. Usage: make version CHART=<name>
-	@if [ -z "$(CHART)" ]; then echo "ERROR: CHART is required"; exit 1; fi
-	@if [ ! -d "$(CHARTS_DIR)/$(CHART)" ]; then echo "ERROR: chart not found: $(CHARTS_DIR)/$(CHART)"; exit 1; fi
+	$(call require_chart,make version CHART=<name>)
 	@awk '/^version:/ {print $$2}' $(CHARTS_DIR)/$(CHART)/Chart.yaml
 
 ##@ Development
@@ -79,11 +99,7 @@ ct-lint: ## chart-testing lint (matches CI behavior).
 template: ## helm template render smoke test (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
 	@for c in $(TARGET_CHARTS); do \
 		echo "==> helm template $$c"; \
-		ci_args=""; \
-		for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
-			[ -f "$$f" ] && ci_args="$$ci_args -f $$f"; \
-		done; \
-		helm template ci $(CHARTS_DIR)/$$c $$ci_args > /dev/null; \
+		$(HELM_TEMPLATE_CMD) > /dev/null; \
 	done
 
 .PHONY: validate
@@ -91,11 +107,7 @@ validate: ## kubeconform validation against k8s + CRD schemas (CHART=name to lim
 	@command -v kubeconform >/dev/null 2>&1 || { echo "kubeconform required: brew install kubeconform"; exit 1; }
 	@for c in $(TARGET_CHARTS); do \
 		echo "==> kubeconform $$c"; \
-		ci_args=""; \
-		for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
-			[ -f "$$f" ] && ci_args="$$ci_args -f $$f"; \
-		done; \
-		helm template ci $(CHARTS_DIR)/$$c $$ci_args | kubeconform \
+		$(HELM_TEMPLATE_CMD) | kubeconform \
 			-strict \
 			-ignore-missing-schemas \
 			-schema-location default \
@@ -124,8 +136,7 @@ clean: ## Remove generated tarballs and helm artifacts.
 
 .PHONY: bump
 bump: ## Bump CHART version. Usage: make bump CHART=<name> LEVEL=patch|minor|major
-	@if [ -z "$(CHART)" ]; then echo "ERROR: CHART is required (e.g. make bump CHART=nginx-gateway-cr LEVEL=patch)"; exit 1; fi
-	@if [ ! -d "$(CHARTS_DIR)/$(CHART)" ]; then echo "ERROR: chart not found: $(CHARTS_DIR)/$(CHART)"; exit 1; fi
+	$(call require_chart,make bump CHART=<name> LEVEL=patch)
 	@case "$(LEVEL)" in patch|minor|major) ;; *) echo "ERROR: LEVEL must be patch, minor, or major (got: $(LEVEL))"; exit 1 ;; esac
 	@CURRENT=$$(awk '/^version:/ {print $$2}' $(CHARTS_DIR)/$(CHART)/Chart.yaml | tr -d '"'); \
 	IFS='.' read -r MAJ MIN PAT <<< "$$CURRENT"; \
@@ -150,8 +161,7 @@ bump: ## Bump CHART version. Usage: make bump CHART=<name> LEVEL=patch|minor|maj
 
 .PHONY: changelog
 changelog: ## Sync CHART CHANGELOG.md from Chart.yaml. Usage: make changelog CHART=<name> [DRY_RUN=1]
-	@if [ -z "$(CHART)" ]; then echo "ERROR: CHART is required (e.g. make changelog CHART=nginx-gateway-cr)"; exit 1; fi
-	@if [ ! -d "$(CHARTS_DIR)/$(CHART)" ]; then echo "ERROR: chart not found: $(CHARTS_DIR)/$(CHART)"; exit 1; fi
+	$(call require_chart,make changelog CHART=<name>)
 	@./scripts/changelog/sync-changelog.sh $(if $(DRY_RUN),--dry-run) $(CHARTS_DIR)/$(CHART)
 
 .PHONY: changelog-all

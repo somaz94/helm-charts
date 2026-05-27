@@ -22,29 +22,15 @@ unset _SCRIPT_PATH
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CHARTS_DIR="$REPO_ROOT/charts"
 
+# Shared helpers: log/warn/die/info, mktemp_tracked, require_yq_v4.
+# Installs an EXIT trap that removes every mktemp_tracked file — protects
+# against SIGTERM / `set -e` exits between mktemp and the success-path mv.
+. "$SCRIPT_DIR/../lib/common.sh"
+init_tmp_cleanup
+
 DRY_RUN=0
 ALL=0
 CHART_DIR=""
-
-# Track every mktemp this script allocates and clean them up on EXIT — the
-# previous code only `mv`'d the temp into place on the success path; SIGTERM
-# or `set -e` exits between mktemp and mv would leak.
-TMP_FILES=()
-cleanup_tmp() {
-    local f
-    for f in "${TMP_FILES[@]:-}"; do
-        [ -n "$f" ] && rm -f "$f"
-    done
-    return 0
-}
-trap cleanup_tmp EXIT
-
-mktemp_tracked() {
-    local f
-    f=$(mktemp)
-    TMP_FILES+=("$f")
-    printf '%s' "$f"
-}
 
 usage() {
     cat <<'EOF'
@@ -72,18 +58,7 @@ Requires: yq v4 (mikefarah/yq).
 EOF
 }
 
-log()  { printf '%s\n' "$*" >&2; }
-die()  { log "ERROR: $*"; exit 1; }
-warn() { log "WARNING: $*"; }
-
-require_yq() {
-    if ! command -v yq >/dev/null 2>&1; then
-        die "yq is required (mikefarah/yq v4). Install with: brew install yq"
-    fi
-    if ! yq --version 2>&1 | grep -qE 'version v?4\.'; then
-        die "yq v4 is required (mikefarah/yq). Found: $(yq --version 2>&1)"
-    fi
-}
+# log/info/warn/die provided by lib/common.sh.
 
 # Map a Chart.yaml `kind:` value to a Keep a Changelog section header.
 section_for_kind() {
@@ -214,7 +189,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-require_yq
+require_yq_v4
 
 if [ "$ALL" -eq 1 ]; then
     [ -z "$CHART_DIR" ] || die "--all and <chart-dir> are mutually exclusive"

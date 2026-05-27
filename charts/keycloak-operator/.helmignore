@@ -17,10 +17,9 @@
 *.tmproj
 .vscode/
 
-# Maintenance scripts and rollback trail — not part of the released chart.
+# upgrade.sh bookkeeping — chart-maintainer tooling, not shipped in tarballs.
 upgrade.sh
 backup/
 
-# Maintenance scripts and rollback trail — not part of the released chart.
-upgrade.sh
-backup/
+# CI values — only used by local `make template`/`make validate`.
+ci/
