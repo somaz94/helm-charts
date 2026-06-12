@@ -1,6 +1,6 @@
 # CLAUDE.md — helm-charts
 
-Repo-specific guidance for this Helm chart collection. Assume global `~/.claude/CLAUDE.md` rules (commit style, push safety, language) already apply — this file only adds conventions unique to this repo.
+Repo-specific guidance for this Helm chart collection. Assume the global user-level Claude config rules (commit style, push safety, language) already apply — this file only adds conventions unique to this repo.
 
 <br/>
 
@@ -139,6 +139,6 @@ Never tag releases manually; never push to `gh-pages` manually.
 
 ## Things that live elsewhere
 
-- **Commit style, push safety, conventional commits** — global `~/.claude/CLAUDE.md`
+- **Commit style, push safety, conventional commits** — the global user-level Claude config
 - **Korean vs English rules** — this repo is English-only (README.md is the only doc, no `README-en.md` siblings)
 - **Sensitive value sanitization** — this is a public repo; there should be nothing to sanitize. If you see a real internal domain/token in a PR, reject it.

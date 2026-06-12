@@ -38,7 +38,7 @@ No backup CronJob — Redis is typically a cache, and its canonical persistence 
 
 ```bash
 helm install dev-redis oci://ghcr.io/somaz94/charts/redis --version 0.1.0 \
-  --namespace projectm-db-redis --create-namespace
+  --namespace myapp-db-redis --create-namespace
 ```
 
 ### Classic Helm repo
@@ -46,7 +46,7 @@ helm install dev-redis oci://ghcr.io/somaz94/charts/redis --version 0.1.0 \
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
 helm install dev-redis somaz94/redis --version 0.1.0 \
-  --namespace projectm-db-redis --create-namespace \
+  --namespace myapp-db-redis --create-namespace \
   -f my-values.yaml
 ```
 
@@ -88,13 +88,13 @@ service:
 
 ### 3. Adopt a pre-existing raw-YAML deployment in place (no data movement)
 
-The legacy raw-YAML for `dev-projectm-redis` mounted the PVC at `/redis-master-data` rather than the standard `/data`. The chart's `persistence.mountPath` lets you preserve that mount layout so Redis finds its existing RDB / AOF files.
+The legacy raw-YAML for `dev-myapp-redis` mounted the PVC at `/redis-master-data` rather than the standard `/data`. The chart's `persistence.mountPath` lets you preserve that mount layout so Redis finds its existing RDB / AOF files.
 
 ```yaml
-fullnameOverride: dev-projectm-redis
+fullnameOverride: dev-myapp-redis
 
 persistence:
-  existingClaim: dev-projectm-redis-pvc
+  existingClaim: dev-myapp-redis-pvc
   mountPath: /redis-master-data        # legacy raw-YAML path
 
 service:
@@ -109,27 +109,27 @@ Adoption checklist before `helm upgrade --install`:
 
 ```bash
 KCTX=<your-context>
-NS=projectm-db-redis
+NS=myapp-db-redis
 
 # 1. Annotate existing resources for Helm ownership
-for kind in pvc/dev-projectm-redis-pvc service/dev-projectm-redis; do
+for kind in pvc/dev-myapp-redis-pvc service/dev-myapp-redis; do
   kubectl --context $KCTX -n $NS annotate "$kind" \
-    meta.helm.sh/release-name=dev-projectm-redis \
+    meta.helm.sh/release-name=dev-myapp-redis \
     meta.helm.sh/release-namespace=$NS --overwrite
   kubectl --context $KCTX -n $NS label "$kind" \
     app.kubernetes.io/managed-by=Helm --overwrite
 done
 
 # 2. (Optional) belt-and-suspenders against accidental future helm uninstall
-kubectl --context $KCTX -n $NS annotate pvc dev-projectm-redis-pvc \
+kubectl --context $KCTX -n $NS annotate pvc dev-myapp-redis-pvc \
   helm.sh/resource-policy=keep --overwrite
 
 # 3. Drop the legacy Deployment so Helm can recreate with new selector
-kubectl --context $KCTX -n $NS delete deployment dev-projectm-redis --wait
+kubectl --context $KCTX -n $NS delete deployment dev-myapp-redis --wait
 
 # 4. helm install. After install, remove stale `app:` key from Service
 #    selector that helm's client-side merge left behind:
-kubectl --context $KCTX -n $NS patch svc dev-projectm-redis \
+kubectl --context $KCTX -n $NS patch svc dev-myapp-redis \
   --type=json -p='[{"op":"remove","path":"/spec/selector/app"}]'
 ```
 

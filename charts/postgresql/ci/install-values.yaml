@@ -3,7 +3,7 @@
 # must not be reused.
 auth:
   user: ci
-  password: ci-test-password
+  password: example-password
   database: ci
 backup:
   enabled: true

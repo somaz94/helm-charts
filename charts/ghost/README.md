@@ -46,7 +46,7 @@ helm install blog oci://ghcr.io/somaz94/charts/ghost \
   --namespace blog --create-namespace \
   --set url=https://blog.example.com \
   --set mysql.auth.user=ghost \
-  --set mysql.auth.password=CHANGE_ME \
+  --set mysql.auth.password=REPLACE_ME \
   --set mysql.auth.database=ghost \
   --set mysql.auth.rootPassword=CHANGE_ME_ROOT
 ```

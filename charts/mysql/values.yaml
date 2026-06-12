@@ -65,7 +65,7 @@ nameOverride: ""
 # Secret / (when configMap.nameOverride is empty) the ConfigMap. Use this to
 # adopt pre-existing resources whose names do not match the default
 # `<release>-mysql` pattern (typical when migrating off raw-YAML deployments
-# that named the Service `projectm-db` rather than `projectm-mysql`).
+# that named the Service `myapp-db` rather than `myapp-mysql`).
 fullnameOverride: ""
 
 configMap:

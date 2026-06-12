@@ -5,7 +5,7 @@ url: https://blog.example.com
 mysql:
   auth:
     user: ghost
-    password: ci-test-password
+    password: example-password
     database: ghost
     rootPassword: ci-test-root-password
 backup:

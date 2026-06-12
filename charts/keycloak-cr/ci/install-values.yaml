@@ -41,12 +41,12 @@ keycloak:
 dbSecret:
   enabled: true
   username: ci
-  password: ci-test-password
+  password: example-password
 
 adminSecret:
   enabled: true
   username: admin
-  password: ci-test-password
+  password: example-password
 
 realmImport:
   enabled: true

@@ -5,7 +5,7 @@ secrets:
   - name: cloudflare-api-token
     namespace: default
     stringData:
-      api-token: ci-test-token
+      api-token: example-token
 clusterIssuers:
   - name: letsencrypt-staging
     email: dummy-ci@example.com

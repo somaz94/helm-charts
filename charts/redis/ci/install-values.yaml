@@ -3,7 +3,7 @@
 # must not be reused.
 auth:
   enabled: true
-  password: ci-test-password
+  password: example-password
 customConfig: |
   maxmemory 256mb
   maxmemory-policy allkeys-lru

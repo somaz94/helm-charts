@@ -35,19 +35,19 @@ For HA prefer an external managed DB (RDS / CloudSQL / Patroni) — out of scope
 ### OCI registry (Helm 3.8+)
 
 ```bash
-helm install projectm-postgres oci://ghcr.io/somaz94/charts/postgresql --version 0.1.0 \
-  --namespace projectm-db-redis --create-namespace \
-  --set auth.user=projectm \
+helm install myapp-postgres oci://ghcr.io/somaz94/charts/postgresql --version 0.1.0 \
+  --namespace myapp-db-redis --create-namespace \
+  --set auth.user=myapp \
   --set auth.password='<password>' \
-  --set auth.database=projectm
+  --set auth.database=myapp
 ```
 
 ### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
-helm install projectm-postgres somaz94/postgresql --version 0.1.0 \
-  --namespace projectm-db-redis --create-namespace \
+helm install myapp-postgres somaz94/postgresql --version 0.1.0 \
+  --namespace myapp-db-redis --create-namespace \
   -f my-values.yaml
 ```
 
@@ -61,9 +61,9 @@ helm install projectm-postgres somaz94/postgresql --version 0.1.0 \
 
 ```yaml
 auth:
-  user: projectm
+  user: myapp
   password: changeme
-  database: projectm
+  database: myapp
 persistence:
   size: 20Gi
 service:
@@ -76,9 +76,9 @@ service:
 
 ```yaml
 auth:
-  user: projectm
+  user: myapp
   password: changeme
-  database: projectm
+  database: myapp
 service:
   type: NodePort
   nodePort: 30632
@@ -103,23 +103,23 @@ customConfig:
 This pattern lets you migrate a legacy `kubectl apply -f db.yaml` install to Helm management without restoring from backup. Existing PVC, Secret and ConfigMap are reused; the chart only takes ownership of the Deployment and Service.
 
 ```yaml
-fullnameOverride: projectm-postgresql-db
+fullnameOverride: myapp-postgresql-db
 configMap:
-  nameOverride: projectm-postgresql-db-config
+  nameOverride: myapp-postgresql-db-config
 
 # Reuse the legacy Secret. Original keys were `DB_USERNAME` / `POSTGRES_PASSWORD`
 # (the legacy raw-YAML used POSTGRES_DB as a literal env value, not in the
 # Secret — this chart matches that pattern: `auth.database` is rendered as a
 # plain `value:` env, not a secretKeyRef).
 auth:
-  existingSecret: projectm-postgresql-db-secret
+  existingSecret: myapp-postgresql-db-secret
   secretKeys:
     user: DB_USERNAME
     password: POSTGRES_PASSWORD
-  database: projectm
+  database: myapp
 
 persistence:
-  existingClaim: projectm-postgresql-db-pvc
+  existingClaim: myapp-postgresql-db-pvc
 
 service:
   type: NodePort
@@ -134,30 +134,30 @@ Adoption checklist before `helm upgrade --install`:
 
 ```bash
 KCTX=<your-context>
-NS=projectm-db-redis
+NS=myapp-db-redis
 
 # 1. Annotate existing resources for Helm ownership
-for kind in pvc/projectm-postgresql-db-pvc \
-            secret/projectm-postgresql-db-secret \
-            configmap/projectm-postgresql-db-config \
-            service/projectm-postgresql-db; do
+for kind in pvc/myapp-postgresql-db-pvc \
+            secret/myapp-postgresql-db-secret \
+            configmap/myapp-postgresql-db-config \
+            service/myapp-postgresql-db; do
   kubectl --context $KCTX -n $NS annotate "$kind" \
-    meta.helm.sh/release-name=projectm-postgresql-db \
+    meta.helm.sh/release-name=myapp-postgresql-db \
     meta.helm.sh/release-namespace=$NS --overwrite
   kubectl --context $KCTX -n $NS label "$kind" \
     app.kubernetes.io/managed-by=Helm --overwrite
 done
 
 # 2. (Optional) belt-and-suspenders against accidental future helm uninstall
-kubectl --context $KCTX -n $NS annotate pvc projectm-postgresql-db-pvc \
+kubectl --context $KCTX -n $NS annotate pvc myapp-postgresql-db-pvc \
   helm.sh/resource-policy=keep --overwrite
 
 # 3. Drop the legacy Deployment so Helm can recreate with new selector
-kubectl --context $KCTX -n $NS delete deployment projectm-postgresql-db --wait
+kubectl --context $KCTX -n $NS delete deployment myapp-postgresql-db --wait
 
 # 4. helm install. After install, remove stale `app:` key from Service
 #    selector that helm's client-side merge left behind:
-kubectl --context $KCTX -n $NS patch svc projectm-postgresql-db \
+kubectl --context $KCTX -n $NS patch svc myapp-postgresql-db \
   --type=json -p='[{"op":"remove","path":"/spec/selector/app"}]'
 ```
 
@@ -167,9 +167,9 @@ kubectl --context $KCTX -n $NS patch svc projectm-postgresql-db \
 
 ```yaml
 auth:
-  user: projectm
+  user: myapp
   password: changeme
-  database: projectm
+  database: myapp
 backup:
   enabled: true
   schedule: "0 18 * * *"        # 03:00 KST = 18:00 UTC
@@ -185,9 +185,9 @@ When `auth.database` is set, the CronJob runs `pg_dump <db>`. When empty, it run
 Trigger an ad-hoc run:
 
 ```bash
-kubectl -n projectm-db-redis create job \
-  --from=cronjob/projectm-postgresql-db-backup \
-  projectm-postgresql-db-backup-manual-$(date +%Y%m%d-%H%M)
+kubectl -n myapp-db-redis create job \
+  --from=cronjob/myapp-postgresql-db-backup \
+  myapp-postgresql-db-backup-manual-$(date +%Y%m%d-%H%M)
 ```
 
 <br/>

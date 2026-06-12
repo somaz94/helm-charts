@@ -51,7 +51,7 @@ helm install ngf-cr somaz94/nginx-gateway-cr \
 ```yaml
 gateways:
   - name: app
-    loadBalancerIP: 10.0.0.10
+    loadBalancerIP: 192.0.2.10
     https:
       enabled: true
       hostname: "*.example.com"
@@ -67,7 +67,7 @@ proxy:
 
 gateways:
   - name: app
-    loadBalancerIP: 10.0.0.10
+    loadBalancerIP: 192.0.2.10
     https:
       enabled: true
       hostname: "*.example.com"
@@ -76,7 +76,7 @@ gateways:
       replicas: 3                          # override default
 
   - name: public
-    loadBalancerIP: 10.0.0.11
+    loadBalancerIP: 192.0.2.11
     proxy:
       service:
         annotations:
@@ -88,7 +88,7 @@ gateways:
 ```yaml
 gateways:
   - name: tcp
-    loadBalancerIP: 10.0.0.12
+    loadBalancerIP: 192.0.2.12
     listeners:                             # full override; shorthand ignored
       - name: tls-passthrough
         protocol: TLS
@@ -105,7 +105,7 @@ gateways:
 ```yaml
 gateways:
   - name: app
-    loadBalancerIP: 10.0.0.10
+    loadBalancerIP: 192.0.2.10
     https:
       enabled: true
       hostname: "*.example.com"

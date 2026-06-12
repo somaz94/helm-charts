@@ -35,9 +35,9 @@ For HA prefer an external managed DB (RDS / CloudSQL / Vitess) — out of scope.
 ### OCI registry (Helm 3.8+)
 
 ```bash
-helm install projectm-db oci://ghcr.io/somaz94/charts/mysql --version 0.1.0 \
-  --namespace projectm-db-redis --create-namespace \
-  --set auth.user=projectm \
+helm install myapp-db oci://ghcr.io/somaz94/charts/mysql --version 0.1.0 \
+  --namespace myapp-db-redis --create-namespace \
+  --set auth.user=myapp \
   --set auth.password='<password>' \
   --set auth.rootPassword='<root-password>'
 ```
@@ -46,8 +46,8 @@ helm install projectm-db oci://ghcr.io/somaz94/charts/mysql --version 0.1.0 \
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
-helm install projectm-db somaz94/mysql --version 0.1.0 \
-  --namespace projectm-db-redis --create-namespace \
+helm install myapp-db somaz94/mysql --version 0.1.0 \
+  --namespace myapp-db-redis --create-namespace \
   -f my-values.yaml
 ```
 
@@ -61,9 +61,9 @@ helm install projectm-db somaz94/mysql --version 0.1.0 \
 
 ```yaml
 auth:
-  user: projectm
+  user: myapp
   password: changeme
-  database: projectm
+  database: myapp
   rootPassword: changeme-root
 persistence:
   size: 20Gi
@@ -77,7 +77,7 @@ service:
 
 ```yaml
 auth:
-  user: projectm
+  user: myapp
   password: changeme
   rootPassword: changeme-root
 service:
@@ -101,16 +101,16 @@ This pattern lets you migrate a legacy `kubectl apply -f db.yaml` install to Hel
 
 ```yaml
 # Force the Helm-rendered resources to use the legacy names.
-fullnameOverride: projectm-db
+fullnameOverride: myapp-db
 configMap:
-  nameOverride: projectm-db-config
+  nameOverride: myapp-db-config
 
 # Reuse the legacy Secret. Original keys were `DB_USERNAME` / `DB_PASSWORD` /
 # `DB_ROOT_PASSWORD` — different from the chart's `MYSQL_*` defaults. Tell the
 # chart which secret keys to read from; env var names on the container stay
 # the same (MYSQL_USER, MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD).
 auth:
-  existingSecret: projectm-db-secret
+  existingSecret: myapp-db-secret
   secretKeys:
     user: DB_USERNAME
     password: DB_PASSWORD
@@ -118,7 +118,7 @@ auth:
 
 # Reuse the legacy PVC — chart will not render a new PVC.
 persistence:
-  existingClaim: projectm-db-pvc
+  existingClaim: myapp-db-pvc
 
 # Preserve the legacy NodePort so external clients keep working.
 service:
@@ -131,29 +131,29 @@ Adoption checklist before `helm upgrade --install`:
 ```bash
 # 1. Annotate existing resources so Helm accepts ownership
 KCTX=<your-context>
-NS=projectm-db-redis
-for kind in pvc/projectm-db-pvc \
-            secret/projectm-db-secret \
-            configmap/projectm-db-config \
-            service/projectm-db; do
+NS=myapp-db-redis
+for kind in pvc/myapp-db-pvc \
+            secret/myapp-db-secret \
+            configmap/myapp-db-config \
+            service/myapp-db; do
   kubectl --context $KCTX -n $NS annotate "$kind" \
-    meta.helm.sh/release-name=projectm-db \
+    meta.helm.sh/release-name=myapp-db \
     meta.helm.sh/release-namespace=$NS --overwrite
   kubectl --context $KCTX -n $NS label "$kind" \
     app.kubernetes.io/managed-by=Helm --overwrite
 done
 
 # 2. (Optional) belt-and-suspenders against accidental future helm uninstall
-kubectl --context $KCTX -n $NS annotate pvc projectm-db-pvc \
+kubectl --context $KCTX -n $NS annotate pvc myapp-db-pvc \
   helm.sh/resource-policy=keep --overwrite
 
 # 3. Drop the legacy Deployment so Helm can recreate with new selector
 #    (Deployment.spec.selector is immutable; ~30s downtime, PVC unaffected)
-kubectl --context $KCTX -n $NS delete deployment projectm-db --wait
+kubectl --context $KCTX -n $NS delete deployment myapp-db --wait
 
 # 4. helm install. After install, remove stale `app:` key from Service
 #    selector that helm's client-side merge left behind:
-kubectl --context $KCTX -n $NS patch svc projectm-db \
+kubectl --context $KCTX -n $NS patch svc myapp-db \
   --type=json -p='[{"op":"remove","path":"/spec/selector/app"}]'
 ```
 
@@ -163,9 +163,9 @@ kubectl --context $KCTX -n $NS patch svc projectm-db \
 
 ```yaml
 auth:
-  user: projectm
+  user: myapp
   password: changeme
-  database: projectm
+  database: myapp
   rootPassword: changeme-root
 backup:
   enabled: true
@@ -182,8 +182,8 @@ When `auth.database` is set, the CronJob runs `mysqldump <db>` with the user cre
 Trigger an ad-hoc run:
 
 ```bash
-kubectl -n projectm-db-redis create job \
-  --from=cronjob/projectm-db-backup projectm-db-backup-manual-$(date +%Y%m%d-%H%M)
+kubectl -n myapp-db-redis create job \
+  --from=cronjob/myapp-db-backup myapp-db-backup-manual-$(date +%Y%m%d-%H%M)
 ```
 
 <br/>

@@ -97,7 +97,7 @@ gateways: []
 #   gateways:
 #     # Simple HTTPS gateway, default proxy settings
 #     - name: app
-#       loadBalancerIP: 10.0.0.10
+#       loadBalancerIP: 192.0.2.10
 #       https:
 #         enabled: true
 #         hostname: "*.example.com"
@@ -105,7 +105,7 @@ gateways: []
 #
 #     # HTTP-only with custom service annotations (e.g. MetalLB pool selection)
 #     - name: public
-#       loadBalancerIP: 10.0.0.11
+#       loadBalancerIP: 192.0.2.11
 #       proxy:
 #         replicas: 2
 #         service:
@@ -114,7 +114,7 @@ gateways: []
 #
 #     # TLS passthrough on a non-default port via explicit listeners
 #     - name: tcp
-#       loadBalancerIP: 10.0.0.12
+#       loadBalancerIP: 192.0.2.12
 #       listeners:
 #         - name: tls-passthrough
 #           protocol: TLS

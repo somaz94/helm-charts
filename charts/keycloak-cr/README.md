@@ -100,7 +100,7 @@ keycloak:
 realmImport:
   enabled: true
   realm:
-    realm: concrit
+    realm: acme
     enabled: true
     sslRequired: external
     registrationAllowed: false
@@ -119,7 +119,7 @@ The `KeycloakRealmImport` CRD only accepts the realm inline (`spec.realm`) — i
 helm install keycloak oci://ghcr.io/somaz94/charts/keycloak-cr \
   -n keycloak -f values.yaml \
   --set realmImport.enabled=true \
-  --set-file realmImport.realm=./realm-concrit.json
+  --set-file realmImport.realm=./realm-acme.json
 ```
 
 For declarative GitOps (ArgoCD / Flux), commit the JSON, convert to YAML once, and embed it under `realmImport.realm` — Helm renders large YAML/JSON values without issue.
@@ -144,12 +144,12 @@ keycloak:
 dbSecret:
   enabled: true
   username: keycloak
-  password: change-me-in-vault         # rotate post-install
+  password: REPLACE_ME         # rotate post-install
 
 adminSecret:
   enabled: true
   username: admin
-  password: change-me-in-vault         # rotate post-install via the admin UI
+  password: REPLACE_ME         # rotate post-install via the admin UI
 
 httproute:
   enabled: true
