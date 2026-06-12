@@ -1,0 +1,73 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing and
+# kubeconform. Not a deployment recipe — values below are dummy and must not be reused.
+# Toggles every optional template path so each renders.
+clusterName: demo-cluster
+
+commonLabels:
+  team: platform
+commonAnnotations:
+  owner: ci
+
+nodeClassDefaults:
+  role: KarpenterNodeRole-demo
+  amiAlias: al2023@latest
+
+nodeClasses:
+  - name: build
+    # inherits defaults (role, AL2023 alias, gp3 50Gi, IMDS hop 2)
+    tags:
+      cost-center: ci
+  - name: custom
+    role: KarpenterNodeRole-custom
+    amiSelectorTerms:
+      - id: ami-0123456789abcdef0
+    metadataOptions:
+      httpEndpoint: enabled
+      httpTokens: required
+      httpPutResponseHopLimit: 1
+    kubelet:
+      maxPods: 110
+    detailedMonitoring: true
+
+nodePools:
+  - name: build
+    nodeClassRef: build
+    labels:
+      nodegroup-workload: build
+    taints:
+      - key: dedicated
+        value: build
+        effect: NoSchedule
+    requirements:
+      - key: kubernetes.io/arch
+        operator: In
+        values: ["arm64"]
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values: ["spot"]
+      - key: karpenter.k8s.aws/instance-family
+        operator: In
+        values: ["c7g", "c6g", "m7g", "m6g"]
+      - key: karpenter.k8s.aws/instance-size
+        operator: In
+        values: ["xlarge"]
+    limits:
+      cpu: "24"
+    weight: 10
+  - name: custom
+    annotations:
+      note: exercises-defaults
+    startupTaints:
+      - key: startup
+        value: "true"
+        effect: NoSchedule
+    requirements:
+      - key: kubernetes.io/arch
+        operator: In
+        values: ["amd64"]
+    disruption:
+      consolidationPolicy: WhenEmpty
+      consolidateAfter: 1m
+      expireAfter: Never
+      budgets:
+        - nodes: "10%"

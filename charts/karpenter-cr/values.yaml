@@ -1,0 +1,67 @@
+# karpenter-cr — data-driven EC2NodeClass + NodePool custom resources for AWS Karpenter.
+#
+# The chart ships NO opinionated pools: supply `nodeClasses` and `nodePools` from your
+# environment values. Each entry inherits the shared `*Defaults` block and overrides
+# only what it needs — add a pool by appending one entry, no template edits.
+
+# Extra labels / annotations added to every rendered resource.
+commonLabels: {}
+commonAnnotations: {}
+
+# Cluster name + discovery tag KEY used to resolve subnets / security groups for every
+# EC2NodeClass (unless an entry supplies explicit selector terms). Karpenter's terraform
+# submodule stamps { <discoveryKey> = <clusterName> } onto the subnets and node SG.
+clusterName: ""
+discoveryKey: karpenter.sh/discovery
+
+# ---------------------------------------------------------------------------
+# Shared defaults — applied to every entry unless the entry overrides the field.
+# ---------------------------------------------------------------------------
+nodeClassDefaults:
+  amiFamily: AL2023
+  # SSM AMI alias (e.g. al2023@latest, al2023@v20240625). EMPTY by default on purpose:
+  # `@latest` would silently drift node AMIs, so each consumer must choose explicitly —
+  # set amiAlias (here or per entry) OR provide amiSelectorTerms. One of the two is required.
+  amiAlias: ""
+  # Per-entry amiSelectorTerms (raw list) take full control of AMI selection when set.
+  amiSelectorTerms: []
+  # IAM role NAME (not ARN) for Karpenter-launched nodes. Required (here or per entry).
+  role: ""
+  metadataOptions:
+    httpEndpoint: enabled
+    httpTokens: required
+    httpPutResponseHopLimit: 2
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 50Gi
+        volumeType: gp3
+        encrypted: true
+        deleteOnTermination: true
+  # Extra tags merged onto every node (the discovery tag is always added).
+  tags: {}
+
+nodePoolDefaults:
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 30s
+    expireAfter: 720h
+  # Default capacity cap per pool. Override per entry.
+  limits:
+    cpu: "100"
+
+# ---------------------------------------------------------------------------
+# EC2NodeClasses — one per distinct launch profile (AMI / role / disk / IMDS).
+# Schema per entry:
+#   name (required), role, amiFamily, amiAlias, amiSelectorTerms,
+#   subnetSelectorTerms, securityGroupSelectorTerms (default: discovery tag),
+#   metadataOptions, blockDeviceMappings, tags, userData, detailedMonitoring, kubelet
+# ---------------------------------------------------------------------------
+nodeClasses: []
+
+# ---------------------------------------------------------------------------
+# NodePools — what Karpenter may provision. Schema per entry:
+#   name (required), nodeClassRef (default: name), labels, annotations, taints,
+#   startupTaints, requirements (raw list, required), limits, disruption, weight
+# ---------------------------------------------------------------------------
+nodePools: []

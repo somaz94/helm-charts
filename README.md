@@ -16,6 +16,7 @@ The latest released version of each chart is published to the channels listed un
 | Chart | Description |
 |---|---|
 | [nginx-gateway-cr](charts/nginx-gateway-cr) | Custom resources for NGINX Gateway Fabric — Gateway, NginxProxy, ReferenceGrant, plus ServiceMonitor / PodMonitor for Prometheus |
+| [karpenter-cr](charts/karpenter-cr) | Custom resources for AWS Karpenter — data-driven `EC2NodeClass` + `NodePool` (multi-pool via `nodeClasses[]` / `nodePools[]` lists, shared defaults with per-entry override). Discovery-tag subnet / SG selection, secure-by-default (IMDSv2, encrypted gp3); AMI selection required (no silent drift). Karpenter v1 API. |
 | [certmanager-letsencrypt](charts/certmanager-letsencrypt) | Let's Encrypt resources for cert-manager — multi-issuer / multi-certificate / multi-secret / optional Ingress, DNS-01 (Cloudflare, Route53, Cloud DNS, ...) |
 | [elasticsearch-eck](charts/elasticsearch-eck) | Elasticsearch CR for ECK (Elastic Cloud on Kubernetes) — nodeSets[] array, HTTPRoute, Ingress, BackendTLSPolicy, PDB (native/external), ServiceMonitor, NetworkPolicy, ReferenceGrant, sysctl init container. Single-node default, HA opt-in. |
 | [kibana-eck](charts/kibana-eck) | Kibana CR for ECK — auto-wired to an Elasticsearch CR via elasticsearchRef, HTTPRoute, Ingress, BackendTLSPolicy, PDB, ServiceMonitor, NetworkPolicy, ReferenceGrant. Sibling-version check in upgrade.sh. |

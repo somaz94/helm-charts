@@ -1,0 +1,29 @@
+karpenter-cr installed (release "{{ .Release.Name }}").
+
+{{ if .Values.nodeClasses -}}
+EC2NodeClasses created:
+{{- range .Values.nodeClasses }}
+  - {{ .name }}
+{{- end }}
+{{- else -}}
+No EC2NodeClasses defined. Set `nodeClasses` in your values file.
+{{- end }}
+
+{{ if .Values.nodePools -}}
+NodePools created:
+{{- range .Values.nodePools }}
+  - {{ .name }} (nodeClass: {{ default .name .nodeClassRef }})
+{{- end }}
+{{- else -}}
+No NodePools defined. Set `nodePools` in your values file.
+{{- end }}
+
+Verify:
+  kubectl get ec2nodeclass
+  kubectl get nodepool
+  kubectl get nodeclaim          # nodes Karpenter has provisioned
+
+Discovery: subnets / security groups are selected by the tag
+  {{ .Values.discoveryKey }} = {{ .Values.clusterName | default "<clusterName>" }}
+Ensure that tag exists on your subnets and node security group (the Karpenter
+terraform submodule stamps it).

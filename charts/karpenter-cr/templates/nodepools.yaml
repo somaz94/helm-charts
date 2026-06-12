@@ -1,0 +1,64 @@
+{{- $top := . -}}
+{{- $defaults := .Values.nodePoolDefaults -}}
+{{- range $np := .Values.nodePools }}
+{{- $disruption := mergeOverwrite (deepCopy $defaults.disruption) (default dict $np.disruption) -}}
+---
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ $np.name }}
+  labels:
+    {{- include "karpenter-cr.labels" $top | nindent 4 }}
+  {{- $annot := include "karpenter-cr.annotations" (dict "top" $top "extra" $np.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  template:
+    {{- if or $np.labels $np.podAnnotations }}
+    metadata:
+      {{- with $np.labels }}
+      labels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $np.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: {{ default $np.name $np.nodeClassRef }}
+      {{- with $np.taints }}
+      taints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $np.startupTaints }}
+      startupTaints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      requirements:
+        {{- toYaml (required (printf "nodePools[%s]: requirements (raw list) is required" $np.name) $np.requirements) | nindent 8 }}
+      {{- with $disruption.expireAfter }}
+      expireAfter: {{ . }}
+      {{- end }}
+  {{- with default $defaults.limits $np.limits }}
+  limits:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  disruption:
+    consolidationPolicy: {{ $disruption.consolidationPolicy }}
+    {{- with $disruption.consolidateAfter }}
+    consolidateAfter: {{ . }}
+    {{- end }}
+    {{- with $disruption.budgets }}
+    budgets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- with $np.weight }}
+  weight: {{ . }}
+  {{- end }}
+{{ end }}

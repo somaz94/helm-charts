@@ -1,0 +1,62 @@
+{{- $top := . -}}
+{{- $defaults := .Values.nodeClassDefaults -}}
+{{- range $nc := .Values.nodeClasses }}
+{{- $role := default $defaults.role $nc.role -}}
+---
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: {{ $nc.name }}
+  labels:
+    {{- include "karpenter-cr.labels" $top | nindent 4 }}
+    {{- with $nc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "karpenter-cr.annotations" (dict "top" $top "extra" $nc.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  amiFamily: {{ default $defaults.amiFamily $nc.amiFamily }}
+  amiSelectorTerms:
+    {{- $amiTerms := default $defaults.amiSelectorTerms $nc.amiSelectorTerms }}
+    {{- if $amiTerms }}
+    {{- toYaml $amiTerms | nindent 4 }}
+    {{- else }}
+    - alias: {{ required (printf "nodeClasses[%s]: set amiAlias or amiSelectorTerms (no default — avoids silent AMI drift)" $nc.name) (default $defaults.amiAlias $nc.amiAlias) }}
+    {{- end }}
+  role: {{ required (printf "nodeClasses[%s]: role (Karpenter node IAM role name) is required" $nc.name) $role | quote }}
+  subnetSelectorTerms:
+    {{- if $nc.subnetSelectorTerms }}
+    {{- toYaml $nc.subnetSelectorTerms | nindent 4 }}
+    {{- else }}
+    {{- include "karpenter-cr.discoverySelector" $top | nindent 4 }}
+    {{- end }}
+  securityGroupSelectorTerms:
+    {{- if $nc.securityGroupSelectorTerms }}
+    {{- toYaml $nc.securityGroupSelectorTerms | nindent 4 }}
+    {{- else }}
+    {{- include "karpenter-cr.discoverySelector" $top | nindent 4 }}
+    {{- end }}
+  metadataOptions:
+    {{- toYaml (default $defaults.metadataOptions $nc.metadataOptions) | nindent 4 }}
+  blockDeviceMappings:
+    {{- toYaml (default $defaults.blockDeviceMappings $nc.blockDeviceMappings) | nindent 4 }}
+  {{- with $nc.kubelet }}
+  kubelet:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $nc.userData }}
+  userData: |
+    {{- . | nindent 4 }}
+  {{- end }}
+  {{- if hasKey $nc "detailedMonitoring" }}
+  detailedMonitoring: {{ $nc.detailedMonitoring }}
+  {{- end }}
+  tags:
+    {{ $top.Values.discoveryKey }}: {{ required "clusterName is required" $top.Values.clusterName | quote }}
+    {{- range $k, $v := default $defaults.tags $nc.tags }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+{{ end }}

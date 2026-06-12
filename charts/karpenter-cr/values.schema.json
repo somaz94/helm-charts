@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "karpenter-cr values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "commonLabels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "commonAnnotations": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "clusterName": { "type": "string" },
+    "discoveryKey": { "type": "string", "minLength": 1 },
+    "nodeClassDefaults": { "$ref": "#/$defs/nodeClassBody" },
+    "nodePoolDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "disruption": { "$ref": "#/$defs/disruption" },
+        "limits": { "type": "object" }
+      }
+    },
+    "nodeClasses": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          { "$ref": "#/$defs/nodeClassBody" },
+          {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+              "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+            }
+          }
+        ]
+      }
+    },
+    "nodePools": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nodePool" }
+    }
+  },
+  "$defs": {
+    "nodeClassBody": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "amiFamily": { "type": "string" },
+        "amiAlias": { "type": "string" },
+        "amiSelectorTerms": { "type": "array" },
+        "subnetSelectorTerms": { "type": "array" },
+        "securityGroupSelectorTerms": { "type": "array" },
+        "metadataOptions": { "type": "object" },
+        "blockDeviceMappings": { "type": "array" },
+        "kubelet": { "type": "object" },
+        "userData": { "type": "string" },
+        "detailedMonitoring": { "type": "boolean" },
+        "tags": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "disruption": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "consolidationPolicy": { "type": "string", "enum": ["WhenEmpty", "WhenEmptyOrUnderutilized"] },
+        "consolidateAfter": { "type": "string" },
+        "expireAfter": { "type": "string" },
+        "budgets": { "type": "array" }
+      }
+    },
+    "nodePool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "requirements"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "nodeClassRef": { "type": "string" },
+        "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "podAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "taints": { "type": "array" },
+        "startupTaints": { "type": "array" },
+        "requirements": { "type": "array" },
+        "limits": { "type": "object" },
+        "disruption": { "$ref": "#/$defs/disruption" },
+        "weight": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    }
+  }
+}
