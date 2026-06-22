@@ -1,0 +1,40 @@
+MetalLB custom resources installed in namespace "{{ .Release.Namespace }}".
+
+{{ if .Values.ipAddressPools -}}
+IPAddressPools created:
+{{- range .Values.ipAddressPools }}
+  - {{ .name }} ({{ join ", " .addresses }})
+{{- end }}
+{{- else -}}
+No IPAddressPools defined yet. Set `ipAddressPools` in your values file so
+MetalLB has addresses to allocate. See `helm show values <chart>`.
+{{- end }}
+
+{{- if .Values.l2Advertisements }}
+
+L2Advertisements created:
+{{- range .Values.l2Advertisements }}
+  - {{ .name }}
+{{- end }}
+{{- end }}
+{{- if .Values.bgpAdvertisements }}
+
+BGPAdvertisements created:
+{{- range .Values.bgpAdvertisements }}
+  - {{ .name }}
+{{- end }}
+{{- end }}
+{{- if .Values.bgpPeers }}
+
+BGPPeers created:
+{{- range .Values.bgpPeers }}
+  - {{ .name }} (AS{{ .myASN }} -> {{ .peerAddress | default .interface }})
+{{- end }}
+{{- end }}
+
+Verify resources:
+  kubectl -n {{ .Release.Namespace }} get ipaddresspools,l2advertisements,bgpadvertisements,bgppeers,communities,bfdprofiles
+
+NOTE: This chart only creates MetalLB *config* CRs. The MetalLB controller and
+speaker (and the CRDs themselves) must already be installed — typically via the
+upstream `metallb/metallb` chart in the same namespace.

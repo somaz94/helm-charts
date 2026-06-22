@@ -21,6 +21,7 @@ Charts in scope:
 | keycloak-cr |
 | keycloak-operator |
 | kibana-eck |
+| metallb-cr |
 | mysql |
 | nginx-gateway-cr |
 | postgresql |

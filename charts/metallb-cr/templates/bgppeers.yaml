@@ -1,0 +1,80 @@
+{{- $top := . -}}
+{{- range $peer := .Values.bgpPeers }}
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: {{ required "bgpPeers[].name is required" $peer.name }}
+  namespace: {{ $top.Release.Namespace }}
+  labels:
+    {{- include "metallb-cr.labels" $top | nindent 4 }}
+    {{- with $peer.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "metallb-cr.annotations" (dict "top" $top "extra" $peer.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  myASN: {{ required "bgpPeers[].myASN is required" $peer.myASN }}
+  {{- if hasKey $peer "peerASN" }}
+  peerASN: {{ $peer.peerASN }}
+  {{- end }}
+  {{- with $peer.dynamicASN }}
+  dynamicASN: {{ . }}
+  {{- end }}
+  {{- with $peer.peerAddress }}
+  peerAddress: {{ . }}
+  {{- end }}
+  {{- with $peer.interface }}
+  interface: {{ . }}
+  {{- end }}
+  {{- if hasKey $peer "peerPort" }}
+  peerPort: {{ $peer.peerPort }}
+  {{- end }}
+  {{- with $peer.holdTime }}
+  holdTime: {{ . }}
+  {{- end }}
+  {{- with $peer.keepaliveTime }}
+  keepaliveTime: {{ . }}
+  {{- end }}
+  {{- with $peer.connectTime }}
+  connectTime: {{ . }}
+  {{- end }}
+  {{- with $peer.routerID }}
+  routerID: {{ . }}
+  {{- end }}
+  {{- with $peer.sourceAddress }}
+  sourceAddress: {{ . }}
+  {{- end }}
+  {{- with $peer.vrf }}
+  vrf: {{ . }}
+  {{- end }}
+  {{- if hasKey $peer "ebgpMultiHop" }}
+  ebgpMultiHop: {{ $peer.ebgpMultiHop }}
+  {{- end }}
+  {{- if hasKey $peer "disableMP" }}
+  disableMP: {{ $peer.disableMP }}
+  {{- end }}
+  {{- if hasKey $peer "enableGracefulRestart" }}
+  enableGracefulRestart: {{ $peer.enableGracefulRestart }}
+  {{- end }}
+  {{- with $peer.bfdProfile }}
+  bfdProfile: {{ . }}
+  {{- end }}
+  {{- with $peer.password }}
+  password: {{ . | quote }}
+  {{- end }}
+  {{- with $peer.passwordSecret }}
+  passwordSecret:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $peer.nodeSelectors }}
+  nodeSelectors:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $peer.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{- end }}

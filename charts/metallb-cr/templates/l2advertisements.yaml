@@ -1,0 +1,43 @@
+{{- $top := . -}}
+{{- range $adv := .Values.l2Advertisements }}
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: {{ required "l2Advertisements[].name is required" $adv.name }}
+  namespace: {{ $top.Release.Namespace }}
+  labels:
+    {{- include "metallb-cr.labels" $top | nindent 4 }}
+    {{- with $adv.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "metallb-cr.annotations" (dict "top" $top "extra" $adv.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+{{- if or $adv.ipAddressPools $adv.ipAddressPoolSelectors $adv.nodeSelectors $adv.interfaces $adv.specExtra }}
+spec:
+  {{- with $adv.ipAddressPools }}
+  ipAddressPools:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $adv.ipAddressPoolSelectors }}
+  ipAddressPoolSelectors:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $adv.nodeSelectors }}
+  nodeSelectors:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $adv.interfaces }}
+  interfaces:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $adv.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- else }}
+spec: {}
+{{- end }}
+---
+{{- end }}

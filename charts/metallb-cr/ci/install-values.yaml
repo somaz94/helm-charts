@@ -1,0 +1,74 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — values below are dummy and must
+# not be reused. Toggles every optional template path so each renders.
+commonLabels:
+  team: network
+commonAnnotations:
+  owner: platform
+
+ipAddressPools:
+  - name: ip-pool
+    addresses:
+      - 192.0.2.10-192.0.2.50
+      - 198.51.100.0/24
+    autoAssign: true
+    avoidBuggyIPs: false
+  - name: restricted
+    addresses:
+      - 203.0.113.0/28
+    autoAssign: false
+    serviceAllocation:
+      priority: 50
+      namespaces:
+        - prod
+      serviceSelectors:
+        - matchLabels:
+            team: payments
+
+l2Advertisements:
+  - name: l2-network
+    ipAddressPools:
+      - ip-pool
+    nodeSelectors:
+      - matchLabels:
+          kubernetes.io/os: linux
+
+bgpAdvertisements:
+  - name: bgp-default
+    ipAddressPools:
+      - ip-pool
+    aggregationLength: 32
+    aggregationLengthV6: 128
+    localPref: 100
+    communities:
+      - no-advertise
+    peers:
+      - tor-1
+
+bgpPeers:
+  - name: tor-1
+    myASN: 64512
+    peerASN: 64512
+    peerAddress: 203.0.113.254
+    peerPort: 179
+    holdTime: 90s
+    keepaliveTime: 30s
+    ebgpMultiHop: false
+    bfdProfile: fast
+    passwordSecret:
+      name: tor-1-bgp-password
+      namespace: metallb
+
+communities:
+  - name: communities
+    communities:
+      - name: no-advertise
+        value: 65535:65282
+
+bfdProfiles:
+  - name: fast
+    receiveInterval: 100
+    transmitInterval: 100
+    detectMultiplier: 3
+    echoMode: false
+    passiveMode: false

@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "metallb-cr values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "commonLabels": { "type": "object", "additionalProperties": { "type": "string" } },
+    "commonAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+
+    "ipAddressPools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "addresses"],
+        "properties": {
+          "name": { "type": "string" },
+          "addresses": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "autoAssign": { "type": "boolean" },
+          "avoidBuggyIPs": { "type": "boolean" },
+          "serviceAllocation": { "type": "object", "additionalProperties": true },
+          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+          "specExtra": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+
+    "l2Advertisements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "ipAddressPools": { "type": "array", "items": { "type": "string" } },
+          "ipAddressPoolSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "nodeSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "interfaces": { "type": "array", "items": { "type": "string" } },
+          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+          "specExtra": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+
+    "bgpAdvertisements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "aggregationLength": { "type": "integer" },
+          "aggregationLengthV6": { "type": "integer" },
+          "localPref": { "type": "integer" },
+          "communities": { "type": "array", "items": { "type": "string" } },
+          "ipAddressPools": { "type": "array", "items": { "type": "string" } },
+          "ipAddressPoolSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "nodeSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "peers": { "type": "array", "items": { "type": "string" } },
+          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+          "specExtra": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+
+    "bgpPeers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "myASN"],
+        "properties": {
+          "name": { "type": "string" },
+          "myASN": { "type": "integer" },
+          "peerASN": { "type": "integer" },
+          "dynamicASN": { "type": "string", "enum": ["internal", "external"] },
+          "peerAddress": { "type": "string" },
+          "interface": { "type": "string" },
+          "peerPort": { "type": "integer" },
+          "holdTime": { "type": "string" },
+          "keepaliveTime": { "type": "string" },
+          "connectTime": { "type": "string" },
+          "routerID": { "type": "string" },
+          "sourceAddress": { "type": "string" },
+          "vrf": { "type": "string" },
+          "ebgpMultiHop": { "type": "boolean" },
+          "disableMP": { "type": "boolean" },
+          "enableGracefulRestart": { "type": "boolean" },
+          "bfdProfile": { "type": "string" },
+          "password": { "type": "string" },
+          "passwordSecret": { "type": "object", "additionalProperties": true },
+          "nodeSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+          "specExtra": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+
+    "communities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "communities"],
+        "properties": {
+          "name": { "type": "string" },
+          "communities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "value"],
+              "properties": {
+                "name": { "type": "string" },
+                "value": { "type": "string" }
+              }
+            }
+          },
+          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+          "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      }
+    },
+
+    "bfdProfiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "receiveInterval": { "type": "integer" },
+          "transmitInterval": { "type": "integer" },
+          "detectMultiplier": { "type": "integer" },
+          "echoInterval": { "type": "integer" },
+          "echoMode": { "type": "boolean" },
+          "passiveMode": { "type": "boolean" },
+          "minimumTtl": { "type": "integer" },
+          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+          "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

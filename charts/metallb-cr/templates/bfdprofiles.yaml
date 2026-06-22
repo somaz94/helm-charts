@@ -1,0 +1,45 @@
+{{- $top := . -}}
+{{- range $profile := .Values.bfdProfiles }}
+apiVersion: metallb.io/v1beta1
+kind: BFDProfile
+metadata:
+  name: {{ required "bfdProfiles[].name is required" $profile.name }}
+  namespace: {{ $top.Release.Namespace }}
+  labels:
+    {{- include "metallb-cr.labels" $top | nindent 4 }}
+    {{- with $profile.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "metallb-cr.annotations" (dict "top" $top "extra" $profile.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+{{- if or (hasKey $profile "receiveInterval") (hasKey $profile "transmitInterval") (hasKey $profile "detectMultiplier") (hasKey $profile "echoInterval") (hasKey $profile "echoMode") (hasKey $profile "passiveMode") (hasKey $profile "minimumTtl") }}
+spec:
+  {{- if hasKey $profile "receiveInterval" }}
+  receiveInterval: {{ $profile.receiveInterval }}
+  {{- end }}
+  {{- if hasKey $profile "transmitInterval" }}
+  transmitInterval: {{ $profile.transmitInterval }}
+  {{- end }}
+  {{- if hasKey $profile "detectMultiplier" }}
+  detectMultiplier: {{ $profile.detectMultiplier }}
+  {{- end }}
+  {{- if hasKey $profile "echoInterval" }}
+  echoInterval: {{ $profile.echoInterval }}
+  {{- end }}
+  {{- if hasKey $profile "echoMode" }}
+  echoMode: {{ $profile.echoMode }}
+  {{- end }}
+  {{- if hasKey $profile "passiveMode" }}
+  passiveMode: {{ $profile.passiveMode }}
+  {{- end }}
+  {{- if hasKey $profile "minimumTtl" }}
+  minimumTtl: {{ $profile.minimumTtl }}
+  {{- end }}
+{{- else }}
+spec: {}
+{{- end }}
+---
+{{- end }}

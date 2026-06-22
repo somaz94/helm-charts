@@ -1,0 +1,35 @@
+{{- $top := . -}}
+{{- range $pool := .Values.ipAddressPools }}
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: {{ required "ipAddressPools[].name is required" $pool.name }}
+  namespace: {{ $top.Release.Namespace }}
+  labels:
+    {{- include "metallb-cr.labels" $top | nindent 4 }}
+    {{- with $pool.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "metallb-cr.annotations" (dict "top" $top "extra" $pool.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  addresses:
+    {{- toYaml (required "ipAddressPools[].addresses is required" $pool.addresses) | nindent 4 }}
+  {{- if hasKey $pool "autoAssign" }}
+  autoAssign: {{ $pool.autoAssign }}
+  {{- end }}
+  {{- if hasKey $pool "avoidBuggyIPs" }}
+  avoidBuggyIPs: {{ $pool.avoidBuggyIPs }}
+  {{- end }}
+  {{- with $pool.serviceAllocation }}
+  serviceAllocation:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $pool.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{- end }}

@@ -1,0 +1,166 @@
+# Default values for metallb-cr.
+# This chart templates MetalLB *configuration* custom resources. The upstream
+# metallb/metallb chart installs the controller, speaker and CRDs but does NOT
+# template config CRs (IPAddressPool, L2Advertisement, BGPPeer, ...) — those are
+# left to the user to apply out-of-band. This chart fills that gap so the config
+# is managed declaratively as a Helm release alongside the operator.
+#
+# The chart ships with safe empty defaults: an unconfigured `helm install` is a
+# no-op (creates no resources). Define the lists below to create CRs.
+#
+# Prerequisite: the MetalLB CRDs (metallb.io/v1beta1, metallb.io/v1beta2) must
+# already be installed in the cluster (the upstream chart's `crds` subchart).
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+# Labels and annotations applied to EVERY resource created by this chart.
+commonLabels: {}
+commonAnnotations: {}
+
+# ---------------------------------------------------------------------------
+# IPAddressPools (metallb.io/v1beta1)
+# ---------------------------------------------------------------------------
+# The address ranges MetalLB allocates LoadBalancer IPs from.
+#
+# Per-entry fields:
+#   name              (required) IPAddressPool name.
+#   addresses         (required) List of CIDRs or "start-end" ranges.
+#   autoAssign        (optional) Auto-assign from this pool (default true upstream).
+#   avoidBuggyIPs     (optional) Skip .0 / .255 addresses (default false upstream).
+#   serviceAllocation (optional) Restrict the pool to namespaces/services.
+#   labels/annotations (optional) Extra metadata on this resource.
+#   specExtra         (optional) Arbitrary YAML merged into spec for unsurfaced fields.
+ipAddressPools: []
+# Example:
+#   ipAddressPools:
+#     - name: ip-pool
+#       addresses:
+#         - 192.0.2.10-192.0.2.50
+#         - 198.51.100.0/24
+#       autoAssign: true
+#       avoidBuggyIPs: false
+#     - name: restricted
+#       addresses:
+#         - 203.0.113.0/28
+#       autoAssign: false
+#       serviceAllocation:
+#         priority: 50
+#         namespaces:
+#           - prod
+#         serviceSelectors:
+#           - matchLabels:
+#               team: payments
+
+# ---------------------------------------------------------------------------
+# L2Advertisements (metallb.io/v1beta1)
+# ---------------------------------------------------------------------------
+# Advertise pool addresses over Layer 2 (ARP/NDP). An L2Advertisement with no
+# fields advertises ALL pools from ALL nodes.
+#
+# Per-entry fields:
+#   name                   (required) L2Advertisement name.
+#   ipAddressPools         (optional) Pool names to advertise.
+#   ipAddressPoolSelectors (optional) Label selectors to pick pools.
+#   nodeSelectors          (optional) Limit announcing nodes.
+#   interfaces             (optional) Limit announcing interfaces.
+#   labels/annotations/specExtra (optional)
+l2Advertisements: []
+# Example:
+#   l2Advertisements:
+#     - name: l2-network
+#       ipAddressPools:
+#         - ip-pool
+
+# ---------------------------------------------------------------------------
+# BGPAdvertisements (metallb.io/v1beta1)
+# ---------------------------------------------------------------------------
+# Advertise pool addresses over BGP. Requires BGPPeers and a BGP backend
+# (frr-k8s / frr) enabled in the upstream MetalLB chart.
+#
+# Per-entry fields:
+#   name                   (required) BGPAdvertisement name.
+#   aggregationLength      (optional) IPv4 aggregation length (default 32).
+#   aggregationLengthV6    (optional) IPv6 aggregation length (default 128).
+#   localPref              (optional) BGP LOCAL_PREF attribute.
+#   communities            (optional) BGP communities to attach.
+#   ipAddressPools         (optional) Pool names to advertise.
+#   ipAddressPoolSelectors (optional) Label selectors to pick pools.
+#   nodeSelectors          (optional) Limit announcing nodes.
+#   peers                  (optional) Limit to specific BGPPeer names.
+#   labels/annotations/specExtra (optional)
+bgpAdvertisements: []
+# Example:
+#   bgpAdvertisements:
+#     - name: bgp-default
+#       ipAddressPools:
+#         - ip-pool
+#       aggregationLength: 32
+#       communities:
+#         - no-advertise
+
+# ---------------------------------------------------------------------------
+# BGPPeers (metallb.io/v1beta2)
+# ---------------------------------------------------------------------------
+# BGP neighbors MetalLB establishes sessions with.
+#
+# Per-entry fields:
+#   name           (required) BGPPeer name.
+#   myASN          (required) Local AS number.
+#   peerASN        (optional) Remote AS number (mutually exclusive with dynamicASN).
+#   dynamicASN     (optional) "internal" | "external" instead of a fixed peerASN.
+#   peerAddress    (optional) Neighbor IP (mutually exclusive with interface).
+#   interface      (optional) Interface for unnumbered BGP.
+#   peerPort       (optional) Neighbor port (default 179).
+#   holdTime/keepaliveTime/connectTime (optional) Session timers.
+#   routerID/sourceAddress/vrf (optional)
+#   ebgpMultiHop/disableMP/enableGracefulRestart (optional booleans)
+#   bfdProfile     (optional) BFDProfile name to associate.
+#   password       (optional) Plaintext BGP MD5 password (prefer passwordSecret).
+#   passwordSecret (optional) SecretReference {name, namespace} for the password.
+#   nodeSelectors  (optional) Limit which nodes peer.
+#   labels/annotations/specExtra (optional)
+bgpPeers: []
+# Example:
+#   bgpPeers:
+#     - name: tor-1
+#       myASN: 64512
+#       peerASN: 64512
+#       peerAddress: 203.0.113.254
+#       bfdProfile: fast
+
+# ---------------------------------------------------------------------------
+# Communities (metallb.io/v1beta1)
+# ---------------------------------------------------------------------------
+# Named BGP community aliases referenced from BGPAdvertisement.communities.
+#
+# Per-entry fields:
+#   name        (required) Community resource name.
+#   communities (required) List of { name, value } alias entries.
+#   labels/annotations (optional)
+communities: []
+# Example:
+#   communities:
+#     - name: communities
+#       communities:
+#         - name: no-advertise
+#           value: 65535:65282
+
+# ---------------------------------------------------------------------------
+# BFDProfiles (metallb.io/v1beta1)
+# ---------------------------------------------------------------------------
+# Bidirectional Forwarding Detection profiles referenced from BGPPeer.bfdProfile.
+#
+# Per-entry fields:
+#   name             (required) BFDProfile name.
+#   receiveInterval/transmitInterval/detectMultiplier/echoInterval (optional ints)
+#   echoMode/passiveMode (optional booleans)
+#   minimumTtl       (optional)
+#   labels/annotations (optional)
+bfdProfiles: []
+# Example:
+#   bfdProfiles:
+#     - name: fast
+#       receiveInterval: 100
+#       transmitInterval: 100
+#       detectMultiplier: 3
