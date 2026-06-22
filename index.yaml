@@ -1477,6 +1477,52 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/kibana-eck-0.1.1/kibana-eck-0.1.1.tgz
     version: 0.1.1
+  metallb-cr:
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Initial release: data-driven MetalLB configuration custom resources, deployed alongside the upstream metallb/metallb chart which intentionally does not template config CRs."
+        - kind: added
+          description: "IPAddressPool, L2Advertisement, BGPAdvertisement (metallb.io/v1beta1), BGPPeer (metallb.io/v1beta2), Community and BFDProfile rendered from list-valued inputs with shared commonLabels / commonAnnotations and a per-entry specExtra escape hatch."
+        - kind: added
+          description: "Safe empty defaults so an unconfigured install is a no-op, a values.schema.json contract (additionalProperties false at root), and ci/install-values.yaml exercising every template path for chart-testing / kubeconform coverage."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: MetalLB
+          url: https://github.com/metallb/metallb
+        - name: MetalLB configuration docs
+          url: https://metallb.universe.tf/configuration/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.16.1
+    created: "2026-06-22T07:28:16.99311849Z"
+    description: Custom resources for MetalLB — IPAddressPool, L2Advertisement, BGPAdvertisement,
+      BGPPeer, Community, BFDProfile. Deployed alongside the upstream MetalLB chart,
+      which intentionally does not template these config CRs.
+    digest: f81f03bd5487275c9325ff9aa0fab691bdf2aed47cd781e3d0abb1fbfce6fd90
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - metallb
+    - loadbalancer
+    - bare-metal
+    - bgp
+    - l2
+    - kubernetes
+    - networking
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: metallb-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/metallb-cr-0.1.0/metallb-cr-0.1.0.tgz
+    version: 0.1.0
   mysql:
   - annotations:
       artifacthub.io/category: database
@@ -2109,4 +2155,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-22T05:15:22.439892446Z"
+generated: "2026-06-22T07:28:16.99321911Z"
