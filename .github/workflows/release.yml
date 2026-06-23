@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # PAT_TOKEN so the changelog-sync step below can push back to main
           # and re-trigger this workflow's safeguards. The re-triggered run

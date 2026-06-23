@@ -30,7 +30,7 @@ jobs:
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 0
