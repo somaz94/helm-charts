@@ -965,6 +965,45 @@ entries:
     version: 0.1.0
   karpenter-cr:
   - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Set artifacthub.io/category to integration-delivery for ArtifactHub classification."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Karpenter
+          url: https://karpenter.sh/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.13.0
+    created: "2026-06-24T05:59:58.357753572Z"
+    description: Custom resources (EC2NodeClass, NodePool) for AWS Karpenter, deployed
+      alongside the upstream Karpenter controller chart. Data-driven — render any
+      number of node classes / pools from values.
+    digest: e18d027b384a55bababdf8dfdeac49119866aac9f104d2e17f92e5371cdb7040
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - karpenter
+    - nodepool
+    - ec2nodeclass
+    - autoscaling
+    - kubernetes
+    - aws
+    kubeVersion: '>=1.31.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: karpenter-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/aws/karpenter-provider-aws
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/karpenter-cr-0.1.1/karpenter-cr-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
       artifacthub.io/changes: |
         - kind: added
           description: "Initial release: data-driven EC2NodeClass + NodePool custom resources for AWS Karpenter (multi-pool via values, shared defaults with per-entry override)."
@@ -2155,4 +2194,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-22T07:28:16.99321911Z"
+generated: "2026-06-24T05:59:59.113567728Z"
