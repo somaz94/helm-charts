@@ -4,6 +4,8 @@ A Helm chart that deploys [NGINX Gateway Fabric](https://github.com/nginx/nginx-
 
 The upstream chart installs the controller and CRDs, but does **not** create the tenant-level resources you actually route traffic through. This chart fills that gap with a flexible, multi-Gateway-friendly schema.
 
+<br/>
+
 ## What it deploys
 
 | Resource | API | Purpose |
@@ -16,12 +18,16 @@ The upstream chart installs the controller and CRDs, but does **not** create the
 | `PodMonitor` (controller) | `monitoring.coreos.com/v1` | Optional. Scrapes the NGF control-plane Pod directly. **Recommended for NGF 2.x** (controller `/metrics` is exposed on the Pod, not the Service) |
 | `PodMonitor` (dataplane) | `monitoring.coreos.com/v1` | Optional. Scrapes the dataplane (nginx) Pods directly |
 
+<br/>
+
 ## Prerequisites
 
 - Kubernetes **1.25+**
 - [NGINX Gateway Fabric](https://github.com/nginx/nginx-gateway-fabric) controller installed (provides the `NginxProxy` CRD and `gateway.nginx.org` API group)
 - [Gateway API](https://gateway-api.sigs.k8s.io/) CRDs installed (`gateway.networking.k8s.io`)
 - For `serviceMonitor.*.enabled: true`, the [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator) (typically via [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack))
+
+<br/>
 
 ## Install
 
@@ -43,6 +49,8 @@ helm install ngf-cr somaz94/nginx-gateway-cr \
   --namespace nginx-gateway \
   -f my-values.yaml
 ```
+
+<br/>
 
 ## Quick examples
 
@@ -140,6 +148,8 @@ podMonitor:
 
 `ServiceMonitor` works only when a Service in the namespace exposes the metrics port (e.g. via custom port config). When in doubt, use `PodMonitor`.
 
+<br/>
+
 ## Values reference
 
 ### Top-level
@@ -235,10 +245,14 @@ Both blocks share the same shape (a `controller` and a `dataplane` sub-block plu
 
 Use `podMonitor` for NGF 2.x controller (Pod port `metrics:9113` is not on the Service). Use `serviceMonitor` when a Service exposes the metrics port.
 
+<br/>
+
 ## Notes on `externalTrafficPolicy`
 
 - Use `Cluster` (default) when in-cluster pods may resolve the LoadBalancer IP and need traffic to reach the dataplane regardless of which node receives it.
 - Use `Local` when you must preserve the client source IP and accept that only nodes running a dataplane pod will accept traffic.
+
+<br/>
 
 ## Escape hatches
 
@@ -259,6 +273,8 @@ proxy:
 ```
 
 `mergeOverwrite` semantics — escape hatch keys override chart-managed keys when they collide. Prefer first-class fields when available.
+
+<br/>
 
 ## License
 

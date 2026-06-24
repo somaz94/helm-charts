@@ -1,5 +1,7 @@
 # Security Policy
 
+<br/>
+
 ## Supported Versions
 
 Each chart is independently versioned. Only the **latest released version** of each chart receives security fixes. Users are encouraged to track the latest release and bump promptly when security advisories are published.
@@ -18,6 +20,7 @@ Charts in scope:
 | certmanager-letsencrypt |
 | elasticsearch-eck |
 | ghost |
+| karpenter-cr |
 | keycloak-cr |
 | keycloak-operator |
 | kibana-eck |
@@ -27,6 +30,8 @@ Charts in scope:
 | postgresql |
 | redis |
 | unity-mcp-server |
+
+<br/>
 
 ## Reporting a Vulnerability
 
@@ -45,15 +50,21 @@ Send a private email to **genius5711@gmail.com** with subject prefixed `[helm-ch
 - Impact assessment (what an attacker could achieve)
 - Any suggested mitigation
 
+<br/>
+
 ## Response expectations
 
 - **Acknowledgement**: within 7 days of report
 - **Initial assessment**: within 14 days
 - **Fix release**: timeline depends on severity, typically within 30 days for high/critical issues
 
+<br/>
+
 ## Disclosure
 
 Once a fix is released, the advisory will be published on the GitHub Security Advisories page and an entry will be added to the affected chart's `artifacthub.io/changes` with `kind: security`.
+
+<br/>
 
 ## Scope
 

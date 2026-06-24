@@ -2,6 +2,8 @@
 
 Helm chart for [Ghost](https://ghost.org/) — Node.js blogging platform — with optional bundled MySQL, backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted blogs on Kubernetes with a single-release install.
 
+<br/>
+
 ## What it deploys
 
 | Resource | API | Purpose |
@@ -23,10 +25,14 @@ Helm chart for [Ghost](https://ghost.org/) — Node.js blogging platform — wit
 | `ServiceAccount` | `v1` | Dedicated SA for IRSA / image pull secret scoping (optional, `serviceAccount.create`) |
 | `NetworkPolicy` | `networking.k8s.io/v1` | Pod-level ingress/egress lock-down (optional, `networkPolicy.enabled`) |
 
+<br/>
+
 ## Versioning
 
 - Chart `version` — this chart's own SemVer, bumped on every change.
 - `appVersion` — the Ghost upstream version the defaults target (`image.tag` default, e.g. `5.117.0-alpine`).
+
+<br/>
 
 ## Prerequisites
 
@@ -35,6 +41,8 @@ Helm chart for [Ghost](https://ghost.org/) — Node.js blogging platform — wit
 - For `httproute.enabled`: a Gateway API–compliant controller (e.g. NGINX Gateway Fabric, Envoy Gateway, Contour) with a ready `Gateway`
 - For `nginxGatewayFabric.clientSettings.enabled`: **NGINX Gateway Fabric** specifically (its `gateway.nginx.org/v1alpha1` CRDs)
 - For `ingress.enabled`: an Ingress controller (ingress-nginx, Traefik, cloud LBs)
+
+<br/>
 
 ## Install
 
@@ -59,6 +67,8 @@ helm repo update
 helm install blog somaz94/ghost --version 0.1.0 -f values.yaml
 ```
 
+<br/>
+
 ## Required values
 
 The chart **fails at render time** unless you provide:
@@ -67,7 +77,9 @@ The chart **fails at render time** unless you provide:
 - `mysql.auth.{user,password,database,rootPassword}` — **when `mysql.enabled: true` (default)** and `mysql.auth.existingSecret` is empty
 - `externalDatabase.{host,user,password,database}` — when `mysql.enabled: false` and `externalDatabase.existingSecret` is empty
 
-## Examples
+<br/>
+
+## Quick examples
 
 ### Minimal (bundled MySQL, cluster-internal access only)
 
@@ -258,6 +270,8 @@ backup:
 
 Run `helm diff upgrade --install ...` first and confirm every resource shows up as a modify (not an add) before applying.
 
+<br/>
+
 ## NFS notes
 
 Ghost on NFS-backed RWO volumes needs MySQL tuning. Append to `mysql.customConfig`:
@@ -269,6 +283,8 @@ skip_external_locking=1      # disable external locking
 ```
 
 Or replace the defaults entirely — the chart passes the full string verbatim into `/etc/mysql/conf.d/custom.cnf`.
+
+<br/>
 
 ## Values reference
 
@@ -294,12 +310,16 @@ Key blocks:
 | `commonLabels` / `commonAnnotations` / `resourceMetadata.*` | Labels and annotations per resource kind |
 | `specExtra` / `podTemplateExtra` / `kubernetesExtra` | Escape hatches (merge-in arbitrary fields) |
 
+<br/>
+
 ## Known limitations
 
 - Single-replica Ghost with Recreate update strategy (PVC RWO). `helm upgrade` will incur short downtime — suitable for personal blogs, not highly-available production sites.
 - Bundled MySQL is single-node with no replication. For production prefer an external managed DB (RDS, CloudSQL, DO Managed DB) with `mysql.enabled: false`.
 - `helm upgrade` over an install that originally used plain YAML manifests requires PVC adoption (`kubectl annotate`/`label` the existing PVC with `meta.helm.sh/release-name` + `app.kubernetes.io/managed-by=Helm`) before the install proceeds.
 - Ghost's built-in content filesystem stays on a PVC; for multi-replica or cloud-native setups, configure a third-party storage adapter (S3/GCS) out of chart scope.
+
+<br/>
 
 ## Contributing
 
@@ -310,3 +330,9 @@ make lint CHART=ghost
 make template CHART=ghost
 make validate CHART=ghost
 ```
+
+<br/>
+
+## License
+
+[Apache-2.0](../../LICENSE)

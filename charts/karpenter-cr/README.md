@@ -6,6 +6,17 @@ The chart ships **no opinionated pools** — you describe any number of node cla
 
 <br/>
 
+## What it deploys
+
+| Resource | API | Created from |
+|---|---|---|
+| `EC2NodeClass` | `karpenter.k8s.aws/v1` | `nodeClasses[]` |
+| `NodePool` | `karpenter.sh/v1` | `nodePools[]` |
+
+Both lists default to empty, so an unconfigured `helm install` creates nothing.
+
+<br/>
+
 ## Prerequisites
 
 - A Kubernetes cluster (EKS) with the Karpenter **controller** already installed (this chart only ships the CRs, not the controller).
@@ -15,11 +26,28 @@ The chart ships **no opinionated pools** — you describe any number of node cla
 
 <br/>
 
-## Usage
+## Install
+
+OCI registry:
 
 ```bash
-helm install karpenter-cr oci://<registry>/karpenter-cr -f my-values.yaml
+helm install karpenter-cr oci://ghcr.io/somaz94/charts/karpenter-cr \
+  --namespace karpenter \
+  -f my-values.yaml
 ```
+
+Classic Helm repo:
+
+```bash
+helm repo add somaz94 https://charts.somaz.blog
+helm install karpenter-cr somaz94/karpenter-cr \
+  --namespace karpenter \
+  -f my-values.yaml
+```
+
+<br/>
+
+## Quick examples
 
 Minimal values:
 
@@ -59,7 +87,7 @@ nodePools:
 
 <br/>
 
-## Values
+## Values reference
 
 | Key | Description | Default |
 |-----|-------------|---------|
@@ -89,3 +117,9 @@ nodePools:
 
 - Targets the Karpenter **v1** API (`karpenter.k8s.aws/v1`, `karpenter.sh/v1`); requires Karpenter `>= 1.0`.
 - CRs are cluster-scoped; this chart does not create a namespace.
+
+<br/>
+
+## License
+
+[Apache-2.0](../../LICENSE)

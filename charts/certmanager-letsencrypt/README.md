@@ -4,6 +4,8 @@ A Helm chart that manages [cert-manager](https://cert-manager.io/) Let's Encrypt
 
 The upstream cert-manager chart installs the operator and CRDs, but does **not** create the tenant-level resources you actually issue certificates with. This chart fills that gap with a multi-issuer / multi-certificate / multi-secret schema.
 
+<br/>
+
 ## What it deploys
 
 | Resource | API | Purpose |
@@ -13,12 +15,16 @@ The upstream cert-manager chart installs the operator and CRDs, but does **not**
 | `Issuer` | `cert-manager.io/v1` | Namespace-scoped issuers (use for tenant isolation) |
 | `Certificate` | `cert-manager.io/v1` | Per-domain certificate requests (cert-manager creates the actual TLS Secret) |
 
+<br/>
+
 ## Prerequisites
 
 - Kubernetes **1.25+**
 - [cert-manager](https://cert-manager.io/docs/installation/) installed (provides `cert-manager.io` CRDs)
 - DNS provider account with API access (Cloudflare, Route53, Cloud DNS, ...) — DNS-01 challenge
 - A registered domain whose DNS you control
+
+<br/>
 
 ## Install
 
@@ -40,6 +46,8 @@ helm install cert somaz94/certmanager-letsencrypt \
   --namespace cert-manager \
   -f my-values.yaml
 ```
+
+<br/>
 
 ## Quick examples
 
@@ -254,6 +262,8 @@ ingresses:
 
 > For Workload Identity (recommended on GKE): omit the JSON Secret, use `serviceAccountSecretRef`-less form with cert-manager pod's `iam.gke.io/gcp-service-account` annotation. See [cert-manager Cloud DNS docs](https://cert-manager.io/docs/configuration/acme/dns01/google/).
 
+<br/>
+
 ## Values reference
 
 ### Top-level
@@ -319,6 +329,8 @@ Optional. Most users keep Ingress in their app chart and just add a `cert-manage
 | `rules` | list | no | Passthrough to `Ingress.spec.rules` (Kubernetes Ingress v1 schema). |
 | `tls` | list | no | Passthrough to `Ingress.spec.tls`. `secretName` should match `certificates[].secretName`. |
 
+<br/>
+
 ## Notes
 
 ### Ingress
@@ -352,6 +364,8 @@ certificates:
 ```
 
 Once everything works end-to-end, switch `issuerRef.name` to the prod issuer.
+
+<br/>
 
 ## License
 
