@@ -1,5 +1,7 @@
 # helm-charts
 
+> Production-ready Helm charts for Kubernetes — MySQL, PostgreSQL, Redis, Keycloak, Elasticsearch/Kibana (ECK), MetalLB, Karpenter, cert-manager, Ghost & more. Published to a classic Helm repo, GHCR OCI registry, and ArtifactHub.
+
 A collection of Helm charts maintained by [@somaz94](https://github.com/somaz94).
 
 Charts are published to:
