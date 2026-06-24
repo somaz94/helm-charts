@@ -2,7 +2,7 @@ apiVersion: v2
 name: karpenter-cr
 description: Custom resources (EC2NodeClass, NodePool) for AWS Karpenter, deployed alongside the upstream Karpenter controller chart. Data-driven — render any number of node classes / pools from values.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "1.13.0"
 kubeVersion: ">=1.31.0-0"
 keywords:
@@ -29,5 +29,5 @@ annotations:
       url: https://karpenter.sh/
   artifacthub.io/changes: |
     - kind: added
-      description: "Initial release: data-driven EC2NodeClass + NodePool custom resources for AWS Karpenter (multi-pool via values, shared defaults with per-entry override)."
+      description: "Set artifacthub.io/category to integration-delivery for ArtifactHub classification."
   artifacthub.io/prerelease: "false"
