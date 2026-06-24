@@ -321,14 +321,24 @@ Key blocks:
 
 <br/>
 
-## Contributing
+## Maintaining this chart
 
-Run locally:
+### Bumping the Ghost version
 
 ```bash
+cd charts/ghost
+./upgrade.sh --dry-run           # preview
+./upgrade.sh                     # bump to latest
+./upgrade.sh --version 5.130.6   # pin to a specific version
+./upgrade.sh --rollback          # restore files from backup/
+```
+
+`upgrade.sh` updates `Chart.yaml` `appVersion` only — the image tag is derived from `.Chart.AppVersion`, so `values.yaml` is left untouched. It does NOT bump the chart's own SemVer or touch any cluster. After reviewing the diff:
+
+```bash
+make bump CHART=ghost LEVEL=minor
 make lint CHART=ghost
 make template CHART=ghost
-make validate CHART=ghost
 ```
 
 <br/>

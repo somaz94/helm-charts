@@ -216,14 +216,24 @@ Top-level blocks:
 
 <br/>
 
-## Contributing
+## Maintaining this chart
 
-Run locally:
+### Bumping the Unity MCP Server version
 
 ```bash
+cd charts/unity-mcp-server
+./upgrade.sh --dry-run          # preview
+./upgrade.sh                    # bump to latest
+./upgrade.sh --version 9.7.3    # pin to a specific version
+./upgrade.sh --rollback         # restore files from backup/
+```
+
+`upgrade.sh` updates `Chart.yaml` `appVersion` only — the image tag is derived from `.Chart.AppVersion`, so `values.yaml` is left untouched. It does NOT bump the chart's own SemVer or touch any cluster. After reviewing the diff:
+
+```bash
+make bump CHART=unity-mcp-server LEVEL=minor
 make lint CHART=unity-mcp-server
 make template CHART=unity-mcp-server
-make validate CHART=unity-mcp-server
 ```
 
 <br/>
