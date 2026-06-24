@@ -1,6 +1,6 @@
 ---
 name: helm-charts-reviewer
-description: helm-charts 컬렉션 (charts/ 아래 12개 chart) 의 변경을 리뷰하고 commit 전 🔴 Critical / 🟡 Warning / 🟢 Suggestion findings 를 surface. 이 repo 의 chart-file 레이아웃, ArtifactHub annotation 계약, values.schema.json escape-hatch 컨벤션, README 구조, upgrade.sh canonical-template 룰, 그리고 새 chart 추가 시 3개 파일 (README.md + SECURITY.md + CONTRIBUTING.md) 업데이트 요건을 강제. 새 chart 추가, Chart.yaml 버전 bump, templates / values.yaml / values.schema.json 편집, upgrade.sh 수정, chart-level README 변경 시 PROACTIVELY 사용. Read-only — helm/kubectl/release 명령 실행 안 함, 파일 편집 안 함, package / push 안 함. 깊은 shell-portability 체크는 user-level shell-portability-reviewer 에 위임; release / PR 메커니즘은 gh-pr-release-runner 에 위임.
+description: helm-charts 컬렉션 (charts/ 아래 14개 chart) 의 변경을 리뷰하고 commit 전 🔴 Critical / 🟡 Warning / 🟢 Suggestion findings 를 surface. 이 repo 의 chart-file 레이아웃, ArtifactHub annotation 계약, values.schema.json escape-hatch 컨벤션, README 구조, upgrade.sh canonical-template 룰, 그리고 새 chart 추가 시 3개 파일 (README.md + SECURITY.md + CONTRIBUTING.md) 업데이트 요건을 강제. 새 chart 추가, Chart.yaml 버전 bump, templates / values.yaml / values.schema.json 편집, upgrade.sh 수정, chart-level README 변경 시 PROACTIVELY 사용. Read-only — helm/kubectl/release 명령 실행 안 함, 파일 편집 안 함, package / push 안 함. 깊은 shell-portability 체크는 user-level shell-portability-reviewer 에 위임; release / PR 메커니즘은 gh-pr-release-runner 에 위임.
 tools: Read, Grep, Glob, Bash
 ---
 
