@@ -41,8 +41,8 @@ helm install metallb-config oci://ghcr.io/somaz94/charts/metallb-cr \
 Classic Helm repo:
 
 ```bash
-helm repo add somaz https://charts.somaz.blog
-helm install metallb-config somaz/metallb-cr \
+helm repo add somaz94 https://charts.somaz.blog
+helm install metallb-config somaz94/metallb-cr \
   --namespace metallb \
   -f my-values.yaml
 ```
