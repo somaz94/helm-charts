@@ -20,6 +20,7 @@ maintainers:
   - name: somaz94
     url: https://github.com/somaz94
 annotations:
+  artifacthub.io/category: integration-delivery
   artifacthub.io/license: Apache-2.0
   artifacthub.io/links: |
     - name: Source
