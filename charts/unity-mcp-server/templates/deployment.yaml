@@ -28,6 +28,10 @@ spec:
     metadata:
       labels:
         {{- include "unity-mcp-server.selectorLabels" . | nindent 8 }}
+      {{- if and .Values.apiKey.enabled (not .Values.apiKey.existingSecret) }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      {{- end }}
     spec:
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ .Values.serviceAccount.name | default (include "unity-mcp-server.fullname" .) }}

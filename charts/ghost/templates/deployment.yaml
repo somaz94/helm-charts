@@ -31,6 +31,10 @@ spec:
     metadata:
       labels:
         {{- include "ghost.selectorLabels" . | nindent 8 }}
+      {{- if and .Values.mysql.enabled (not .Values.mysql.auth.existingSecret) }}
+      annotations:
+        checksum/secret: {{ .Values.mysql.auth | toYaml | sha256sum }}
+      {{- end }}
     spec:
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ .Values.serviceAccount.name | default (include "ghost.fullname" .) }}
