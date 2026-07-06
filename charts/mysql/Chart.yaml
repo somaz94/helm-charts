@@ -2,7 +2,7 @@ apiVersion: v2
 name: mysql
 description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "8.0.43"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -30,10 +30,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Initial release. Standalone single-node MySQL 8 with ConfigMap (custom.cnf), Secret, PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), optional backup CronJob (mysqldump + retention), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS, additive), kubernetesExtra escape hatch."
-    - kind: added
-      description: "`auth.existingSecret` + `auth.secretKeys.{user,password,rootPassword,database}` for adopting legacy Secrets that use non-standard key names (e.g. `DB_USERNAME` instead of `MYSQL_USER`) without re-keying."
-    - kind: added
-      description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default (typical when migrating off raw-YAML deployments)."
-    - kind: added
-      description: "`persistence.existingClaim` for PVC reuse — the chart will not render or modify the PVC when set, preserving the underlying volume on uninstall."
+      description: "Add checksum/config and checksum/secret pod annotations so ConfigMap or Secret changes trigger a rollout on helm upgrade."

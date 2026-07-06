@@ -21,8 +21,15 @@ keycloak:
       cpu: "2"
       memory: 2Gi
   scheduling:
-    nodeSelector:
-      role: keycloak
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: role
+                  operator: In
+                  values:
+                    - keycloak
   features:
     enabled:
       - token-exchange

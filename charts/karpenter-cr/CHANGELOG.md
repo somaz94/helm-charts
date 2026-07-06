@@ -5,6 +5,11 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.2] - 2026-07-06
+
+### Changed
+- Add app.kubernetes.io/name and app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection.
+
 ## [v0.1.1] - 2026-06-24
 
 ### Added

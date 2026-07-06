@@ -2,7 +2,7 @@ apiVersion: v2
 name: unity-mcp-server
 description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
 type: application
-version: 0.1.8
+version: 0.1.9
 # appVersion pins the upstream CoplayDev/unity-mcp release the chart was
 # tested against (bumped by upgrade.sh). Users MUST still set
 # image.repository / image.tag — this chart does not ship a default image.
@@ -37,5 +37,5 @@ annotations:
       url: https://modelcontextprotocol.io/
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: Bump appVersion from 9.7.1 to 9.7.3
+    - kind: added
+      description: "Add a checksum/secret pod annotation so apiKey Secret changes trigger a rollout on helm upgrade."

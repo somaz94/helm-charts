@@ -25,6 +25,15 @@ spec:
     metadata:
       labels:
         {{- include "redis.selectorLabels" . | nindent 8 }}
+      {{- if or (eq (include "redis.useConfigFile" .) "true") (and .Values.auth.enabled (not .Values.auth.existingSecret)) }}
+      annotations:
+        {{- if eq (include "redis.useConfigFile" .) "true" }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if and .Values.auth.enabled (not .Values.auth.existingSecret) }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+      {{- end }}
     spec:
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ .Values.serviceAccount.name | default (include "redis.fullname" .) }}

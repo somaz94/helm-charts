@@ -74,6 +74,11 @@ spec:
     metadata:
       labels:
         {{- include "ghost.mysql.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ .Values.mysql.customConfig | sha256sum }}
+        {{- if not .Values.mysql.auth.existingSecret }}
+        checksum/secret: {{ .Values.mysql.auth | toYaml | sha256sum }}
+        {{- end }}
     spec:
       {{- include "ghost.imagePullSecretsBlock" . | nindent 6 }}
       {{- with .Values.mysql.podSecurityContext }}

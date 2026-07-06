@@ -8,10 +8,10 @@ metadata:
     {{- with .Values.resourceMetadata.deployment.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- $mergedAnn := merge (deepCopy (default (dict) .Values.resourceMetadata.deployment.annotations)) (deepCopy (default (dict) .Values.commonAnnotations)) }}
-  {{- if $mergedAnn }}
+  {{- $depAnn := include "keycloak-operator.annotations" (dict "top" . "extra" .Values.resourceMetadata.deployment.annotations) }}
+  {{- if $depAnn }}
   annotations:
-    {{- toYaml $mergedAnn | nindent 4 }}
+    {{- $depAnn | nindent 4 }}
   {{- end }}
 spec:
   replicas: {{ .Values.replicas }}

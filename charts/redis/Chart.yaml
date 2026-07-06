@@ -2,7 +2,7 @@ apiVersion: v2
 name: redis
 description: Standalone single-node Redis — Deployment + optional Secret + optional ConfigMap (redis.conf) + PVC + Service, NetworkPolicy, ServiceAccount. Recreate strategy. No backup CronJob (Redis is typically a cache; if you need persistence + offsite backups, prefer Sentinel/Cluster topology). Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption). Sibling chart to `valkey-cr` — choose by license / compatibility preference.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "8.2-alpine"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -30,10 +30,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: "Initial release. Standalone single-node Redis with optional ConfigMap (redis.conf), optional Secret (auth password), PVC, Deployment (Recreate strategy), Service (ClusterIP/NodePort), NetworkPolicy, ServiceAccount, image pull Secret (chart-managed dockerconfigjson + BYOIPS), kubernetesExtra escape hatch. Default image tracks Redis 8.2 (RSALv2/SSPL); pin `image.tag: 7.4-alpine` to remain on the last BSD-licensed release."
-    - kind: added
-      description: "`auth.existingSecret` + `auth.passwordKey` for adopting legacy Secrets that hold the Redis password under non-standard keys."
-    - kind: added
-      description: "`fullnameOverride` and `configMap.nameOverride` to adopt pre-existing resources whose names do not fit the chart default."
-    - kind: added
-      description: "`persistence.{enabled,existingClaim,mountPath}` for PVC reuse and non-standard mount paths (e.g. `/redis-master-data` from legacy raw YAML)."
+      description: "Add checksum/config and checksum/secret pod annotations so ConfigMap or Secret changes trigger a rollout on helm upgrade."
