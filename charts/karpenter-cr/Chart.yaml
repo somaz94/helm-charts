@@ -2,7 +2,7 @@ apiVersion: v2
 name: karpenter-cr
 description: Custom resources (EC2NodeClass, NodePool) for AWS Karpenter, deployed alongside the upstream Karpenter controller chart. Data-driven — render any number of node classes / pools from values.
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: "1.13.0"
 kubeVersion: ">=1.31.0-0"
 keywords:
@@ -28,6 +28,6 @@ annotations:
     - name: Karpenter
       url: https://karpenter.sh/
   artifacthub.io/changes: |
-    - kind: added
-      description: "Set artifacthub.io/category to integration-delivery for ArtifactHub classification."
+    - kind: changed
+      description: "Add app.kubernetes.io/name and app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection."
   artifacthub.io/prerelease: "false"

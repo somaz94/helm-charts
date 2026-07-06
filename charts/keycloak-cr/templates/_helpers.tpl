@@ -16,6 +16,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/name: {{ include "keycloak-cr.fullname" . }}
 app.kubernetes.io/part-of: keycloak
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- with .Values.commonLabels }}
 {{ toYaml . }}
 {{- end }}

@@ -2,7 +2,7 @@ apiVersion: v2
 name: metallb-cr
 description: Custom resources for MetalLB — IPAddressPool, L2Advertisement, BGPAdvertisement, BGPPeer, Community, BFDProfile. Deployed alongside the upstream MetalLB chart, which intentionally does not template these config CRs.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "0.16.1"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -30,10 +30,6 @@ annotations:
     - name: MetalLB configuration docs
       url: https://metallb.universe.tf/configuration/
   artifacthub.io/changes: |
-    - kind: added
-      description: "Initial release: data-driven MetalLB configuration custom resources, deployed alongside the upstream metallb/metallb chart which intentionally does not template config CRs."
-    - kind: added
-      description: "IPAddressPool, L2Advertisement, BGPAdvertisement (metallb.io/v1beta1), BGPPeer (metallb.io/v1beta2), Community and BFDProfile rendered from list-valued inputs with shared commonLabels / commonAnnotations and a per-entry specExtra escape hatch."
-    - kind: added
-      description: "Safe empty defaults so an unconfigured install is a no-op, a values.schema.json contract (additionalProperties false at root), and ci/install-values.yaml exercising every template path for chart-testing / kubeconform coverage."
+    - kind: changed
+      description: "Add app.kubernetes.io/name and app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection."
   artifacthub.io/prerelease: "false"

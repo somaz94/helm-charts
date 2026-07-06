@@ -2,7 +2,7 @@ apiVersion: v2
 name: nginx-gateway-cr
 description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
 type: application
-version: 0.3.2
+version: 0.3.3
 appVersion: "0.1.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -27,6 +27,6 @@ annotations:
     - name: NGINX Gateway Fabric
       url: https://github.com/nginx/nginx-gateway-fabric
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the 0.3.1 release content (the prior unquoted form failed annotation validation)."
+    - kind: changed
+      description: "Add app.kubernetes.io/name and app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection."
   artifacthub.io/prerelease: "false"

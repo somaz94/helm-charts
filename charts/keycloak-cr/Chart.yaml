@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-cr
 description: Custom resources (Keycloak, KeycloakRealmImport) for the Keycloak Operator, with optional HTTPRoute, DB-credentials Secret and bootstrap-admin Secret. Defaults to a single-instance Keycloak with edge-proxy mode.
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: "1.0.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -32,5 +32,5 @@ annotations:
       url: https://github.com/keycloak/keycloak-k8s-resources
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "Quote artifacthub.io/changes descriptions so chart-releaser/ArtifactHub linter accepts the prior release content (unquoted form failed annotation validation)."
+    - kind: changed
+      description: "Add app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection."
