@@ -16,7 +16,9 @@ metadata:
   {{- end }}
 spec:
   acme:
-    email: {{ $i.email }}
+    {{- with $i.email }}
+    email: {{ . }}
+    {{- end }}
     server: {{ $i.server }}
     privateKeySecretRef:
       name: {{ default (printf "%s-account-key" $i.name) $i.privateKeySecretRef }}
