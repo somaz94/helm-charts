@@ -3,6 +3,9 @@
 .helm/
 charts/**/charts/
 
+# upgrade.sh rollback snapshots (local-only; git history is the real backup)
+charts/*/backup/
+
 # Local-only values files
 *.local.yaml
 *.local.yml
