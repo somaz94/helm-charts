@@ -292,7 +292,7 @@ ingresses:
 | Key | Type | Required | Description |
 |---|---|---|---|
 | `name` | string | yes | Issuer name. |
-| `email` | string | yes | ACME account email. |
+| `email` | string | no | ACME account email (optional — Let's Encrypt / cert-manager does not require it). |
 | `server` | string | yes | ACME directory URL (use `acmeServers.letsencryptProd` etc.). |
 | `privateKeySecretRef` | string | no | ACME account key secret name. Default: `<name>-account-key`. |
 | `solvers` | list | yes | cert-manager solvers (DNS-01, HTTP-01) — passthrough. |

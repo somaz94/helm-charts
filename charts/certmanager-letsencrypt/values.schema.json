@@ -62,7 +62,7 @@
     },
     "issuer": {
       "type": "object",
-      "required": ["name", "email", "server", "solvers"],
+      "required": ["name", "server", "solvers"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string", "minLength": 1 },
@@ -76,7 +76,7 @@
     },
     "namespacedIssuer": {
       "type": "object",
-      "required": ["name", "namespace", "email", "server", "solvers"],
+      "required": ["name", "namespace", "server", "solvers"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string", "minLength": 1 },
