@@ -7,5 +7,12 @@
         <sub><b>somaz94</b></sub>
       </a>
     </td>
+    <td align="center">
+      <a href="https://github.com/josephpage">
+        <img src="https://avatars.githubusercontent.com/u/351958?v=4" width="100" alt="josephpage"/>
+        <br />
+        <sub><b>josephpage</b></sub>
+      </a>
+    </td>
   </tr>
 </table>
