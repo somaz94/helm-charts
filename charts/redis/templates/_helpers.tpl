@@ -1,3 +1,8 @@
+{{/*
+Chart name used to derive resource names and as the label value.
+Defaults to the Helm release name; overridable via .Values.fullnameOverride
+or .Values.nameOverride.
+*/}}
 {{- define "redis.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
@@ -15,6 +20,10 @@
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{/*
+Secret name. When auth.existingSecret is set, the chart skips Secret rendering
+and resource references resolve to that name instead.
+*/}}
 {{- define "redis.secretName" -}}
 {{- if .Values.auth.existingSecret -}}
 {{- .Values.auth.existingSecret -}}
@@ -23,6 +32,11 @@
 {{- end -}}
 {{- end -}}
 
+{{/*
+ConfigMap name. Defaults to `<fullname>-config`. Override with
+`configMap.nameOverride` to adopt a legacy ConfigMap whose suffix differs
+(e.g. `<fullname>` without `-config`).
+*/}}
 {{- define "redis.configMapName" -}}
 {{- if .Values.configMap.nameOverride -}}
 {{- .Values.configMap.nameOverride -}}
@@ -31,6 +45,10 @@
 {{- end -}}
 {{- end -}}
 
+{{/*
+Pull Secret name. Default `<fullname>-pull-secret`; override with
+`imagePullSecret.name`. Only consulted when `imagePullSecret.create` is true.
+*/}}
 {{- define "redis.imagePullSecretName" -}}
 {{- if .Values.imagePullSecret.name -}}
 {{- .Values.imagePullSecret.name -}}
@@ -39,6 +57,14 @@
 {{- end -}}
 {{- end -}}
 
+{{/*
+Render the `imagePullSecrets:` block for a Pod spec. Combines two sources:
+  1. `.Values.imagePullSecrets`           — bring-your-own pull Secrets (BYOIPS).
+  2. `<fullname>-pull-secret`             — chart-managed Secret rendered when
+                                            `.Values.imagePullSecret.create` is true.
+Outputs nothing when both lists are empty so the caller can `nindent` safely.
+Usage: `{{- include "redis.imagePullSecretsBlock" . | nindent 6 }}`
+*/}}
 {{- define "redis.imagePullSecretsBlock" -}}
 {{- $list := default (list) .Values.imagePullSecrets -}}
 {{- if (default (dict) .Values.imagePullSecret).create -}}
@@ -50,6 +76,9 @@ imagePullSecrets:
 {{- end -}}
 {{- end -}}
 
+{{/*
+Resolved image tag — defaults to .Chart.AppVersion when .Values.image.tag is empty.
+*/}}
 {{- define "redis.imageTag" -}}
 {{- default .Chart.AppVersion .Values.image.tag -}}
 {{- end -}}
@@ -61,6 +90,10 @@ True when the chart should render a ConfigMap (i.e. customConfig non-empty).
 {{- if .Values.customConfig -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
+{{/*
+Common labels applied to every resource in this chart.
+Caller may extend via .Values.commonLabels.
+*/}}
 {{- define "redis.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -73,12 +106,21 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 {{- end -}}
 
+{{/*
+Selector labels — stable subset used in Deployment/Service selectors. Must NOT
+include version/chart labels so pods survive chart version bumps.
+*/}}
 {{- define "redis.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "redis.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: redis
 {{- end -}}
 
+{{/*
+Per-resource annotations: merge of commonAnnotations and per-resource extra.
+Usage: include "redis.annotations" (dict "top" $top "extra" .Values.resourceMetadata.service.annotations)
+Returns empty when both are empty (caller should guard with `if`).
+*/}}
 {{- define "redis.annotations" -}}
 {{- $top := .top -}}
 {{- $extra := default dict .extra -}}
