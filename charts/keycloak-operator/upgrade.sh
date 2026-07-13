@@ -5,6 +5,8 @@
 # (https://github.com/keycloak/keycloak-k8s-resources) and refresh:
 #   - templates/crd-keycloaks.yaml
 #   - templates/crd-realmimports.yaml
+#   - templates/crd-oidcclients.yaml
+#   - templates/crd-samlclients.yaml
 #   - Chart.yaml `appVersion`
 #   - values.yaml `version`
 #   - artifacthub.io/changes annotation
@@ -45,6 +47,8 @@ EOF
 CRD_FILES=(
   "keycloaks.k8s.keycloak.org-v1.yml:templates/crd-keycloaks.yaml"
   "keycloakrealmimports.k8s.keycloak.org-v1.yml:templates/crd-realmimports.yaml"
+  "keycloakoidcclients.k8s.keycloak.org-v1.yml:templates/crd-oidcclients.yaml"
+  "keycloaksamlclients.k8s.keycloak.org-v1.yml:templates/crd-samlclients.yaml"
 )
 
 # ============================================================

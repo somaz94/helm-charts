@@ -2,7 +2,7 @@
 
 A Helm chart that wraps the upstream [Keycloak Operator](https://www.keycloak.org/operator/installation) raw YAML — published by the Keycloak project at [`keycloak/keycloak-k8s-resources`](https://github.com/keycloak/keycloak-k8s-resources) under `kubernetes/`.
 
-The Keycloak project does **not** ship a Helm chart for the operator (only the raw `kubernetes.yml` and the two CRDs). This chart packages those manifests, makes the namespace, image, watch-scope and resource limits configurable, and ships an `upgrade.sh` that tracks new keycloak-k8s-resources tags and refreshes the in-tree CRD templates.
+The Keycloak project does **not** ship a Helm chart for the operator (only the raw `kubernetes.yml` and the CRDs). This chart packages those manifests, makes the namespace, image, watch-scope and resource limits configurable, and ships an `upgrade.sh` that tracks new keycloak-k8s-resources tags and refreshes the in-tree CRD templates.
 
 After installing this chart, use the [`keycloak-cr`](../keycloak-cr) chart to render Keycloak instances (`Keycloak`, `KeycloakRealmImport` CRs).
 
@@ -14,10 +14,12 @@ After installing this chart, use the [`keycloak-cr`](../keycloak-cr) chart to re
 |---|---|---|
 | `CustomResourceDefinition` (Keycloak) | `apiextensions.k8s.io/v1` | Defines `k8s.keycloak.org/v2beta1` `Keycloak` CR. |
 | `CustomResourceDefinition` (KeycloakRealmImport) | `apiextensions.k8s.io/v1` | Defines `k8s.keycloak.org/v2beta1` `KeycloakRealmImport` CR. |
+| `CustomResourceDefinition` (KeycloakOIDCClient) | `apiextensions.k8s.io/v1` | Defines `k8s.keycloak.org/v2alpha1` `KeycloakOIDCClient` CR (added in operator 26.7.0). |
+| `CustomResourceDefinition` (KeycloakSAMLClient) | `apiextensions.k8s.io/v1` | Defines `k8s.keycloak.org/v2alpha1` `KeycloakSAMLClient` CR (added in operator 26.7.0). |
 | `ServiceAccount` (`keycloak-operator`) | `v1` | Operator identity. |
-| `ClusterRole` (×3) | `rbac.authorization.k8s.io/v1` | OpenShift `ingresses` read; `keycloaks` controller; `keycloakrealmimports` controller. |
+| `ClusterRole` (×5) | `rbac.authorization.k8s.io/v1` | OpenShift `ingresses` read; `keycloaks`, `keycloakrealmimports`, `keycloakoidcclients`, `keycloaksamlclients` controllers. |
 | `ClusterRoleBinding` | `rbac.authorization.k8s.io/v1` | Binds the operator SA to the OpenShift-ingresses read role cluster-wide. |
-| `Role` + `RoleBinding` (×4) | `rbac.authorization.k8s.io/v1` | Namespace-scoped permissions for managing `StatefulSet`, `Service`, `Secret`, `Job`, `Ingress`, `ServiceMonitor` plus `view` access. |
+| `Role` + `RoleBinding` (×6) | `rbac.authorization.k8s.io/v1` | Namespace-scoped permissions for managing `StatefulSet`, `Service`, `Secret`, `Job`, `Ingress`, `ServiceMonitor`, the four CR controllers, plus `view` access. |
 | `Service` (`keycloak-operator`) | `v1` | Health/metrics endpoint on port 80 → 8080. |
 | `Deployment` (`keycloak-operator`) | `apps/v1` | One operator pod with liveness/readiness/startup probes against `/q/health/*`. |
 
@@ -111,12 +113,12 @@ rbac:
 ```yaml
 image:
   repository: registry.internal.example.com/keycloak/keycloak-operator
-  tag: 26.6.1                            # operator image (defaults to .Values.version)
+  tag: 26.7.0                            # operator image (defaults to .Values.version)
   pullPolicy: IfNotPresent
 
 serverImage:
   repository: registry.internal.example.com/keycloak/keycloak
-  tag: 26.6.1                            # rendered into RELATED_IMAGE_KEYCLOAK env
+  tag: 26.7.0                            # rendered into RELATED_IMAGE_KEYCLOAK env
 
 imagePullSecrets:
   - name: registry-internal-pull
@@ -131,7 +133,7 @@ crds:
   install: false                         # CRDs registered out-of-band (e.g. fleet GitOps)
 ```
 
-When this flag is off, the chart skips both CRDs — the operator still references them, so `keycloaks.k8s.keycloak.org` and `keycloakrealmimports.k8s.keycloak.org` must be present in the cluster before this chart is applied.
+When this flag is off, the chart skips all four CRDs — the operator still references them, so `keycloaks.k8s.keycloak.org`, `keycloakrealmimports.k8s.keycloak.org`, `keycloakoidcclients.k8s.keycloak.org`, and `keycloaksamlclients.k8s.keycloak.org` must be present in the cluster before this chart is applied.
 
 <br/>
 
@@ -162,7 +164,7 @@ When this flag is off, the chart skips both CRDs — the operator still referenc
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `replicas` | int | `1` | Operator replicas. The operator does not support active-active — keep at 1 unless using leader election. |
-| `resources` | object | `{cpu: 300m–700m, mem: 450Mi}` | Compute resources. Defaults match upstream 26.6.1. |
+| `resources` | object | `{cpu: 300m–700m, mem: 450Mi}` | Compute resources. Defaults match upstream 26.7.0. |
 | `nodeSelector`, `tolerations`, `affinity`, `priorityClassName`, `topologySpreadConstraints` | — | — | Standard pod-scheduling fields. |
 | `podLabels`, `podAnnotations`, `podSecurityContext`, `securityContext` | object | `{}` | Pod template metadata + security contexts. |
 | `extraEnv[]` | list | `[]` | Additional env vars (chart already wires `KUBERNETES_NAMESPACE`, `RELATED_IMAGE_KEYCLOAK`, watch-scope vars). |
@@ -182,21 +184,21 @@ When this flag is off, the chart skips both CRDs — the operator still referenc
 | `serviceAccount.name` | string | `keycloak-operator` | SA name. The Deployment references this. |
 | `rbac.create` | bool | `true` | Render `ClusterRole` / `ClusterRoleBinding` / `Role` / `RoleBinding`. |
 | `rbac.subjectNamespace` | string | `""` (= `Release.Namespace`) | Namespace used as the `ClusterRoleBinding` subject's namespace. Override only when SA lives in a different namespace from the chart release. |
-| `rbac.useClusterBindings` | bool | `false` | Bind the `keycloakcontroller-cluster-role` / `keycloakrealmimportcontroller-cluster-role` via `ClusterRoleBinding` instead of in-namespace `RoleBinding`. **Required** when `watchNamespaces` is anything other than `JOSDK_WATCH_CURRENT` — RoleBindings only grant their bound rules within their own namespace, so the operator cannot list/watch CRs in other namespaces otherwise. |
-| `crds.install` | bool | `true` | Render the two CRDs in `templates/`. Disable when CRDs are managed externally. |
+| `rbac.useClusterBindings` | bool | `false` | Bind the per-controller cluster roles (`keycloakcontroller-cluster-role`, `keycloakrealmimportcontroller-cluster-role`, `keycloakoidcclientcontroller-cluster-role`, `keycloaksamlclientcontroller-cluster-role`) via `ClusterRoleBinding` instead of in-namespace `RoleBinding`. **Required** when `watchNamespaces` is anything other than `JOSDK_WATCH_CURRENT` — RoleBindings only grant their bound rules within their own namespace, so the operator cannot list/watch CRs in other namespaces otherwise. |
+| `crds.install` | bool | `true` | Render the four CRDs in `templates/`. Disable when CRDs are managed externally. |
 | `crds.keep` | bool | `true` | Add `helm.sh/resource-policy: keep` so the CRDs survive a chart uninstall. Recommended in production. |
 
 <br/>
 
 ## Maintaining this chart
 
-This chart wraps third-party YAML — both CRDs and the operator manifest evolve on the Keycloak release cadence. The chart-local `upgrade.sh` automates the bump:
+This chart wraps third-party YAML — the CRDs and the operator manifest evolve on the Keycloak release cadence. The chart-local `upgrade.sh` automates the bump:
 
 ```bash
 cd charts/keycloak-operator
 ./upgrade.sh --dry-run                     # preview the next bump
 ./upgrade.sh                               # bump to the latest GA tag
-./upgrade.sh --version 26.6.1              # pin to a specific tag
+./upgrade.sh --version 26.7.0              # pin to a specific tag
 ./upgrade.sh --rollback                    # restore from backup/<timestamp>/
 ./upgrade.sh --list-backups
 ./upgrade.sh --cleanup-backups             # keep last 5 (override KEEP_BACKUPS=N)
@@ -205,8 +207,8 @@ cd charts/keycloak-operator
 What it does on a successful bump:
 
 1. Verifies `quay.io/keycloak/keycloak-operator:<version>` exists.
-2. Backs up `Chart.yaml`, `values.yaml`, and the two CRD templates to `backup/<timestamp>/`.
-3. Re-fetches `keycloaks.k8s.keycloak.org-v1.yml` and `keycloakrealmimports.k8s.keycloak.org-v1.yml` from the upstream tag, re-injects the chart's `{{- if .Values.crds.install }}` gate and labels/annotations block.
+2. Backs up `Chart.yaml`, `values.yaml`, and the CRD templates to `backup/<timestamp>/`.
+3. Re-fetches the four upstream CRDs (`keycloaks`, `keycloakrealmimports`, `keycloakoidcclients`, `keycloaksamlclients` `.k8s.keycloak.org-v1.yml`) from the upstream tag, re-injects the chart's `{{- if .Values.crds.install }}` gate and labels/annotations block.
 4. Rewrites `Chart.yaml` `appVersion` and `values.yaml` `version`.
 5. Appends a `kind: changed` entry to `artifacthub.io/changes`.
 
