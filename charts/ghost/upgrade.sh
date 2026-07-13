@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # upgrade-template: chart-appversion
 #
 # Purpose: as a chart maintainer, track the latest Ghost GA version on Docker

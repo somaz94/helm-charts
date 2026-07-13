@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # upgrade-template: helm-charts/external-tracked
 #
 # Purpose: as a chart maintainer, track new keycloak-k8s-resources releases

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # upgrade-template: chart-appversion
 #
 # Purpose: as a chart maintainer, track the latest `CoplayDev/unity-mcp`
