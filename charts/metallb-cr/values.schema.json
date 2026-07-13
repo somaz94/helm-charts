@@ -3,9 +3,13 @@
   "title": "metallb-cr values",
   "type": "object",
   "additionalProperties": false,
+  "$defs": {
+    "stringMap": { "type": "object", "additionalProperties": { "type": "string" } },
+    "specExtra": { "type": "object", "additionalProperties": true }
+  },
   "properties": {
-    "commonLabels": { "type": "object", "additionalProperties": { "type": "string" } },
-    "commonAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+    "commonLabels": { "$ref": "#/$defs/stringMap" },
+    "commonAnnotations": { "$ref": "#/$defs/stringMap" },
 
     "ipAddressPools": {
       "type": "array",
@@ -19,9 +23,9 @@
           "autoAssign": { "type": "boolean" },
           "avoidBuggyIPs": { "type": "boolean" },
           "serviceAllocation": { "type": "object", "additionalProperties": true },
-          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
-          "specExtra": { "type": "object", "additionalProperties": true }
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
         }
       }
     },
@@ -38,9 +42,9 @@
           "ipAddressPoolSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
           "nodeSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
           "interfaces": { "type": "array", "items": { "type": "string" } },
-          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
-          "specExtra": { "type": "object", "additionalProperties": true }
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
         }
       }
     },
@@ -61,9 +65,9 @@
           "ipAddressPoolSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
           "nodeSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
           "peers": { "type": "array", "items": { "type": "string" } },
-          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
-          "specExtra": { "type": "object", "additionalProperties": true }
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
         }
       }
     },
@@ -95,9 +99,9 @@
           "password": { "type": "string" },
           "passwordSecret": { "type": "object", "additionalProperties": true },
           "nodeSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
-          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-          "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
-          "specExtra": { "type": "object", "additionalProperties": true }
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
         }
       }
     },
@@ -122,8 +126,8 @@
               }
             }
           },
-          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-          "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" }
         }
       }
     },
@@ -143,8 +147,8 @@
           "echoMode": { "type": "boolean" },
           "passiveMode": { "type": "boolean" },
           "minimumTtl": { "type": "integer" },
-          "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-          "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" }
         }
       }
     }

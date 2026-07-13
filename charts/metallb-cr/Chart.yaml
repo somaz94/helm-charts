@@ -2,7 +2,7 @@ apiVersion: v2
 name: metallb-cr
 description: Custom resources for MetalLB — IPAddressPool, L2Advertisement, BGPAdvertisement, BGPPeer, Community, BFDProfile. Deployed alongside the upstream MetalLB chart, which intentionally does not template these config CRs.
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: "0.16.1"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -31,5 +31,5 @@ annotations:
       url: https://metallb.universe.tf/configuration/
   artifacthub.io/changes: |
     - kind: changed
-      description: "Add app.kubernetes.io/name and app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection."
+      description: "Refactor values.schema.json to reuse $defs.stringMap and $defs.specExtra (no validation change), matching the keycloak-cr/keycloak-operator schema convention."
   artifacthub.io/prerelease: "false"
