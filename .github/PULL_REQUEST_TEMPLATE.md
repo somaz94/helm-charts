@@ -32,7 +32,6 @@ For chart changes (skip rows that don't apply):
 
 For all PRs:
 
-- [ ] All commits are signed off (`git commit -s`) — see [DCO.md](https://github.com/somaz94/.github/blob/main/DCO.md)
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
 - [ ] PR title is clear and follows the same convention
 
