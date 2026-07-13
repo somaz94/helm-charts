@@ -4,6 +4,50 @@ entries:
   - annotations:
       artifacthub.io/category: integration-delivery
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Refactor templates — split Service into a dedicated service.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: BuildKit upstream
+          url: https://github.com/moby/buildkit
+        - name: Buildx kubernetes driver
+          url: https://docs.docker.com/build/builders/drivers/kubernetes/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: v0.29.0
+    created: "2026-07-13T06:54:29.032068215Z"
+    description: Standalone BuildKit StatefulSet — moby/buildkit pod (rootful, privileged)
+      with optional CA-bundle Secret + optional buildkitd.toml ConfigMap, cache PVC
+      via volumeClaimTemplates, ClusterIP Service on TCP 1234. Suits dev/staging container
+      builds where ephemeral buildx builders fail to verify a self-signed registry's
+      OAuth token endpoint — bake the registry CA into the BuildKit pod's trust store
+      so multi-arch buildx (kubernetes/remote driver) succeeds. NetworkPolicy, ServiceAccount,
+      kubernetesExtra escape hatch.
+    digest: d2bc143dc838fece65dc31ec8d2b626602e83ebff94b3174d7a96c1fca4b6dc3
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - buildkit
+    - buildx
+    - oci-build
+    - cicd
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: buildkit
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/moby/buildkit
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/buildkit-0.1.3/buildkit-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
         - kind: added
           description: "`registry.caBundle.systemTrustStorePath` (default `/etc/ssl/certs/ca-certificates.crt`) — when `installToTrustStore` is true, the merged bundle is also subPath-mounted at this absolute path inside the main container, overlaying the OS's default trust store file. Required for BuildKit's OAuth token call against self-signed Harbor: containerd's docker resolver only reads the system trust store and ignores `SSL_CERT_FILE`, so the previous 0.1.1 setup (env var + sibling directory mount) was insufficient. Set to empty string to disable the overlay."
         - kind: fixed
@@ -2169,6 +2213,46 @@ entries:
   - annotations:
       artifacthub.io/category: database
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: MySQL Docker image
+          url: https://hub.docker.com/_/mysql
+        - name: MySQL 8.0 Reference Manual
+          url: https://dev.mysql.com/doc/refman/8.0/en/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 8.0.43
+    created: "2026-07-13T06:54:29.15386964Z"
+    description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret
+      + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount.
+      Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML
+      migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: 847f70b6c514dbac74dbfd981288aedd451fa62506f726a2d69f59865ba468b3
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mysql
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: mysql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/mysql
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/mysql-0.1.2/mysql-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
         - kind: added
           description: "Add checksum/config and checksum/secret pod annotations so ConfigMap or Secret changes trigger a rollout on helm upgrade."
       artifacthub.io/license: Apache-2.0
@@ -2440,6 +2524,48 @@ entries:
   - annotations:
       artifacthub.io/category: database
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: PostgreSQL Docker image
+          url: https://hub.docker.com/_/postgres
+        - name: PostgreSQL documentation
+          url: https://www.postgresql.org/docs/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 18-alpine
+    created: "2026-07-13T06:54:29.281834456Z"
+    description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf
+      + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump),
+      NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate
+      strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations
+      (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: 6776423b7832e98beacb351e6606e0134e72a0d38ffc6c6a3ef98ec995700620
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: postgresql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/postgres
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/postgresql-0.1.2/postgresql-0.1.2.tgz
+    version: 0.1.2
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
         - kind: added
           description: "Add checksum/config and checksum/secret pod annotations so ConfigMap or Secret changes trigger a rollout on helm upgrade."
       artifacthub.io/license: Apache-2.0
@@ -2530,6 +2656,49 @@ entries:
     - https://github.com/somaz94/helm-charts/releases/download/postgresql-0.1.0/postgresql-0.1.0.tgz
     version: 0.1.0
   redis:
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
+        - kind: changed
+          description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Redis Docker image
+          url: https://hub.docker.com/_/redis
+        - name: Redis documentation
+          url: https://redis.io/docs/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 8.2-alpine
+    created: "2026-07-13T06:54:29.406587036Z"
+    description: Standalone single-node Redis — Deployment + optional Secret + optional
+      ConfigMap (redis.conf) + PVC + Service, NetworkPolicy, ServiceAccount. Recreate
+      strategy. No backup CronJob (Redis is typically a cache; if you need persistence
+      + offsite backups, prefer Sentinel/Cluster topology). Suits dev/staging single-replica
+      installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride
+      for in-place adoption). Sibling chart to `valkey-cr` — choose by license / compatibility
+      preference.
+    digest: a08fb4d33bc5abb193418ad82437eb44c4b090fe333714c9e5f2cfee4a53280a
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - redis
+    - cache
+    - kv-store
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: redis
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/redis
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/redis-0.1.2/redis-0.1.2.tgz
+    version: 0.1.2
   - annotations:
       artifacthub.io/category: database
       artifacthub.io/changes: |
@@ -3003,4 +3172,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-07-13T06:05:49.707797671Z"
+generated: "2026-07-13T06:54:29.406708747Z"
