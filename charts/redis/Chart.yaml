@@ -2,7 +2,7 @@ apiVersion: v2
 name: redis
 description: Standalone single-node Redis — Deployment + optional Secret + optional ConfigMap (redis.conf) + PVC + Service, NetworkPolicy, ServiceAccount. Recreate strategy. No backup CronJob (Redis is typically a cache; if you need persistence + offsite backups, prefer Sentinel/Cluster topology). Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption). Sibling chart to `valkey-cr` — choose by license / compatibility preference.
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: "8.2-alpine"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -29,5 +29,5 @@ annotations:
       url: https://redis.io/docs/
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add checksum/config and checksum/secret pod annotations so ConfigMap or Secret changes trigger a rollout on helm upgrade."
+    - kind: changed
+      description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
