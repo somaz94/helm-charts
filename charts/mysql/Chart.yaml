@@ -2,7 +2,7 @@ apiVersion: v2
 name: mysql
 description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: "8.0.43"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -29,5 +29,5 @@ annotations:
       url: https://dev.mysql.com/doc/refman/8.0/en/
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add checksum/config and checksum/secret pod annotations so ConfigMap or Secret changes trigger a rollout on helm upgrade."
+    - kind: changed
+      description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."

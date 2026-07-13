@@ -200,32 +200,3 @@ spec:
   {{- with .Values.specExtra }}
   {{- toYaml . | nindent 2 }}
   {{- end }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "buildkit.serviceName" . }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "buildkit.labels" . | nindent 4 }}
-    app.kubernetes.io/component: buildkit
-    {{- with .Values.resourceMetadata.service.labels }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-  {{- $svcAnn := include "buildkit.annotations" (dict "top" . "extra" (merge (deepCopy (default (dict) .Values.service.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.service.annotations)))) }}
-  {{- if $svcAnn }}
-  annotations:
-    {{- $svcAnn | nindent 4 }}
-  {{- end }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - name: buildkitd
-      port: {{ .Values.service.port }}
-      targetPort: buildkitd
-      protocol: TCP
-      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
-      nodePort: {{ .Values.service.nodePort }}
-      {{- end }}
-  selector:
-    {{- include "buildkit.selectorLabels" . | nindent 4 }}
