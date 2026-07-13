@@ -70,6 +70,8 @@ spec:
         {{- $env = append $env (dict "name" "RELATED_IMAGE_KEYCLOAK" "value" (include "keycloak-operator.serverImage" .)) }}
         {{- $env = append $env (dict "name" "QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES" "value" .Values.watchNamespaces) }}
         {{- $env = append $env (dict "name" "QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES" "value" .Values.watchNamespaces) }}
+        {{- $env = append $env (dict "name" "QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKSAMLCLIENTCONTROLLER_NAMESPACES" "value" .Values.watchNamespaces) }}
+        {{- $env = append $env (dict "name" "QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKOIDCCLIENTCONTROLLER_NAMESPACES" "value" .Values.watchNamespaces) }}
         {{- range $extra := .Values.extraEnv }}
         {{- $env = append $env $extra }}
         {{- end }}

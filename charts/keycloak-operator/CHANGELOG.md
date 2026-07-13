@@ -5,10 +5,13 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.1.8] - 2026-07-13
+## [v0.2.0] - 2026-07-13
+
+### Added
+- KeycloakOIDCClient and KeycloakSAMLClient CRDs plus their controller ClusterRoles, RoleBindings, and watch-namespace env vars (new in operator 26.7.0).
 
 ### Changed
-- Bump appVersion from 26.6.4 to 26.7.0 (refresh templates/crd-*.yaml from upstream)
+- Bump appVersion from 26.6.4 to 26.7.0 (refresh CRD templates from upstream).
 
 ## [v0.1.7] - 2026-07-06
 
