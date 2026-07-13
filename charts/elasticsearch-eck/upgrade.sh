@@ -30,6 +30,9 @@ GITHUB_TAG_PREFIX="${GITHUB_TAG_PREFIX:-v}"
 # ============================================================
 
 # === BEGIN CANONICAL BODY ===
+# zsh compat: prevent a zero-match glob (empty backup/) from being fatal under
+# zsh's default NOMATCH. No-op in bash. Must run before any "$BACKUP_DIR"/2* glob.
+[ -n "${ZSH_VERSION:-}" ] && setopt nonomatch
 CHART_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_DIR="$CHART_DIR/backup"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -99,15 +102,18 @@ do_rollback() {
     exit 1
   fi
   list_backups
-  local backups=()
-  for dir in $(ls -dt "$BACKUP_DIR"/2*/); do backups+=("$dir"); done
+  local total
+  total=$(ls -d "$BACKUP_DIR"/2*/ 2>/dev/null | wc -l | tr -d ' ')
   read -rp "Select backup number to restore [1]: " choice
   choice=${choice:-1}
-  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "${#backups[@]}" ]; then
+  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$total" ]; then
     echo "Invalid selection."
     exit 1
   fi
-  local selected="${backups[$((choice - 1))]}"
+  # Re-select by line number instead of array indexing: sed is 1-based in both
+  # bash and zsh, avoiding the 0-vs-1-indexed array divergence between shells.
+  local selected
+  selected=$(ls -dt "$BACKUP_DIR"/2*/ | sed -n "${choice}p")
   local dirname=$(basename "$selected")
   echo ""
   echo "Restoring from backup/$dirname..."

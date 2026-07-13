@@ -54,6 +54,9 @@ CRD_FILES=(
 # ============================================================
 
 # === BEGIN CANONICAL BODY ===
+# zsh compat: prevent a zero-match glob (empty backup/) from being fatal under
+# zsh's default NOMATCH. No-op in bash. Must run before any "$BACKUP_DIR"/2* glob.
+[ -n "${ZSH_VERSION:-}" ] && setopt nonomatch
 
 usage() {
   cat <<EOF
@@ -101,11 +104,14 @@ list_backups() {
   fi
   local i=1
   for dir in $(ls -dt "$BACKUP_DIR"/2*/); do
-    local dirname app_ver files
-    dirname=$(basename "$dir")
-    app_ver="unknown"
+    # Declare-and-assign inline: a bare `local a b c` re-declaration prints the
+    # vars' current values under zsh once they are set (loop iteration 2+).
+    local dirname=$(basename "$dir")
+    local app_ver="unknown"
     [ -f "$dir/Chart.yaml" ] && app_ver=$(grep '^appVersion:' "$dir/Chart.yaml" | awk '{print $2}' | tr -d '"')
-    files=$(find "$dir" -type f -printf '%P\n' 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+    # Recursive (backups nest templates/crd-*.yaml) but portable: BSD find has
+    # no -printf, so strip the "$dir" prefix (trailing slash included) with sed.
+    local files=$(find "${dir%/}" -type f 2>/dev/null | sed "s#^${dir%/}/##" | tr '\n' ',' | sed 's/,$//')
     printf "  [%d] %s (appVersion: %s) — %s\n" "$i" "$dirname" "$app_ver" "$files"
     i=$((i + 1))
   done
@@ -118,15 +124,18 @@ do_rollback() {
     exit 1
   fi
   list_backups
-  local backups=()
-  for dir in $(ls -dt "$BACKUP_DIR"/2*/); do backups+=("$dir"); done
+  local total
+  total=$(ls -d "$BACKUP_DIR"/2*/ 2>/dev/null | wc -l | tr -d ' ')
   read -rp "Select backup number to restore [1]: " choice
   choice=${choice:-1}
-  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "${#backups[@]}" ]; then
+  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$total" ]; then
     echo "Invalid selection."
     exit 1
   fi
-  local selected="${backups[$((choice - 1))]}"
+  # Re-select by line number instead of array indexing: sed is 1-based in both
+  # bash and zsh, avoiding the 0-vs-1-indexed array divergence between shells.
+  local selected
+  selected=$(ls -dt "$BACKUP_DIR"/2*/ | sed -n "${choice}p")
   local dirname
   dirname=$(basename "$selected")
   echo ""
