@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # upgrade-template: chart-appversion
 #
 # Purpose: bump Chart.yaml appVersion + values.yaml version to the latest

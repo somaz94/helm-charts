@@ -20,3 +20,6 @@
 # upgrade.sh bookkeeping — chart-maintainer tooling, not shipped in tarballs.
 upgrade.sh
 backup/
+
+# CI values — only used by local `make template`/`make validate`.
+ci/

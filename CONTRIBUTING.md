@@ -209,18 +209,6 @@ Required for:
 
 <br/>
 
-## Sign off your commits (DCO)
-
-This collection uses the [Developer Certificate of Origin](https://github.com/somaz94/.github/blob/main/DCO.md) instead of a CLA. Every commit must carry a `Signed-off-by` trailer — add it with `-s`:
-
-```bash
-git commit -s -m "feat(<chart>): ..."
-```
-
-A CI check rejects pull requests whose commits are not signed off. See [DCO.md](https://github.com/somaz94/.github/blob/main/DCO.md) for the full text and how to fix unsigned commits.
-
-<br/>
-
 ## Reporting Bugs / Requesting Features
 
 Please use the [issue templates](https://github.com/somaz94/helm-charts/issues/new/choose). For security issues, see [SECURITY.md](SECURITY.md) instead.
