@@ -1379,6 +1379,56 @@ entries:
       artifacthub.io/category: security
       artifacthub.io/changes: |
         - kind: changed
+          description: Bump appVersion from 26.6.4 to 26.7.0 (refresh CRD templates from upstream).
+        - kind: added
+          description: Add KeycloakOIDCClient and KeycloakSAMLClient CRDs plus their controller ClusterRoles, RoleBindings, and watch-namespace env vars (new in operator 26.7.0).
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+        - name: Keycloak Release Notes
+          url: https://www.keycloak.org/docs/latest/release_notes/index.html
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Seamless Upgrades
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 26.7.0
+    created: "2026-07-13T05:07:55.933576998Z"
+    description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped
+      from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via
+      upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+    digest: bf6876de561930b1f43ff88ed17a6296dbc6b573e8307b729117b2df0fb70ff7
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - keycloak-operator
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-operator
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    - https://github.com/keycloak/keycloak
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.2.0/keycloak-operator-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: changed
           description: "Render the Deployment annotations through the shared keycloak-operator.annotations helper instead of an inline merge (no change to rendered output)."
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
@@ -2827,4 +2877,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-07-07T07:54:20.951204721Z"
+generated: "2026-07-13T05:07:55.933696161Z"
