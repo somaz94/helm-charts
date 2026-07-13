@@ -14,6 +14,10 @@
 
 set -euo pipefail
 
+# zsh compat: a zero-match glob is fatal under zsh's default NOMATCH. No-op in
+# bash. Must run before any glob (e.g. "$CHARTS_DIR"/*/).
+[ -n "${ZSH_VERSION:-}" ] && setopt nonomatch
+
 # Resolve script path portably across bash and zsh.
 # bash: ${BASH_SOURCE[0]}; zsh executed: $0 (these scripts are not sourced).
 _SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
@@ -194,8 +198,9 @@ require_yq_v4
 if [ "$ALL" -eq 1 ]; then
     [ -z "$CHART_DIR" ] || die "--all and <chart-dir> are mutually exclusive"
     [ -d "$CHARTS_DIR" ] || die "charts dir not found: $CHARTS_DIR"
-    # Skip the literal unexpanded glob when no directory matches. Avoids the
-    # bash-only `shopt -s nullglob` so the script works under zsh too.
+    # Guard against a zero-match glob: `setopt nonomatch` (top of file) keeps zsh
+    # from aborting, and this [ -d ] check skips the literal pattern that both
+    # shells then pass through. Avoids the bash-only `shopt -s nullglob`.
     for d in "$CHARTS_DIR"/*/; do
         [ -d "$d" ] || continue
         process_chart "${d%/}"

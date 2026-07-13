@@ -21,6 +21,10 @@
 # --include-major to opt in.
 set -euo pipefail
 
+# zsh compat: a zero-match glob is fatal under zsh's default NOMATCH. No-op in
+# bash. Must run before any glob (e.g. "$CHARTS_DIR"/*/).
+[ -n "${ZSH_VERSION:-}" ] && setopt nonomatch
+
 # Resolve script path portably across bash and zsh.
 # bash: ${BASH_SOURCE[0]}; zsh executed: $0 (these scripts are not sourced).
 _SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"

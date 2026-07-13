@@ -31,7 +31,14 @@ jobs:
           charts_dir: charts
           base_ref: ${{ github.event.repository.default_branch }}
           helm_version: v3.16.4
-          ct_check_version_increment: 'true'
+          # Version bumps are maintainer-driven via `make bump` for template /
+          # schema changes only (see CLAUDE.md "Versioning"). ct's change
+          # detection flags any file under charts/<name>/ — including the
+          # packaging-excluded upgrade.sh — so enforcing a version increment
+          # here would demand no-op bumps for tooling-only edits. The
+          # changelog-check job below still enforces CHANGELOG updates whenever
+          # a Chart.yaml version line actually changes.
+          ct_check_version_increment: 'false'
           # The action's standalone helm template + kubeconform steps render
           # each changed chart with empty values (they do not honor
           # charts/<chart>/ci/*.yaml in changed-charts mode), so charts that
