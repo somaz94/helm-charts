@@ -1,5 +1,52 @@
 apiVersion: v1
 entries:
+  aws-storageclass:
+  - annotations:
+      artifacthub.io/category: storage
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Initial release: data-driven AWS StorageClass chart rendering EBS/EFS classes from a list of per-entry-toggleable inputs, with commonLabels/commonAnnotations, is-default-class handling, and a parametersExtra escape hatch."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: AWS EBS CSI driver
+          url: https://github.com/kubernetes-sigs/aws-ebs-csi-driver
+        - name: AWS EFS CSI driver
+          url: https://github.com/kubernetes-sigs/aws-efs-csi-driver
+        - name: Kubernetes StorageClass docs
+          url: https://kubernetes.io/docs/concepts/storage/storage-classes/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-07-21T09:44:48.229416996Z"
+    description: Data-driven AWS StorageClasses — EBS (gp3/gp2/io2/...) and EFS —
+      rendered from a list of per-entry-toggleable inputs. One release manages any
+      number of StorageClasses for an EKS cluster; the AWS EBS/EFS CSI drivers themselves
+      are installed separately.
+    digest: 4b1312103675b7d49ef001b79d6d0ceed9887358ab56484a5dfd47ce6ea43462
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - storage
+    - storageclass
+    - aws
+    - eks
+    - ebs
+    - efs
+    - gp3
+    - csi
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: aws-storageclass
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/aws-storageclass-0.1.0/aws-storageclass-0.1.0.tgz
+    version: 0.1.0
   buildkit:
   - annotations:
       artifacthub.io/category: integration-delivery
@@ -3172,4 +3219,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-07-13T06:54:29.406708747Z"
+generated: "2026-07-21T09:44:48.229591422Z"
