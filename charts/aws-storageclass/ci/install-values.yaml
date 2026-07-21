@@ -1,0 +1,65 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing and
+# kubeconform. Not a deployment recipe — values below are dummy and must not be
+# reused. Renders EBS + EFS classes and exercises the enabled toggle, isDefault,
+# mountOptions, allowedTopologies, and parametersExtra paths.
+commonLabels:
+  team: platform
+commonAnnotations:
+  owner: storage
+
+storageClasses:
+  - enabled: true
+    name: ebs-sc
+    provisioner: ebs.csi.aws.com
+    isDefault: true
+    volumeBindingMode: WaitForFirstConsumer
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
+    parameters:
+      type: gp3
+      encrypted: "true"
+    labels:
+      tier: primary
+    annotations:
+      description: gp3 encrypted default class
+
+  - enabled: false
+    name: ebs-gp2
+    provisioner: ebs.csi.aws.com
+    volumeBindingMode: WaitForFirstConsumer
+    reclaimPolicy: Delete
+    allowVolumeExpansion: true
+    parameters:
+      type: gp2
+      encrypted: "true"
+
+  - enabled: true
+    name: efs-sc
+    provisioner: efs.csi.aws.com
+    volumeBindingMode: Immediate
+    reclaimPolicy: Retain
+    mountOptions:
+      - tls
+    parameters:
+      provisioningMode: efs-ap
+      fileSystemId: fs-0123456789abcdef0
+      directoryPerms: "700"
+    parametersExtra:
+      gidRangeStart: "1000"
+      gidRangeEnd: "2000"
+
+  - enabled: true
+    name: ebs-io2
+    provisioner: ebs.csi.aws.com
+    volumeBindingMode: WaitForFirstConsumer
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
+    parameters:
+      type: io2
+      iops: "10000"
+      encrypted: "true"
+    allowedTopologies:
+      - matchLabelExpressions:
+          - key: topology.ebs.csi.aws.com/zone
+            values:
+              - eu-central-1a

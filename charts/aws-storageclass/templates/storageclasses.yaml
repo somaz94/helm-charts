@@ -1,0 +1,43 @@
+{{- $top := . -}}
+{{- range $sc := .Values.storageClasses }}
+{{- if dig "enabled" true $sc }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ required "storageClasses[].name is required" $sc.name }}
+  labels:
+    {{- include "aws-storageclass.labels" $top | nindent 4 }}
+    {{- with $sc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "aws-storageclass.annotations" (dict "top" $top "extra" $sc.annotations "isDefault" (dig "isDefault" false $sc)) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+provisioner: {{ required "storageClasses[].provisioner is required" $sc.provisioner }}
+{{- $params := merge (deepCopy (default dict $sc.parameters)) (deepCopy (default dict $sc.parametersExtra)) }}
+{{- with $params }}
+parameters:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $sc.reclaimPolicy }}
+reclaimPolicy: {{ . }}
+{{- end }}
+{{- with $sc.volumeBindingMode }}
+volumeBindingMode: {{ . }}
+{{- end }}
+{{- if hasKey $sc "allowVolumeExpansion" }}
+allowVolumeExpansion: {{ $sc.allowVolumeExpansion }}
+{{- end }}
+{{- with $sc.mountOptions }}
+mountOptions:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $sc.allowedTopologies }}
+allowedTopologies:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+---
+{{- end }}
+{{- end }}

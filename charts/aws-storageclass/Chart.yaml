@@ -1,0 +1,39 @@
+apiVersion: v2
+name: aws-storageclass
+description: Data-driven AWS StorageClasses — EBS (gp3/gp2/io2/...) and EFS — rendered from a list of per-entry-toggleable inputs. One release manages any number of StorageClasses for an EKS cluster; the AWS EBS/EFS CSI drivers themselves are installed separately.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - storage
+  - storageclass
+  - aws
+  - eks
+  - ebs
+  - efs
+  - gp3
+  - csi
+  - kubernetes
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: storage
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: AWS EBS CSI driver
+      url: https://github.com/kubernetes-sigs/aws-ebs-csi-driver
+    - name: AWS EFS CSI driver
+      url: https://github.com/kubernetes-sigs/aws-efs-csi-driver
+    - name: Kubernetes StorageClass docs
+      url: https://kubernetes.io/docs/concepts/storage/storage-classes/
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Initial release: data-driven AWS StorageClass chart rendering EBS/EFS classes from a list of per-entry-toggleable inputs, with commonLabels/commonAnnotations, is-default-class handling, and a parametersExtra escape hatch."
+  artifacthub.io/prerelease: "false"

@@ -1,0 +1,77 @@
+# Default values for aws-storageclass.
+# This chart templates AWS StorageClass objects (EBS and/or EFS) from a single
+# list. Each entry is an independent StorageClass, individually toggleable via
+# `enabled`, so one release can manage any mix of classes (gp3, gp2, io2, efs, ...)
+# for an EKS cluster.
+#
+# The chart ships with a safe empty default: an unconfigured `helm install`
+# creates nothing. Define `storageClasses` below to render classes.
+#
+# Prerequisite: the matching AWS CSI driver must already be installed for each
+# provisioner used — `ebs.csi.aws.com` (aws-ebs-csi-driver) for EBS classes,
+# `efs.csi.aws.com` (aws-efs-csi-driver) for EFS classes. This chart only
+# declares the StorageClass; it does not install the CSI drivers.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+# Labels and annotations applied to EVERY StorageClass created by this chart.
+commonLabels: {}
+commonAnnotations: {}
+
+# ---------------------------------------------------------------------------
+# StorageClasses (storage.k8s.io/v1)
+# ---------------------------------------------------------------------------
+# A list of StorageClass definitions. StorageClass is cluster-scoped, so these
+# are not namespaced.
+#
+# Per-entry fields:
+#   enabled            (optional) Render this class. Defaults to true when omitted;
+#                      set `enabled: false` to keep the definition but skip it.
+#   name               (required) StorageClass name (e.g. ebs-sc, ebs-gp2, efs-sc).
+#   provisioner        (required) CSI provisioner (ebs.csi.aws.com / efs.csi.aws.com).
+#   isDefault          (optional) Mark as the cluster default class (adds the
+#                      storageclass.kubernetes.io/is-default-class: "true" annotation).
+#                      Only ONE class in the cluster should be default.
+#   parameters         (optional) CSI parameters (string:string map). EBS: type,
+#                      encrypted, iops, throughput, kmsKeyId. EFS: provisioningMode,
+#                      fileSystemId, directoryPerms, ...
+#   volumeBindingMode  (optional) Immediate | WaitForFirstConsumer. WaitForFirstConsumer
+#                      keeps an EBS volume in the consuming pod's AZ.
+#   reclaimPolicy      (optional) Retain | Delete.
+#   allowVolumeExpansion (optional) Allow online volume resize (EBS; EFS ignores it).
+#   mountOptions       (optional) List of mount options (common for EFS/NFS).
+#   allowedTopologies  (optional) Restrict provisioning to zones/topologies.
+#   labels/annotations (optional) Extra metadata on this StorageClass.
+#   parametersExtra    (optional) Arbitrary extra key/values merged into parameters.
+storageClasses: []
+# Example — an EBS gp3 (default) + a gp2 + an EFS class, gp2 kept off:
+#   storageClasses:
+#     - enabled: true
+#       name: ebs-sc
+#       provisioner: ebs.csi.aws.com
+#       isDefault: false
+#       volumeBindingMode: WaitForFirstConsumer
+#       reclaimPolicy: Retain
+#       allowVolumeExpansion: true
+#       parameters:
+#         type: gp3
+#         encrypted: "true"
+#     - enabled: false
+#       name: ebs-gp2
+#       provisioner: ebs.csi.aws.com
+#       volumeBindingMode: WaitForFirstConsumer
+#       reclaimPolicy: Delete
+#       allowVolumeExpansion: true
+#       parameters:
+#         type: gp2
+#         encrypted: "true"
+#     - enabled: true
+#       name: efs-sc
+#       provisioner: efs.csi.aws.com
+#       volumeBindingMode: Immediate
+#       reclaimPolicy: Retain
+#       parameters:
+#         provisioningMode: efs-ap
+#         fileSystemId: fs-0123456789abcdef0
+#         directoryPerms: "700"

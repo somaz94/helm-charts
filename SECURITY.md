@@ -16,6 +16,7 @@ Charts in scope:
 
 | Chart |
 |---|
+| aws-storageclass |
 | buildkit |
 | certmanager-letsencrypt |
 | elasticsearch-eck |

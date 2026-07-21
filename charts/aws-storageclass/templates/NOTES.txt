@@ -1,0 +1,25 @@
+aws-storageclass release "{{ .Release.Name }}" processed.
+
+{{- $rendered := list -}}
+{{- range $sc := .Values.storageClasses -}}
+{{- if dig "enabled" true $sc -}}
+{{- $rendered = append $rendered $sc -}}
+{{- end -}}
+{{- end }}
+{{ if $rendered -}}
+StorageClasses created:
+{{- range $rendered }}
+  - {{ .name }} ({{ .provisioner }}{{ if dig "isDefault" false . }}, default{{ end }})
+{{- end }}
+{{- else -}}
+No StorageClasses rendered. Every entry in `storageClasses` is either absent or
+`enabled: false`. Set entries in your values file so classes are created.
+See `helm show values <chart>`.
+{{- end }}
+
+Verify:
+  kubectl get storageclass
+
+NOTE: This chart only creates StorageClass objects. The matching AWS CSI driver
+must already be installed for each provisioner — aws-ebs-csi-driver for
+`ebs.csi.aws.com`, aws-efs-csi-driver for `efs.csi.aws.com`.
