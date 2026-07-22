@@ -1,6 +1,6 @@
 apiVersion: v2
 name: redis
-description: Standalone single-node Redis — Deployment + optional Secret + optional ConfigMap (redis.conf) + PVC + Service, NetworkPolicy, ServiceAccount. Recreate strategy. No backup CronJob (Redis is typically a cache; if you need persistence + offsite backups, prefer Sentinel/Cluster topology). Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption). Sibling chart to `valkey-cr` — choose by license / compatibility preference.
+description: Standalone single-node Redis — Deployment + optional Secret + optional ConfigMap (redis.conf) + PVC + Service, NetworkPolicy, ServiceAccount. Recreate strategy. No backup CronJob (Redis is typically a cache; if you need persistence + offsite backups, prefer Sentinel/Cluster topology). Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
 type: application
 version: 0.1.2
 appVersion: "8.2-alpine"

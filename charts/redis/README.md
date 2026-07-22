@@ -4,8 +4,6 @@ Standalone single-node Redis chart — Deployment + PVC + Service, with optional
 
 For HA prefer Sentinel / Cluster topology — out of scope.
 
-> Looking for Redis-API compatible without Redis Source-Available License v2 / SSPL exposure? See the sibling chart `valkey-cr`.
-
 <br/>
 
 ## What it deploys
