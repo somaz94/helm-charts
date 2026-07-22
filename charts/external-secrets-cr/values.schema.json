@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "external-secrets-cr values",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "stringMap": { "type": "object", "additionalProperties": { "type": "string" } },
+    "specExtra": { "type": "object", "additionalProperties": true },
+    "provider": { "type": "object", "additionalProperties": true },
+    "storeItem": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "provider"],
+      "properties": {
+        "name": { "type": "string" },
+        "provider": { "$ref": "#/$defs/provider" },
+        "refreshInterval": { "type": "integer" },
+        "retrySettings": { "type": "object", "additionalProperties": true },
+        "conditions": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "controller": { "type": "string" },
+        "labels": { "$ref": "#/$defs/stringMap" },
+        "annotations": { "$ref": "#/$defs/stringMap" },
+        "specExtra": { "$ref": "#/$defs/specExtra" }
+      }
+    }
+  },
+  "properties": {
+    "commonLabels": { "$ref": "#/$defs/stringMap" },
+    "commonAnnotations": { "$ref": "#/$defs/stringMap" },
+
+    "secretStores": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/storeItem" }],
+        "properties": {
+          "namespace": { "type": "string" }
+        }
+      }
+    },
+
+    "clusterSecretStores": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/storeItem" }
+    },
+
+    "externalSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "refreshInterval": { "type": "string" },
+          "secretStoreRef": { "type": "object", "additionalProperties": true },
+          "target": { "type": "object", "additionalProperties": true },
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "dataFrom": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    },
+
+    "clusterExternalSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "externalSecretSpec"],
+        "properties": {
+          "name": { "type": "string" },
+          "externalSecretName": { "type": "string" },
+          "namespaceSelector": { "type": "object", "additionalProperties": true },
+          "namespaces": { "type": "array", "items": { "type": "string" } },
+          "namespaceSelectors": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "refreshTime": { "type": "string" },
+          "externalSecretSpec": { "type": "object", "additionalProperties": true },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    },
+
+    "pushSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "refreshInterval": { "type": "string" },
+          "secretStoreRefs": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "selector": { "type": "object", "additionalProperties": true },
+          "data": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+          "template": { "type": "object", "additionalProperties": true },
+          "updatePolicy": { "type": "string", "enum": ["Replace", "IfNotExists"] },
+          "deletionPolicy": { "type": "string", "enum": ["Delete", "None"] },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    }
+  }
+}

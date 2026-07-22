@@ -1,0 +1,90 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — values below are dummy and must
+# not be reused. Toggles every optional template path so each renders.
+commonLabels:
+  team: platform
+commonAnnotations:
+  owner: security
+
+clusterSecretStores:
+  - name: aws-secretsmanager
+    provider:
+      aws:
+        service: SecretsManager
+        region: eu-central-1
+    conditions:
+      - namespaceSelector:
+          matchLabels:
+            eso.example.com/allow: "true"
+
+secretStores:
+  - name: vault-backend
+    namespace: default
+    refreshInterval: 3600
+    provider:
+      vault:
+        server: https://vault.example.com:8200
+        path: secret
+        version: v2
+        auth:
+          kubernetes:
+            mountPath: kubernetes
+            role: eso
+    retrySettings:
+      maxRetries: 5
+      retryInterval: 10s
+
+externalSecrets:
+  - name: app-db
+    namespace: default
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-secretsmanager
+      kind: ClusterSecretStore
+    target:
+      name: app-db
+      creationPolicy: Owner
+    data:
+      - secretKey: password
+        remoteRef:
+          key: prod-example/app-db
+          property: password
+    dataFrom:
+      - extract:
+          key: prod-example/app-config
+
+clusterExternalSecrets:
+  - name: registry-pull
+    externalSecretName: registry-pull
+    refreshTime: 1h
+    namespaceSelector:
+      matchLabels:
+        eso.example.com/pull: "true"
+    externalSecretSpec:
+      secretStoreRef:
+        name: aws-secretsmanager
+        kind: ClusterSecretStore
+      target:
+        name: registry-pull
+      data:
+        - secretKey: .dockerconfigjson
+          remoteRef:
+            key: prod-example/registry-dockerconfig
+
+pushSecrets:
+  - name: mirror-to-aws
+    namespace: default
+    refreshInterval: 1h
+    secretStoreRefs:
+      - name: aws-secretsmanager
+        kind: ClusterSecretStore
+    selector:
+      secret:
+        name: app-generated
+    data:
+      - match:
+          secretKey: token
+          remoteRef:
+            remoteKey: prod-example/app-generated-token
+    updatePolicy: Replace
+    deletionPolicy: None

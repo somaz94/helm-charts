@@ -1,0 +1,35 @@
+External Secrets custom resources installed for release "{{ .Release.Name }}".
+
+{{ if or .Values.secretStores .Values.clusterSecretStores .Values.externalSecrets .Values.clusterExternalSecrets .Values.pushSecrets -}}
+Resources created:
+{{- range .Values.clusterSecretStores }}
+  - ClusterSecretStore/{{ .name }} (cluster-scoped)
+{{- end }}
+{{- range .Values.secretStores }}
+  - SecretStore/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- range .Values.externalSecrets }}
+  - ExternalSecret/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- range .Values.clusterExternalSecrets }}
+  - ClusterExternalSecret/{{ .name }} (cluster-scoped)
+{{- end }}
+{{- range .Values.pushSecrets }}
+  - PushSecret/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- else -}}
+No resources defined yet. Set `secretStores` / `clusterSecretStores` /
+`externalSecrets` / `clusterExternalSecrets` / `pushSecrets` in your values
+file. See `helm show values <chart>`.
+{{- end }}
+
+Verify resources:
+  kubectl get clustersecretstores,clusterexternalsecrets
+  kubectl -n {{ .Release.Namespace }} get secretstores,externalsecrets,pushsecrets
+
+Check sync status (an ExternalSecret is healthy when SecretSynced is True):
+  kubectl -n {{ .Release.Namespace }} get externalsecrets -o wide
+
+NOTE: This chart only creates External Secrets *config* CRs. The External
+Secrets Operator (controller, webhook) and its CRDs must already be installed —
+typically via the upstream `external-secrets/external-secrets` chart.

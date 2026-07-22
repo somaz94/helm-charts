@@ -1,0 +1,35 @@
+apiVersion: v2
+name: external-secrets-cr
+description: Custom resources for the External Secrets Operator — SecretStore, ClusterSecretStore, ExternalSecret, ClusterExternalSecret (external-secrets.io/v1) and PushSecret (external-secrets.io/v1alpha1). Deployed alongside the upstream external-secrets chart, which installs the operator and CRDs but does not template these config CRs.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - external-secrets
+  - secrets
+  - secretstore
+  - externalsecret
+  - secrets-management
+  - kubernetes
+  - security
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: External Secrets Operator
+      url: https://github.com/external-secrets/external-secrets
+    - name: External Secrets API reference
+      url: https://external-secrets.io/latest/api/spec/
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Initial release: data-driven External Secrets Operator config CRs (SecretStore, ClusterSecretStore, ExternalSecret, ClusterExternalSecret, PushSecret) rendered from list-valued inputs, filling the gap the upstream external-secrets chart leaves open."
+  artifacthub.io/prerelease: "false"

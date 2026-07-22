@@ -20,6 +20,7 @@ Charts in scope:
 | buildkit |
 | certmanager-letsencrypt |
 | elasticsearch-eck |
+| external-secrets-cr |
 | ghost |
 | karpenter-cr |
 | keycloak-cr |
