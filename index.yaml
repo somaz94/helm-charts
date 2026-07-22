@@ -979,6 +979,50 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.1.1/elasticsearch-eck-0.1.1.tgz
     version: 0.1.1
+  external-secrets-cr:
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Initial release: data-driven External Secrets Operator config CRs (SecretStore, ClusterSecretStore, ExternalSecret, ClusterExternalSecret, PushSecret) rendered from list-valued inputs, filling the gap the upstream external-secrets chart leaves open."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: External Secrets Operator
+          url: https://github.com/external-secrets/external-secrets
+        - name: External Secrets API reference
+          url: https://external-secrets.io/latest/api/spec/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-07-22T05:24:05.130716602Z"
+    description: Custom resources for the External Secrets Operator — SecretStore,
+      ClusterSecretStore, ExternalSecret, ClusterExternalSecret (external-secrets.io/v1)
+      and PushSecret (external-secrets.io/v1alpha1). Deployed alongside the upstream
+      external-secrets chart, which installs the operator and CRDs but does not template
+      these config CRs.
+    digest: 9e198e9fd979ab35209c559ea2d25a747d11b08265c9c153c3417a8bb69dffa5
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - external-secrets
+    - secrets
+    - secretstore
+    - externalsecret
+    - secrets-management
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: external-secrets-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/external-secrets-cr-0.1.0/external-secrets-cr-0.1.0.tgz
+    version: 0.1.0
   ghost:
   - annotations:
       artifacthub.io/category: integration-delivery
@@ -3219,4 +3263,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-07-21T09:44:48.229591422Z"
+generated: "2026-07-22T05:24:05.268833532Z"
