@@ -1,0 +1,43 @@
+{{- $top := . -}}
+{{- range $pm := .Values.podMonitors }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ required "podMonitors[].name is required" $pm.name }}
+  namespace: {{ $pm.namespace | default $top.Release.Namespace }}
+  labels:
+    {{- include "prometheus-cr.labels" $top | nindent 4 }}
+    {{- with $pm.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "prometheus-cr.annotations" (dict "top" $top "extra" $pm.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $pm.jobLabel }}
+  jobLabel: {{ . }}
+  {{- end }}
+  {{- with $pm.podTargetLabels }}
+  podTargetLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if hasKey $pm "sampleLimit" }}
+  sampleLimit: {{ $pm.sampleLimit }}
+  {{- end }}
+  selector:
+    {{- toYaml (default (dict "matchLabels" dict) $pm.selector) | nindent 4 }}
+  {{- with $pm.namespaceSelector }}
+  namespaceSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $pm.podMetricsEndpoints }}
+  podMetricsEndpoints:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $pm.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{- end }}

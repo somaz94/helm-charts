@@ -1,0 +1,25 @@
+{{- $top := . -}}
+{{- range $pr := .Values.prometheusRules }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ required "prometheusRules[].name is required" $pr.name }}
+  namespace: {{ $pr.namespace | default $top.Release.Namespace }}
+  labels:
+    {{- include "prometheus-cr.labels" $top | nindent 4 }}
+    {{- with $pr.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "prometheus-cr.annotations" (dict "top" $top "extra" $pr.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  groups:
+    {{- toYaml (required "prometheusRules[].groups is required" $pr.groups) | nindent 4 }}
+  {{- with $pr.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{- end }}

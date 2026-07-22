@@ -1,0 +1,47 @@
+{{- $top := . -}}
+{{- range $sm := .Values.serviceMonitors }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ required "serviceMonitors[].name is required" $sm.name }}
+  namespace: {{ $sm.namespace | default $top.Release.Namespace }}
+  labels:
+    {{- include "prometheus-cr.labels" $top | nindent 4 }}
+    {{- with $sm.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "prometheus-cr.annotations" (dict "top" $top "extra" $sm.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $sm.jobLabel }}
+  jobLabel: {{ . }}
+  {{- end }}
+  {{- with $sm.targetLabels }}
+  targetLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $sm.podTargetLabels }}
+  podTargetLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if hasKey $sm "sampleLimit" }}
+  sampleLimit: {{ $sm.sampleLimit }}
+  {{- end }}
+  selector:
+    {{- toYaml (default (dict "matchLabels" dict) $sm.selector) | nindent 4 }}
+  {{- with $sm.namespaceSelector }}
+  namespaceSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $sm.endpoints }}
+  endpoints:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $sm.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{- end }}

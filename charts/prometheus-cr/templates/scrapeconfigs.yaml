@@ -1,0 +1,50 @@
+{{- $top := . -}}
+{{- range $sc := .Values.scrapeConfigs }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: {{ required "scrapeConfigs[].name is required" $sc.name }}
+  namespace: {{ $sc.namespace | default $top.Release.Namespace }}
+  labels:
+    {{- include "prometheus-cr.labels" $top | nindent 4 }}
+    {{- with $sc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "prometheus-cr.annotations" (dict "top" $top "extra" $sc.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $sc.jobName }}
+  jobName: {{ . }}
+  {{- end }}
+  {{- with $sc.staticConfigs }}
+  staticConfigs:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $sc.scrapeInterval }}
+  scrapeInterval: {{ . }}
+  {{- end }}
+  {{- with $sc.scrapeTimeout }}
+  scrapeTimeout: {{ . }}
+  {{- end }}
+  {{- with $sc.metricsPath }}
+  metricsPath: {{ . }}
+  {{- end }}
+  {{- with $sc.scheme }}
+  scheme: {{ . }}
+  {{- end }}
+  {{- with $sc.relabelings }}
+  relabelings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $sc.metricRelabelings }}
+  metricRelabelings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $sc.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{- end }}

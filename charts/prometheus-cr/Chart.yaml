@@ -1,0 +1,36 @@
+apiVersion: v2
+name: prometheus-cr
+description: Custom resources for the Prometheus Operator — ServiceMonitor, PodMonitor, PrometheusRule, Probe (monitoring.coreos.com/v1) and ScrapeConfig (monitoring.coreos.com/v1alpha1). Deployed alongside kube-prometheus-stack / prometheus-operator, which installs the operator and CRDs but leaves app-level monitoring CRs to each consumer.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - prometheus
+  - prometheus-operator
+  - servicemonitor
+  - podmonitor
+  - prometheusrule
+  - monitoring
+  - observability
+  - kubernetes
+home: https://github.com/somaz94/helm-charts
+sources:
+  - https://github.com/somaz94/helm-charts
+maintainers:
+  - name: somaz94
+    url: https://github.com/somaz94
+annotations:
+  artifacthub.io/category: monitoring-logging
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/somaz94/helm-charts
+    - name: Prometheus Operator
+      url: https://github.com/prometheus-operator/prometheus-operator
+    - name: Prometheus Operator API reference
+      url: https://prometheus-operator.dev/docs/api-reference/api/
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Initial release: data-driven Prometheus Operator monitoring CRs (ServiceMonitor, PodMonitor, PrometheusRule, Probe, ScrapeConfig) rendered from list-valued inputs, filling the gap where the operator chart installs the CRDs but does not template app-level monitoring config."
+  artifacthub.io/prerelease: "false"

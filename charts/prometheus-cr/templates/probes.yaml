@@ -1,0 +1,43 @@
+{{- $top := . -}}
+{{- range $probe := .Values.probes }}
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: {{ required "probes[].name is required" $probe.name }}
+  namespace: {{ $probe.namespace | default $top.Release.Namespace }}
+  labels:
+    {{- include "prometheus-cr.labels" $top | nindent 4 }}
+    {{- with $probe.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "prometheus-cr.annotations" (dict "top" $top "extra" $probe.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $probe.jobName }}
+  jobName: {{ . }}
+  {{- end }}
+  {{- with $probe.prober }}
+  prober:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $probe.module }}
+  module: {{ . }}
+  {{- end }}
+  {{- with $probe.targets }}
+  targets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $probe.interval }}
+  interval: {{ . }}
+  {{- end }}
+  {{- with $probe.scrapeTimeout }}
+  scrapeTimeout: {{ . }}
+  {{- end }}
+  {{- with $probe.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+---
+{{- end }}

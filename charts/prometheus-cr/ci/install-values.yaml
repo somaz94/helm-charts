@@ -1,0 +1,100 @@
+# Values used by CI to exercise `helm lint`, `helm template`, chart-testing
+# and kubeconform. Not a deployment recipe — values below are dummy and must
+# not be reused. Toggles every optional template path so each renders.
+commonLabels:
+  release: kube-prometheus-stack
+commonAnnotations:
+  owner: platform
+
+serviceMonitors:
+  - name: my-app
+    namespace: default
+    jobLabel: app.kubernetes.io/instance
+    targetLabels:
+      - app.kubernetes.io/name
+    podTargetLabels:
+      - app.kubernetes.io/component
+    sampleLimit: 5000
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: my-app
+    namespaceSelector:
+      matchNames:
+        - default
+    endpoints:
+      - port: http-metrics
+        path: /metrics
+        interval: 30s
+        scrapeTimeout: 10s
+        scheme: http
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_pod_node_name]
+            targetLabel: node
+
+podMonitors:
+  - name: my-daemon
+    namespace: default
+    jobLabel: app
+    podTargetLabels:
+      - app
+    selector:
+      matchLabels:
+        app: my-daemon
+    namespaceSelector:
+      any: true
+    podMetricsEndpoints:
+      - port: metrics
+        interval: 30s
+
+prometheusRules:
+  - name: my-app-rules
+    namespace: default
+    groups:
+      - name: my-app.rules
+        rules:
+          - alert: MyAppDown
+            expr: up{job="my-app"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "my-app is down"
+          - record: my_app:request_rate5m
+            expr: sum(rate(http_requests_total[5m]))
+
+probes:
+  - name: external-endpoints
+    namespace: default
+    jobName: blackbox
+    prober:
+      url: blackbox-exporter.monitoring.svc:9115
+      scheme: http
+      path: /probe
+    module: http_2xx
+    interval: 60s
+    scrapeTimeout: 15s
+    targets:
+      staticConfig:
+        static:
+          - https://example.com
+          - https://api.example.com
+        labels:
+          env: prod
+
+scrapeConfigs:
+  - name: external-static
+    namespace: default
+    jobName: external-nodes
+    staticConfigs:
+      - targets:
+          - 192.0.2.10:9100
+          - 192.0.2.11:9100
+        labels:
+          env: prod
+    scrapeInterval: 30s
+    scrapeTimeout: 10s
+    metricsPath: /metrics
+    scheme: HTTP
+    relabelings:
+      - sourceLabels: [__address__]
+        targetLabel: instance

@@ -1,0 +1,176 @@
+# Default values for prometheus-cr.
+# This chart templates Prometheus Operator *monitoring* custom resources. The
+# prometheus-operator / kube-prometheus-stack chart installs the operator and
+# CRDs but leaves app-level monitoring CRs (ServiceMonitor, PodMonitor,
+# PrometheusRule, ...) to each consumer — typically hand-written per component.
+# This chart fills that gap so cross-cutting monitoring config (scraping a
+# third-party target, a blackbox probe, a shared alert-rule set) is managed
+# declaratively as a Helm release instead of scattered raw YAML.
+#
+# The chart ships with safe empty defaults: an unconfigured `helm install` is a
+# no-op (creates no resources). Define the lists below to create CRs.
+#
+# Prerequisite: the Prometheus Operator CRDs (monitoring.coreos.com/v1 and, for
+# ScrapeConfig, monitoring.coreos.com/v1alpha1) must already be installed. A
+# Prometheus must also be selecting these resources via its
+# serviceMonitorSelector / ruleSelector / probeSelector / scrapeConfigSelector
+# (kube-prometheus-stack's defaults select by release label or match everything
+# depending on your values).
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+# Labels and annotations applied to EVERY resource created by this chart.
+# NOTE: a Prometheus commonly selects monitoring CRs by label. Add whatever
+# label your Prometheus selector expects (e.g. `release: kube-prometheus-stack`)
+# to commonLabels so the created resources are actually picked up.
+commonLabels: {}
+commonAnnotations: {}
+
+# ---------------------------------------------------------------------------
+# ServiceMonitors (monitoring.coreos.com/v1, namespaced)
+# ---------------------------------------------------------------------------
+# Scrape metrics from the endpoints behind a Service.
+#
+# Per-entry fields:
+#   name              (required) ServiceMonitor name.
+#   namespace         (optional) Target namespace (default: release namespace).
+#   selector          (optional) Service label selector ({matchLabels|matchExpressions}).
+#   namespaceSelector (optional) {any: true} or {matchNames: [...]}.
+#   endpoints         (optional) List of endpoint scrape configs (port, path,
+#                                interval, scheme, tlsConfig, relabelings, ...).
+#   jobLabel          (optional) Service label to use as the `job` label.
+#   targetLabels      (optional) Service labels to copy onto scraped metrics.
+#   podTargetLabels   (optional) Pod labels to copy onto scraped metrics.
+#   sampleLimit       (optional) Per-scrape sample limit.
+#   labels/annotations (optional) Extra metadata on this resource.
+#   specExtra         (optional) Arbitrary YAML merged into spec for unsurfaced fields.
+serviceMonitors: []
+# Example:
+#   serviceMonitors:
+#     - name: my-app
+#       selector:
+#         matchLabels:
+#           app.kubernetes.io/name: my-app
+#       namespaceSelector:
+#         matchNames:
+#           - my-app
+#       endpoints:
+#         - port: http-metrics
+#           path: /metrics
+#           interval: 30s
+
+# ---------------------------------------------------------------------------
+# PodMonitors (monitoring.coreos.com/v1, namespaced)
+# ---------------------------------------------------------------------------
+# Scrape metrics directly from Pods (no Service required).
+#
+# Per-entry fields:
+#   name                (required) PodMonitor name.
+#   namespace           (optional) Target namespace (default: release namespace).
+#   selector            (optional) Pod label selector.
+#   namespaceSelector   (optional) {any: true} or {matchNames: [...]}.
+#   podMetricsEndpoints (optional) List of pod endpoint scrape configs.
+#   jobLabel            (optional) Pod label to use as the `job` label.
+#   podTargetLabels     (optional) Pod labels to copy onto scraped metrics.
+#   sampleLimit         (optional) Per-scrape sample limit.
+#   labels/annotations/specExtra (optional)
+podMonitors: []
+# Example:
+#   podMonitors:
+#     - name: my-daemon
+#       selector:
+#         matchLabels:
+#           app: my-daemon
+#       podMetricsEndpoints:
+#         - port: metrics
+#           interval: 30s
+
+# ---------------------------------------------------------------------------
+# PrometheusRules (monitoring.coreos.com/v1, namespaced)
+# ---------------------------------------------------------------------------
+# Alerting and recording rules, grouped.
+#
+# Per-entry fields:
+#   name    (required) PrometheusRule name.
+#   namespace (optional) Target namespace (default: release namespace).
+#   groups  (required) List of rule groups: { name, interval?, rules[] }.
+#           Each rule is { alert | record, expr, for?, labels?, annotations? }.
+#   labels/annotations/specExtra (optional)
+prometheusRules: []
+# Example:
+#   prometheusRules:
+#     - name: my-app-rules
+#       groups:
+#         - name: my-app.rules
+#           rules:
+#             - alert: MyAppDown
+#               expr: up{job="my-app"} == 0
+#               for: 5m
+#               labels:
+#                 severity: critical
+#               annotations:
+#                 summary: "my-app is down"
+
+# ---------------------------------------------------------------------------
+# Probes (monitoring.coreos.com/v1, namespaced)
+# ---------------------------------------------------------------------------
+# Blackbox-exporter style synthetic probing of static or Ingress targets.
+#
+# Per-entry fields:
+#   name          (required) Probe name.
+#   namespace     (optional) Target namespace (default: release namespace).
+#   jobName       (optional) Value of the `job` label on probe metrics.
+#   prober        (optional) { url, scheme, path, proxyUrl } of the prober (blackbox-exporter).
+#   module        (optional) Prober module (e.g. "http_2xx").
+#   targets       (optional) { staticConfig: {...} } or { ingress: {...} }.
+#   interval      (optional) Scrape interval.
+#   scrapeTimeout (optional) Scrape timeout.
+#   labels/annotations/specExtra (optional)
+probes: []
+# Example:
+#   probes:
+#     - name: external-endpoints
+#       jobName: blackbox
+#       prober:
+#         url: blackbox-exporter.monitoring.svc:9115
+#       module: http_2xx
+#       targets:
+#         staticConfig:
+#           static:
+#             - https://example.com
+#             - https://api.example.com
+
+# ---------------------------------------------------------------------------
+# ScrapeConfigs (monitoring.coreos.com/v1alpha1, namespaced)
+# ---------------------------------------------------------------------------
+# Additional scrape configuration for targets outside the ServiceMonitor /
+# PodMonitor model (static targets, file/HTTP/cloud service discovery).
+# NOTE: ScrapeConfig is still v1alpha1.
+#
+# Per-entry fields:
+#   name             (required) ScrapeConfig name.
+#   namespace        (optional) Target namespace (default: release namespace).
+#   jobName          (optional) Value of the `job` label.
+#   staticConfigs    (optional) List of { targets: [...], labels: {...} }.
+#   scrapeInterval   (optional) Scrape interval.
+#   scrapeTimeout    (optional) Scrape timeout.
+#   metricsPath      (optional) Metrics path (default /metrics).
+#   scheme           (optional) HTTP | HTTPS.
+#   relabelings      (optional) Target relabel configs.
+#   metricRelabelings (optional) Metric relabel configs.
+#   labels/annotations (optional) Extra metadata on this resource.
+#   specExtra        (optional) Arbitrary YAML merged into spec — use for the
+#                               many *SDConfig discovery variants not surfaced.
+scrapeConfigs: []
+# Example:
+#   scrapeConfigs:
+#     - name: external-static
+#       staticConfigs:
+#         - targets:
+#             - 192.0.2.10:9100
+#             - 192.0.2.11:9100
+#           labels:
+#             env: prod
+#       scrapeInterval: 30s
+#       metricsPath: /metrics

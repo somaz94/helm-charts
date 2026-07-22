@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "prometheus-cr values",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "stringMap": { "type": "object", "additionalProperties": { "type": "string" } },
+    "specExtra": { "type": "object", "additionalProperties": true },
+    "labelSelector": { "type": "object", "additionalProperties": true },
+    "objList": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+  },
+  "properties": {
+    "commonLabels": { "$ref": "#/$defs/stringMap" },
+    "commonAnnotations": { "$ref": "#/$defs/stringMap" },
+
+    "serviceMonitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "selector": { "$ref": "#/$defs/labelSelector" },
+          "namespaceSelector": { "type": "object", "additionalProperties": true },
+          "endpoints": { "$ref": "#/$defs/objList" },
+          "jobLabel": { "type": "string" },
+          "targetLabels": { "type": "array", "items": { "type": "string" } },
+          "podTargetLabels": { "type": "array", "items": { "type": "string" } },
+          "sampleLimit": { "type": "integer" },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    },
+
+    "podMonitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "selector": { "$ref": "#/$defs/labelSelector" },
+          "namespaceSelector": { "type": "object", "additionalProperties": true },
+          "podMetricsEndpoints": { "$ref": "#/$defs/objList" },
+          "jobLabel": { "type": "string" },
+          "podTargetLabels": { "type": "array", "items": { "type": "string" } },
+          "sampleLimit": { "type": "integer" },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    },
+
+    "prometheusRules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "groups"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "groups": { "$ref": "#/$defs/objList" },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    },
+
+    "probes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "jobName": { "type": "string" },
+          "prober": { "type": "object", "additionalProperties": true },
+          "module": { "type": "string" },
+          "targets": { "type": "object", "additionalProperties": true },
+          "interval": { "type": "string" },
+          "scrapeTimeout": { "type": "string" },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    },
+
+    "scrapeConfigs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "jobName": { "type": "string" },
+          "staticConfigs": { "$ref": "#/$defs/objList" },
+          "scrapeInterval": { "type": "string" },
+          "scrapeTimeout": { "type": "string" },
+          "metricsPath": { "type": "string" },
+          "scheme": { "type": "string", "enum": ["HTTP", "HTTPS"] },
+          "relabelings": { "$ref": "#/$defs/objList" },
+          "metricRelabelings": { "$ref": "#/$defs/objList" },
+          "labels": { "$ref": "#/$defs/stringMap" },
+          "annotations": { "$ref": "#/$defs/stringMap" },
+          "specExtra": { "$ref": "#/$defs/specExtra" }
+        }
+      }
+    }
+  }
+}

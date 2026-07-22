@@ -1,0 +1,38 @@
+Prometheus Operator custom resources installed for release "{{ .Release.Name }}".
+
+{{ if or .Values.serviceMonitors .Values.podMonitors .Values.prometheusRules .Values.probes .Values.scrapeConfigs -}}
+Resources created:
+{{- range .Values.serviceMonitors }}
+  - ServiceMonitor/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- range .Values.podMonitors }}
+  - PodMonitor/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- range .Values.prometheusRules }}
+  - PrometheusRule/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- range .Values.probes }}
+  - Probe/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- range .Values.scrapeConfigs }}
+  - ScrapeConfig/{{ .name }} (ns {{ .namespace | default $.Release.Namespace }})
+{{- end }}
+{{- else -}}
+No resources defined yet. Set `serviceMonitors` / `podMonitors` /
+`prometheusRules` / `probes` / `scrapeConfigs` in your values file.
+See `helm show values <chart>`.
+{{- end }}
+
+Verify resources:
+  kubectl -n {{ .Release.Namespace }} get servicemonitors,podmonitors,prometheusrules,probes,scrapeconfigs
+
+IMPORTANT: creating these CRs is not enough on its own — your Prometheus must
+SELECT them. Check the Prometheus CR's serviceMonitorSelector / podMonitorSelector
+/ ruleSelector / probeSelector / scrapeConfigSelector (and the matching
+*NamespaceSelector). With kube-prometheus-stack, either add the label its
+selector expects to `commonLabels`, or set the relevant
+`*SelectorNilUsesHelmValues: false` so it selects all resources cluster-wide.
+
+NOTE: This chart only creates monitoring *config* CRs. The Prometheus Operator
+and its CRDs must already be installed — typically via kube-prometheus-stack or
+the prometheus-operator chart.

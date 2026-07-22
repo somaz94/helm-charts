@@ -30,6 +30,7 @@ Charts in scope:
 | mysql |
 | nginx-gateway-cr |
 | postgresql |
+| prometheus-cr |
 | redis |
 | unity-mcp-server |
 
