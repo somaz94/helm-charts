@@ -51,6 +51,8 @@ helm install eso-config somaz94/external-secrets-cr \
 
 ## Quick examples
 
+<br/>
+
 ### AWS Secrets Manager via EKS Pod Identity / IRSA
 
 A cluster-wide store with no `auth` block — ESO falls back to the pod's default AWS credential chain, which the Pod Identity agent (or IRSA) populates.
@@ -79,6 +81,8 @@ externalSecrets:
           property: password
 ```
 
+<br/>
+
 ### HashiCorp Vault (namespaced store)
 
 ```yaml
@@ -106,6 +110,8 @@ externalSecrets:
           key: app/config
 ```
 
+<br/>
+
 ### Fan one secret out to many namespaces
 
 ```yaml
@@ -125,6 +131,8 @@ clusterExternalSecrets:
           remoteRef:
             key: prod/registry-dockerconfig
 ```
+
+<br/>
 
 ### Push a generated Secret back to the provider
 
@@ -150,6 +158,8 @@ pushSecrets:
 <br/>
 
 ## Values reference
+
+<br/>
 
 ### Shared metadata
 
