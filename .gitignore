@@ -17,3 +17,8 @@ charts/*/backup/
 *.swp
 *.swo
 *~
+
+# Claude Code local settings (per-machine; the shared agents/commands/skills under
+# .claude/ stay tracked, only the settings files are local-only).
+.claude/settings.json
+.claude/settings.local.json
