@@ -2,8 +2,8 @@ apiVersion: v2
 name: elasticsearch-eck
 description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
 type: application
-version: 0.1.13
-appVersion: "9.4.3"
+version: 0.1.14
+appVersion: "9.4.4"
 kubeVersion: ">=1.25.0-0"
 keywords:
   - elasticsearch
@@ -33,4 +33,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: "Exclude ci/ from the packaged chart via .helmignore (CI-only values, matching ghost/unity-mcp-server)."
+      description: Bump appVersion from 9.4.3 to 9.4.4
