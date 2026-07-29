@@ -3,9 +3,15 @@
 # must not be reused. Toggles every optional template path so each renders.
 serviceAccount:
   create: true
+# Both PDB modes on purpose: `native` is rendered inside the Elasticsearch CR,
+# `external` renders templates/poddisruptionbudget.yaml as a standalone object.
+# They are independent, so enabling both is what covers both code paths.
 podDisruptionBudget:
   native: true
+  external: true
   minAvailable: 1
+# Renders templates/elastic-user-secret.yaml (the `elastic` superuser override).
+elasticPassword: example-password
 httproute:
   enabled: true
   parentRefs:

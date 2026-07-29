@@ -1,0 +1,51 @@
+# Second CI scenario — the chart-rendered Ingress routing path.
+#
+# This cannot live in install-values.yaml: the chart deliberately rejects more
+# than one routing method at once ("pick exactly one routing method, got:
+# httproute.enabled, ingress.enabled"), and install-values.yaml already covers
+# the Gateway API path. Rendering the two fixtures separately — which is what
+# `make template` / `make validate` and `ct lint` both do — is what lets
+# templates/ingress.yaml be exercised at all.
+#
+# Not a deployment recipe — credentials below are dummy and must not be reused.
+keycloak:
+  instances: 1
+  hostname:
+    hostname: auth.example.com
+    strict: true
+  proxy:
+    headers: xforwarded
+  db:
+    vendor: postgres
+    host: keycloak-postgresql.keycloak.svc
+    database: keycloak
+
+dbSecret:
+  enabled: true
+  username: ci
+  password: example-password
+
+adminSecret:
+  enabled: true
+  username: admin
+  password: example-password
+
+# The path under test. httproute stays off (chart default) so the
+# mutual-exclusion guard is satisfied.
+ingress:
+  enabled: true
+  className: nginx
+  host: auth.example.com
+  path: /
+  pathType: Prefix
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    - hosts:
+        - auth.example.com
+      secretName: keycloak-tls
+  extraPaths:
+    - path: /metrics
+      pathType: Prefix
+      serviceName: keycloak-metrics
+      servicePort: 9000

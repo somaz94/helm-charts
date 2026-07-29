@@ -10,6 +10,9 @@ charts/*/backup/
 *.local.yaml
 *.local.yml
 
+# kubeconform schema cache (rebuildable download cache; `make clean` clears it)
+.kubeconform-cache/
+
 # OS / Editor
 .DS_Store
 .idea/

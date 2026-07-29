@@ -8,6 +8,25 @@ CHARTS_DIR ?= charts
 CHART      ?=
 LEVEL      ?= patch
 
+# Repo-local CR schemas consulted by `validate` before the remote datree
+# catalog, so a kind the catalog has not published yet still gets validated.
+# Populate with scripts/validate/vendor-crd-schema.sh.
+SCHEMAS_DIR ?= schemas
+
+# chart-testing knobs. CT_REMOTE/CT_TARGET_BRANCH mirror ct's own defaults and
+# exist so a fork or a differently-named remote can run `make ct-lint` unchanged.
+# `ALL=1 make ct-lint` switches from ct's changed-charts detection to every
+# chart — worth knowing that the default scope lints NOTHING on a clean tree,
+# unlike lint/template/validate which always cover all charts.
+CT_REMOTE        ?= origin
+CT_TARGET_BRANCH ?= main
+
+# kubeconform downloads every schema over HTTPS. Without a cache an offline or
+# rate-limited run resolves nothing, and -ignore-missing-schemas would turn that
+# into "everything skipped, all green" — the exact blind spot check-skips.sh
+# exists to catch. Cached under a gitignored dir; `make clean` clears it.
+KUBECONFORM_CACHE ?= .kubeconform-cache
+
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
@@ -22,13 +41,31 @@ TARGET_CHARTS := $(CHART)
 endif
 
 # Shared helm-template invocation used by `template` and `validate`. Collects
-# any charts/<c>/ci/*.yaml as `-f` flags before rendering. Expanded inside a
-# `for c in $(TARGET_CHARTS); do ... done` loop, so $$c is the current chart.
-HELM_TEMPLATE_CMD = ci_args=""; \
+# each charts/<c>/ci/*.yaml as its OWN render, concatenating the manifests to
+# stdout. Expanded inside a `for c in $(TARGET_CHARTS); do ... done` loop, so
+# $$c is the current chart.
+#
+# One render per fixture — not one render with every fixture merged as `-f`
+# flags. Merging cannot express a scenario that contradicts another: keycloak-cr
+# rejects `httproute.enabled` and `ingress.enabled` together on purpose, so a
+# merged render can only ever exercise one of the two routing paths. Separate
+# renders also match `ct lint`, which treats each ci/*-values.yaml as its own
+# case; before this the two disagreed once a chart had a second fixture.
+#
+# A chart with no ci/ fixture still renders once, on pure defaults.
+#
+# The whole body is brace-grouped so callers can pipe it (`$(HELM_TEMPLATE_CMD)
+# | kubeconform`). Without the braces `|` binds tighter than `||` and the pipe
+# would attach only to the trailing fallback render, silently sending the loop's
+# output to stdout instead of down the pipe.
+HELM_TEMPLATE_CMD = { rendered=0; \
 	for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
-		[ -f "$$f" ] && ci_args="$$ci_args -f $$f"; \
+		[ -f "$$f" ] || continue; \
+		rendered=1; \
+		helm template ci $(CHARTS_DIR)/$$c -f "$$f" || exit 1; \
 	done; \
-	helm template ci $(CHARTS_DIR)/$$c $$ci_args
+	[ "$$rendered" = "1" ] || helm template ci $(CHARTS_DIR)/$$c; \
+	}
 
 # Guards for chart-specific targets. Usage at recipe start:
 #   $(call require_chart,make bump CHART=<name> LEVEL=patch)
@@ -91,9 +128,21 @@ lint: ## helm lint each chart (CHART=name to limit).
 	done
 
 .PHONY: ct-lint
-ct-lint: ## chart-testing lint (matches CI behavior).
+ct-lint: ## chart-testing lint (matches CI behavior). ALL=1 lints every chart instead of only changed ones.
 	@command -v ct >/dev/null 2>&1 || { echo "chart-testing required: brew install chart-testing"; exit 1; }
-	ct lint --target-branch main --check-version-increment=false
+	@scope="--target-branch $(CT_TARGET_BRANCH) --check-version-increment=false"; \
+	if [ -n "$(ALL)" ]; then scope="--all"; fi; \
+	extra=""; \
+	host=$$(git remote get-url $(CT_REMOTE) 2>/dev/null \
+		| sed -E 's|^[a-z]+://||; s|^[^@]*@||; s|[:/].*$$||'); \
+	if [ -n "$$host" ] && ! python3 -c 'import socket,sys; socket.gethostbyname(sys.argv[1])' "$$host" >/dev/null 2>&1; then \
+		echo "NOTE: git remote host '$$host' does not resolve — skipping ct's maintainer validation."; \
+		echo "      (a multi-account SSH alias such as git@github.com-<account>: is not a real host;"; \
+		echo "       CI checks out over HTTPS, so maintainers are still validated there)"; \
+		extra="--validate-maintainers=false"; \
+	fi; \
+	echo "==> ct lint $$scope $$extra"; \
+	ct lint $$scope $$extra
 
 .PHONY: template
 template: ## helm template render smoke test (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
@@ -105,14 +154,18 @@ template: ## helm template render smoke test (CHART=name to limit). Picks up cha
 .PHONY: validate
 validate: ## kubeconform validation against k8s + CRD schemas (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
 	@command -v kubeconform >/dev/null 2>&1 || { echo "kubeconform required: brew install kubeconform"; exit 1; }
+	@mkdir -p $(KUBECONFORM_CACHE)
 	@for c in $(TARGET_CHARTS); do \
 		echo "==> kubeconform $$c"; \
 		$(HELM_TEMPLATE_CMD) | kubeconform \
 			-strict \
 			-ignore-missing-schemas \
+			-cache $(KUBECONFORM_CACHE) \
 			-schema-location default \
+			-schema-location '$(SCHEMAS_DIR)/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
 			-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-			-summary; \
+			-output json -verbose \
+		| scripts/validate/check-skips.sh $$c; \
 	done
 
 .PHONY: ci
@@ -129,8 +182,8 @@ package: ## helm package each chart into ./.cr-release-packages/ (CHART=name to 
 	done
 
 .PHONY: clean
-clean: ## Remove generated tarballs and helm artifacts.
-	rm -rf .cr-release-packages
+clean: ## Remove generated tarballs, helm artifacts, and the kubeconform schema cache.
+	rm -rf .cr-release-packages $(KUBECONFORM_CACHE)
 
 ##@ Release
 

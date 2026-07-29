@@ -2,7 +2,7 @@
 
 <br/>
 
-Maintainer automation for the helm-charts mono-repo. Three independent
+Maintainer automation for the helm-charts mono-repo. Four independent
 sub-systems collaborate through a small set of file-level contracts; nothing
 in here touches a live cluster.
 
@@ -11,6 +11,7 @@ scripts/
 ├─ upgrade-sync/    # canonical-body propagation for charts/*/upgrade.sh
 ├─ check-version/   # drift detection + auto-bump PR orchestration
 ├─ changelog/       # Chart.yaml annotation -> charts/*/CHANGELOG.md mirror
+├─ validate/        # kubeconform skip gate + CR schema vendoring
 └─ lib/             # shared helpers sourced by the scripts above (NOT executed)
 ```
 
@@ -23,6 +24,7 @@ scripts/
 | [`upgrade-sync/`](upgrade-sync/) | `sync.sh` | Propagates the canonical body of each per-chart `upgrade.sh` from a single template under `templates/`. Catches body drift between charts. | On every PR that touches `charts/*/upgrade.sh` or `templates/`. Run via `make sync-check`. |
 | [`check-version/`](check-version/) | `check-version.sh` | Iterates every chart's `upgrade.sh --dry-run --json`, classifies drift (`uptodate` / `drift` / `blocked` / `no-image` / `error`), and (with `--apply`) opens one PR per drifted chart. | Weekly via `.github/workflows/check-versions.yml`, or manual `make version-check` / `make version-apply`. |
 | [`changelog/`](changelog/) | `sync-changelog.sh` | Renders per-chart `CHANGELOG.md` from `Chart.yaml`'s `annotations.artifacthub.io/changes` (Keep a Changelog format). Idempotent. | After `upgrade.sh` resets the annotation; via `make changelog CHART=<name>` or `make changelog-all`. |
+| [`validate/`](validate/) | `check-skips.sh` | Fails `make validate` when kubeconform skips a resource whose schema it could not resolve, unless the kind is declared in `allowed-skips.txt`. `vendor-crd-schema.sh` converts an upstream CRD into a repo-local schema under [`schemas/`](../schemas/) so the kind validates instead of skipping. | `check-skips.sh` on every `make validate` (and thus `make ci`). `vendor-crd-schema.sh` manually, when a new CR kind has no published schema. |
 
 <br/>
 
@@ -73,7 +75,7 @@ same PR and re-run `make sync-check` + `make version-check` to verify.
 
 ## Makefile entry points
 
-All three sub-systems are exposed through the top-level `Makefile`:
+All four sub-systems are exposed through the top-level `Makefile`:
 
 | Target | Wraps |
 |---|---|
@@ -85,13 +87,14 @@ All three sub-systems are exposed through the top-level `Makefile`:
 | `make version-apply` | `scripts/check-version/check-version.sh --apply` |
 | `make changelog CHART=<name>` | `scripts/changelog/sync-changelog.sh charts/<name>` |
 | `make changelog-all` | `scripts/changelog/sync-changelog.sh --all` |
+| `make validate` | `kubeconform` per chart, piped into `scripts/validate/check-skips.sh <chart>`. Schema lookup order: kubeconform default store → local [`schemas/`](../schemas/) → datree CRDs-catalog, cached in `.kubeconform-cache/`. |
 | `make shell-lint` | `bash -n` + `zsh -n` on every `scripts/**/*.sh` and `charts/*/upgrade.sh`; `shellcheck --severity=error` (if installed) on `scripts/**/*.sh` only — `charts/*/upgrade.sh` is the sync output of the templates and is checked at the template level. Warning/info-level shellcheck output is shown advisory-only. `STRICT=1 make shell-lint` requires `shellcheck`. |
 
 <br/>
 
 ## Local prerequisites
 
-Shared by all three sub-systems:
+Shared by all four sub-systems:
 
 - `bash` ≥ 4 (Homebrew bash on macOS) **or** `zsh` ≥ 5 — scripts are written
   for both shells; the shebang is `#!/usr/bin/env bash`, so direct execution
@@ -107,8 +110,11 @@ Additional, per sub-system:
 - `shellcheck` (optional; `make shell-lint` runs it when available, and
   `STRICT=1 make shell-lint` requires it for CI)
 - `yq` v4 (mikefarah/yq) — required by `changelog/sync-changelog.sh` for
-  reading `annotations.artifacthub.io/changes`. The other two sub-systems do
+  reading `annotations.artifacthub.io/changes`. The other sub-systems do
   not depend on it; their YAML touches go through inline `python3`.
+- `PyYAML` — required only by `validate/vendor-crd-schema.sh`, a manual
+  maintainer action. The CI-facing `validate/check-skips.sh` parses kubeconform
+  JSON with the stdlib and needs nothing extra.
 
 <br/>
 
@@ -117,6 +123,7 @@ Additional, per sub-system:
 - [upgrade-sync/README.md](upgrade-sync/README.md) — canonical-body markers, available templates, the publisher↔consumer flow with `kuberntes-infra`, and the `--dry-run --json` schema.
 - [check-version/README.md](check-version/README.md) — drift status codes, GitHub Actions wiring, sibling-chart ordering, and PR creation.
 - [changelog/README.md](changelog/README.md) — Chart.yaml annotation RESET semantics and the Keep a Changelog mapping.
+- [validate/README.md](validate/README.md) — why `-ignore-missing-schemas` needs a gate, the schema resolution order, the `allowed-skips.txt` format, and how to vendor a CRD schema.
 
 <br/>
 

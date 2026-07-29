@@ -1,0 +1,28 @@
+# allowed-skips.txt — kinds `make validate` is permitted to leave unvalidated.
+#
+# kubeconform runs with -ignore-missing-schemas, so a resource whose schema it
+# cannot resolve is reported `statusSkipped` and the run still exits 0. Left
+# unchecked that is a silent hole: a chart can ship a malformed CR and CI stays
+# green. check-skips.sh closes it by failing on any skip NOT declared here.
+#
+# Format — one declaration per line, whitespace-separated:
+#
+#   <chart>  <apiVersion>  <Kind>
+#
+#   <chart>      chart directory name under charts/, or * for every chart
+#   <apiVersion> full group/version as rendered (e.g. gateway.nginx.org/v1alpha1)
+#   <Kind>       resource kind, case-sensitive
+#
+# Blank lines and `#` comments are ignored. Keep a `# why:` note on every entry —
+# an undocumented allowance is indistinguishable from an oversight.
+#
+# Prefer vendoring over declaring. If upstream publishes a CRD for the kind,
+# run scripts/validate/vendor-crd-schema.sh instead and leave this file alone;
+# a vendored schema actually validates the resource, a declaration only excuses
+# it. Entries here should be limited to kinds with no obtainable schema.
+
+# why: kubernetes-json-schema (kubeconform's default store) publishes no schema
+# for CustomResourceDefinition itself, and no CRD-of-a-CRD exists to vendor.
+# keycloak-operator ships upstream's Fabric8-generated CRDs verbatim under
+# templates/crd-*.yaml, so their content is upstream's contract, not ours.
+keycloak-operator  apiextensions.k8s.io/v1  CustomResourceDefinition
