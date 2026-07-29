@@ -23,3 +23,21 @@ serviceAccount:
   create: true
 networkPolicy:
   enabled: true
+
+# Escape hatch — each key renders as its own manifest document
+# (templates/extra.yaml). Kept trivial: the point is to exercise the code path,
+# not to model a real add-on.
+kubernetesExtra:
+  ci-extra-configmap:
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: ci-extra
+    data:
+      rendered-by: kubernetesExtra
+
+# Chart-managed image pull Secret (templates/imagepullsecret.yaml).
+# dockerconfigjson is base64 of `{"auths":{}}` — a valid but empty credential.
+imagePullSecret:
+  create: true
+  dockerconfigjson: eyJhdXRocyI6e319

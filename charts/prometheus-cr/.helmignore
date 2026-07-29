@@ -16,3 +16,6 @@
 .idea/
 *.tmproj
 .vscode/
+
+# CI values — only used by local `make template`/`make validate`.
+ci/

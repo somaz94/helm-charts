@@ -33,13 +33,31 @@ TARGET_CHARTS := $(CHART)
 endif
 
 # Shared helm-template invocation used by `template` and `validate`. Collects
-# any charts/<c>/ci/*.yaml as `-f` flags before rendering. Expanded inside a
-# `for c in $(TARGET_CHARTS); do ... done` loop, so $$c is the current chart.
-HELM_TEMPLATE_CMD = ci_args=""; \
+# each charts/<c>/ci/*.yaml as its OWN render, concatenating the manifests to
+# stdout. Expanded inside a `for c in $(TARGET_CHARTS); do ... done` loop, so
+# $$c is the current chart.
+#
+# One render per fixture — not one render with every fixture merged as `-f`
+# flags. Merging cannot express a scenario that contradicts another: keycloak-cr
+# rejects `httproute.enabled` and `ingress.enabled` together on purpose, so a
+# merged render can only ever exercise one of the two routing paths. Separate
+# renders also match `ct lint`, which treats each ci/*-values.yaml as its own
+# case; before this the two disagreed once a chart had a second fixture.
+#
+# A chart with no ci/ fixture still renders once, on pure defaults.
+#
+# The whole body is brace-grouped so callers can pipe it (`$(HELM_TEMPLATE_CMD)
+# | kubeconform`). Without the braces `|` binds tighter than `||` and the pipe
+# would attach only to the trailing fallback render, silently sending the loop's
+# output to stdout instead of down the pipe.
+HELM_TEMPLATE_CMD = { rendered=0; \
 	for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
-		[ -f "$$f" ] && ci_args="$$ci_args -f $$f"; \
+		[ -f "$$f" ] || continue; \
+		rendered=1; \
+		helm template ci $(CHARTS_DIR)/$$c -f "$$f" || exit 1; \
 	done; \
-	helm template ci $(CHARTS_DIR)/$$c $$ci_args
+	[ "$$rendered" = "1" ] || helm template ci $(CHARTS_DIR)/$$c; \
+	}
 
 # Guards for chart-specific targets. Usage at recipe start:
 #   $(call require_chart,make bump CHART=<name> LEVEL=patch)
