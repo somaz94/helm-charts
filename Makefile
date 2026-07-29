@@ -8,6 +8,17 @@ CHARTS_DIR ?= charts
 CHART      ?=
 LEVEL      ?= patch
 
+# Repo-local CR schemas consulted by `validate` before the remote datree
+# catalog, so a kind the catalog has not published yet still gets validated.
+# Populate with scripts/validate/vendor-crd-schema.sh.
+SCHEMAS_DIR ?= schemas
+
+# kubeconform downloads every schema over HTTPS. Without a cache an offline or
+# rate-limited run resolves nothing, and -ignore-missing-schemas would turn that
+# into "everything skipped, all green" — the exact blind spot check-skips.sh
+# exists to catch. Cached under a gitignored dir; `make clean` clears it.
+KUBECONFORM_CACHE ?= .kubeconform-cache
+
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
@@ -105,14 +116,18 @@ template: ## helm template render smoke test (CHART=name to limit). Picks up cha
 .PHONY: validate
 validate: ## kubeconform validation against k8s + CRD schemas (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
 	@command -v kubeconform >/dev/null 2>&1 || { echo "kubeconform required: brew install kubeconform"; exit 1; }
+	@mkdir -p $(KUBECONFORM_CACHE)
 	@for c in $(TARGET_CHARTS); do \
 		echo "==> kubeconform $$c"; \
 		$(HELM_TEMPLATE_CMD) | kubeconform \
 			-strict \
 			-ignore-missing-schemas \
+			-cache $(KUBECONFORM_CACHE) \
 			-schema-location default \
+			-schema-location '$(SCHEMAS_DIR)/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
 			-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-			-summary; \
+			-output json -verbose \
+		| scripts/validate/check-skips.sh $$c; \
 	done
 
 .PHONY: ci
@@ -129,8 +144,8 @@ package: ## helm package each chart into ./.cr-release-packages/ (CHART=name to 
 	done
 
 .PHONY: clean
-clean: ## Remove generated tarballs and helm artifacts.
-	rm -rf .cr-release-packages
+clean: ## Remove generated tarballs, helm artifacts, and the kubeconform schema cache.
+	rm -rf .cr-release-packages $(KUBECONFORM_CACHE)
 
 ##@ Release
 
