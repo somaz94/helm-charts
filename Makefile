@@ -13,6 +13,14 @@ LEVEL      ?= patch
 # Populate with scripts/validate/vendor-crd-schema.sh.
 SCHEMAS_DIR ?= schemas
 
+# chart-testing knobs. CT_REMOTE/CT_TARGET_BRANCH mirror ct's own defaults and
+# exist so a fork or a differently-named remote can run `make ct-lint` unchanged.
+# `ALL=1 make ct-lint` switches from ct's changed-charts detection to every
+# chart — worth knowing that the default scope lints NOTHING on a clean tree,
+# unlike lint/template/validate which always cover all charts.
+CT_REMOTE        ?= origin
+CT_TARGET_BRANCH ?= main
+
 # kubeconform downloads every schema over HTTPS. Without a cache an offline or
 # rate-limited run resolves nothing, and -ignore-missing-schemas would turn that
 # into "everything skipped, all green" — the exact blind spot check-skips.sh
@@ -120,9 +128,21 @@ lint: ## helm lint each chart (CHART=name to limit).
 	done
 
 .PHONY: ct-lint
-ct-lint: ## chart-testing lint (matches CI behavior).
+ct-lint: ## chart-testing lint (matches CI behavior). ALL=1 lints every chart instead of only changed ones.
 	@command -v ct >/dev/null 2>&1 || { echo "chart-testing required: brew install chart-testing"; exit 1; }
-	ct lint --target-branch main --check-version-increment=false
+	@scope="--target-branch $(CT_TARGET_BRANCH) --check-version-increment=false"; \
+	if [ -n "$(ALL)" ]; then scope="--all"; fi; \
+	extra=""; \
+	host=$$(git remote get-url $(CT_REMOTE) 2>/dev/null \
+		| sed -E 's|^[a-z]+://||; s|^[^@]*@||; s|[:/].*$$||'); \
+	if [ -n "$$host" ] && ! python3 -c 'import socket,sys; socket.gethostbyname(sys.argv[1])' "$$host" >/dev/null 2>&1; then \
+		echo "NOTE: git remote host '$$host' does not resolve — skipping ct's maintainer validation."; \
+		echo "      (a multi-account SSH alias such as git@github.com-<account>: is not a real host;"; \
+		echo "       CI checks out over HTTPS, so maintainers are still validated there)"; \
+		extra="--validate-maintainers=false"; \
+	fi; \
+	echo "==> ct lint $$scope $$extra"; \
+	ct lint $$scope $$extra
 
 .PHONY: template
 template: ## helm template render smoke test (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.

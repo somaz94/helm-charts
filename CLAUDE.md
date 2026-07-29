@@ -118,9 +118,27 @@ For sibling-dependent charts (e.g. `kibana-eck` needs Kibana ≤ Elasticsearch),
 make lint CHART=<name>           # helm lint
 make template CHART=<name>       # helm template smoke render
 make ci                          # full CI locally (helm lint + ct lint + helm template + kubeconform)
+make ct-lint ALL=1               # ct lint every chart, not just the changed ones
 ```
 
-If you added a template that emits a new resource kind, also verify it renders with every flag enabled (all optional `*.enabled: true` features on) — that's the path most likely to break.
+`ct lint` defaults to **changed-charts detection**, so the `ct-lint` step of `make ci` lints *nothing* on a clean tree — unlike `lint` / `template` / `validate`, which always cover all charts. Use `ALL=1` when you want full ct coverage.
+
+`ct` validates maintainers by requesting `https://<git-remote-host>/<name>`. A multi-account SSH alias remote (`git@github.com-<account>:…`) is not a resolvable host, so `make ct-lint` detects that and skips just this check, printing a NOTE. CI checks out over HTTPS and still validates maintainers there.
+
+<br/>
+
+### Every template must be reachable from a `ci/` fixture
+
+`make template` / `make validate` render **each** `charts/<name>/ci/*.yaml` as its own case (matching `ct lint`) and `make validate` then fails on anything kubeconform could not check. A template that no fixture ever enables is silently untested — it can break without turning CI red.
+
+So when adding a template gated on a new `*.enabled` flag:
+
+- turn the flag on in `charts/<name>/ci/install-values.yaml`, **or**
+- add a second fixture (`ci/<scenario>-values.yaml`) when the scenario contradicts the first — `keycloak-cr` needs this because it rejects `httproute.enabled` and `ingress.enabled` together.
+
+Fixtures are excluded from the packaged tarball via each chart's `.helmignore` (`ci/`) — verify with `helm package` if you add a chart.
+
+If the template emits a **custom resource**, `make validate` will fail with `undeclared skip` unless a schema exists for that kind. Vendor one with `scripts/validate/vendor-crd-schema.sh <upstream-crd-url>`, or declare it in `scripts/validate/allowed-skips.txt` when no CRD is obtainable. See [`scripts/validate/README.md`](scripts/validate/README.md).
 
 <br/>
 
