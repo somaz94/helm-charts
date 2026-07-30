@@ -44,6 +44,13 @@ LABELS_ANN_BLOCK=$(cat <<'EOF'
 EOF
 )
 
+# These four CRDs are vendored from upstream verbatim and ship UNVALIDATED by
+# design: kubeconform's default schema store publishes no schema for
+# CustomResourceDefinition itself, and no CRD-of-a-CRD exists to vendor. They
+# are therefore declared in scripts/validate/allowed-skips.txt, which is what
+# keeps `make validate` from failing on the undeclared-skip gate. Re-vendoring
+# a newer upstream release does not gain schema coverage — if a refresh adds or
+# renames a CRD file below, update that allowlist entry in the same change.
 CRD_FILES=(
   "keycloaks.k8s.keycloak.org-v1.yml:templates/crd-keycloaks.yaml"
   "keycloakrealmimports.k8s.keycloak.org-v1.yml:templates/crd-realmimports.yaml"
