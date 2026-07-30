@@ -5,6 +5,23 @@ on:
     paths:
       - 'charts/**'
       - '.github/workflows/lint.yml'
+  # Schema validation is scoped to changed charts on PRs, so a chart is only ever
+  # re-validated when someone edits it. That leaves a blind spot no PR can catch:
+  # kubeconform resolves schemas from a remote store, so a chart can start
+  # failing validation with zero repo changes (an upstream schema moves, the CRD
+  # catalog reshuffles, a vendored schema in schemas/ goes stale against it).
+  # The weekly run re-validates every chart so that drift surfaces on its own
+  # instead of ambushing whoever next touches an untouched chart; the manual
+  # trigger gives the same coverage on demand for one chart or all of them.
+  # Only kubeconform-check runs on these events — see the per-job `if` below.
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      charts:
+        description: "Chart names to validate, space-separated (e.g. ghost mysql). Empty = every chart."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -16,6 +33,9 @@ concurrency:
 jobs:
   lint:
     name: Lint and validate charts
+    # PR-only: ct's change detection needs a base ref to diff against, which the
+    # schedule and workflow_dispatch events do not provide.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -55,6 +75,8 @@ jobs:
 
   changelog-check:
     name: CHANGELOG.md updated for version bumps
+    # PR-only: there is no version bump to check outside a pull request diff.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -97,7 +119,7 @@ jobs:
           echo "All version-bumped charts have a corresponding CHANGELOG.md update."
 
   kubeconform-check:
-    name: Schema validation (kubeconform) for changed charts
+    name: Schema validation (kubeconform)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -119,12 +141,37 @@ jobs:
             | sudo tar -xz -C /usr/local/bin kubeconform
           kubeconform -v
 
-      - name: Detect changed charts
+      - name: Detect charts to validate
         id: changed
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED: ${{ inputs.charts }}
         run: |
           set -euo pipefail
+          # schedule / workflow_dispatch have no diff to compute. An explicit
+          # chart list wins; otherwise sweep every chart. Emitting the resolved
+          # names (rather than a magic "all" sentinel) keeps one downstream code
+          # path and puts the exact set in the log.
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            if [ -n "${REQUESTED:-}" ]; then
+              for c in $REQUESTED; do
+                if [ ! -d "charts/$c" ]; then
+                  echo "::error::requested chart does not exist: charts/$c"
+                  exit 1
+                fi
+              done
+              echo "Validating requested charts:"
+              printf '  - %s\n' $REQUESTED
+              echo "list=${REQUESTED}" >> "$GITHUB_OUTPUT"
+            else
+              all=$(find charts -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort | tr '\n' ' ')
+              echo "Full sweep — validating every chart:"
+              printf '  - %s\n' $all
+              echo "list=${all% }" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
           base="origin/${BASE_REF}"
           git fetch origin "${BASE_REF}" --depth=0 >/dev/null 2>&1 || git fetch origin "${BASE_REF}"
           # Charts whose tracked files (anything under charts/<name>/) changed
@@ -146,7 +193,7 @@ jobs:
             echo "list=${existing[*]}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run kubeconform on changed charts
+      - name: Run kubeconform
         if: steps.changed.outputs.list != ''
         env:
           CHANGED: ${{ steps.changed.outputs.list }}
