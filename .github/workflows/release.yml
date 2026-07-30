@@ -126,11 +126,22 @@ jobs:
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # chart-releaser's `changed_charts` output means "charts whose FILES
+      # changed in this push", not "charts newly released" — so a docs- or
+      # ci/fixture-only edit lands the chart in that list and would re-push
+      # its already-published OCI tag under a new digest. skip_existing makes
+      # the OCI step idempotent per chart@version, matching the
+      # `skip_existing: true` already set on chart-releaser above so both
+      # publish targets agree. The check is fail-open (a registry lookup
+      # error falls through to a push), and the workflow_dispatch step below
+      # deliberately omits it so an intentional same-version re-push stays
+      # possible.
       - name: Push released charts to GHCR (OCI)
         if: inputs.dry_run != true && steps.cr.outputs.changed_charts != ''
         uses: somaz94/helm-oci-push-action@v1
         with:
           charts: ${{ steps.cr.outputs.changed_charts }}
+          skip_existing: true
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push manually-specified charts to GHCR (OCI) [workflow_dispatch only]
