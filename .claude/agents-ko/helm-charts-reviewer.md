@@ -1,6 +1,6 @@
 ---
 name: helm-charts-reviewer
-description: helm-charts 컬렉션 (charts/ 아래 14개 chart) 의 변경을 리뷰하고 commit 전 🔴 Critical / 🟡 Warning / 🟢 Suggestion findings 를 surface. 이 repo 의 chart-file 레이아웃, ArtifactHub annotation 계약, values.schema.json escape-hatch 컨벤션, README 구조, upgrade.sh canonical-template 룰, 그리고 새 chart 추가 시 3개 파일 (README.md + SECURITY.md + CONTRIBUTING.md) 업데이트 요건을 강제. 새 chart 추가, Chart.yaml 버전 bump, templates / values.yaml / values.schema.json 편집, upgrade.sh 수정, chart-level README 변경 시 PROACTIVELY 사용. Read-only — helm/kubectl/release 명령 실행 안 함, 파일 편집 안 함, package / push 안 함. 깊은 shell-portability 체크는 user-level shell-portability-reviewer 에 위임; release / PR 메커니즘은 gh-pr-release-runner 에 위임.
+description: '이 repo 의 `charts/` 아래 차트 컬렉션 변경을 커밋 전에 리뷰하고 🔴 / 🟡 / 🟢 findings 를 보고. repo 의 차트 파일 배치, ArtifactHub annotation 계약, `values.schema.json` escape-hatch 컨벤션, README 구조, `upgrade.sh` canonical 템플릿 규칙, 새 차트 추가 시 세 파일 (`README.md` + `SECURITY.md` + `CONTRIBUTING.md`) 갱신 요건을 강제. 차트를 추가하거나 `Chart.yaml` 을 bump 하거나 템플릿 / values / `upgrade.sh` 를 수정할 때 PROACTIVELY 사용. Read-only — bump 워크플로 자체는 `chart-bump-runner` 담당.'
 tools: Read, Grep, Glob, Bash
 ---
 

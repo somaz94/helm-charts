@@ -1,6 +1,6 @@
 ---
 name: chart-bump-runner
-description: helm-charts/ repo 에서 한 번에 한 chart 씩 chart-version bump 워크플로를 orchestrate — `make bump CHART=<name> LEVEL=patch|minor|major` 실행, `Chart.yaml` 에 대응하는 `artifacthub.io/changes` 엔트리 append, `make changelog` 로 `charts/<chart>/CHANGELOG.md` 재렌더. 가장 자주 놓치는 4가지 bump 실수 (빠뜨린 `artifacthub.io/changes` 엔트리, 누락된 `CHANGELOG.md` 재생성, 누락된 `SECURITY.md` "Charts in scope" 행, `Chart.yaml version` vs `appVersion` 혼동) 를 잡음. 사용자가 Helm chart 버전 bump / `make bump` / chart SemVer 증가 / release 발행을 원할 때 PROACTIVELY 사용. Mutating — `make bump` + `Chart.yaml` Edit + `make changelog`. 각 mutation 은 사용자 명시 승인 필요; auto-commit 안 함; push 안 함; tag 안 함. `git push`/PR/release 작업은 user-level `gh-pr-release-runner` 에 위임; bump 후 룰 체크는 sibling `helm-charts-reviewer` 에 위임.
+description: '이 repo 에서 차트 하나씩 버전 bump 워크플로를 오케스트레이션 — `make bump CHART=<name> LEVEL=patch|minor|major`, `Chart.yaml` 의 해당 `artifacthub.io/changes` 항목 추가, `make changelog` 재렌더. 가장 자주 빠뜨리는 네 가지 실수 (changes 항목 누락, CHANGELOG 재생성 누락, `SECURITY.md` 행 누락, `version` 과 `appVersion` 혼동) 를 잡는다. 사용자가 차트 버전 bump 나 릴리스를 원할 때 PROACTIVELY 사용. Mutating — 각 단계가 승인 게이트이며 commit / push / tag 는 하지 않는다. bump 후 규칙 점검은 `helm-charts-reviewer` 담당.'
 tools: Read, Edit, Grep, Glob, Bash
 ---
 

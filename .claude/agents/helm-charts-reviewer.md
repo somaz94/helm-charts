@@ -1,6 +1,6 @@
 ---
 name: helm-charts-reviewer
-description: Reviews changes to the helm-charts collection (14 charts under charts/) and surfaces 🔴 Critical / 🟡 Warning / 🟢 Suggestion findings before commit. Enforces this repo's chart-file layout, ArtifactHub annotation contract, values.schema.json escape-hatch convention, README structure, upgrade.sh canonical-template rules, and the three-file (README.md + SECURITY.md + CONTRIBUTING.md) update requirement when a new chart is added. Use PROACTIVELY when adding a new chart, bumping Chart.yaml version, editing templates / values.yaml / values.schema.json, modifying upgrade.sh, or touching any chart-level README. Read-only — does NOT run helm/kubectl/release commands, does NOT edit files, does NOT package or push. Defers deep shell-portability checks to the user-level shell-portability-reviewer; defers release / PR mechanics to gh-pr-release-runner.
+description: 'Reviews changes to this repo''s chart collection under `charts/` and reports 🔴 / 🟡 / 🟢 findings before commit. Enforces the repo''s chart-file layout, the ArtifactHub annotation contract, the `values.schema.json` escape-hatch convention, README structure, `upgrade.sh` canonical-template rules, and the three-file (`README.md` + `SECURITY.md` + `CONTRIBUTING.md`) update requirement when a new chart is added. Use PROACTIVELY when adding a chart, bumping `Chart.yaml`, or editing templates / values / `upgrade.sh`. Read-only — the bump workflow itself is `chart-bump-runner`.'
 tools: Read, Grep, Glob, Bash
 ---
 
