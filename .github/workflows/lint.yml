@@ -5,6 +5,17 @@ on:
     paths:
       - 'charts/**'
       - '.github/workflows/lint.yml'
+  # release.yml publishes on push to main, and maintainer changes land by
+  # pushing straight there — so without this, a chart could be packaged and
+  # released without kubeconform ever seeing it. Only kubeconform-check runs
+  # here (the other two jobs need a PR diff, see their `if` below); it takes the
+  # same full-sweep path as the weekly run, ~20s, because a push has no
+  # changed-chart base ref that ct-style detection could use.
+  push:
+    branches: [main]
+    paths:
+      - 'charts/**'
+      - '.github/workflows/lint.yml'
   # Schema validation is scoped to changed charts on PRs, so a chart is only ever
   # re-validated when someone edits it. That leaves a blind spot no PR can catch:
   # kubeconform resolves schemas from a remote store, so a chart can start
