@@ -3020,6 +3020,50 @@ entries:
   - annotations:
       artifacthub.io/category: ai-machine-learning
       artifacthub.io/changes: |
+        - kind: changed
+          description: Bump appVersion from 9.7.3 to 10.1.2
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 10.1.2
+    created: "2026-08-10T02:31:13.424714796Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: 41fd316fd5c3d89b9920610a95a12b036949882814144ceaa6c77d3913d8e677
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.10/unity-mcp-server-0.1.10.tgz
+    version: 0.1.10
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
         - kind: added
           description: "Add a checksum/secret pod annotation so apiKey Secret changes trigger a rollout on helm upgrade."
       artifacthub.io/license: Apache-2.0
@@ -3397,4 +3441,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-10T02:05:20.851586143Z"
+generated: "2026-08-10T02:31:13.424838559Z"
