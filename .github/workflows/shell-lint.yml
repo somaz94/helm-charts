@@ -1,6 +1,17 @@
 name: Shell Lint
 
+# push matters as much as pull_request here: this repo lands maintainer changes
+# by pushing straight to main, and the auto-bump PRs that check-versions.yml
+# opens are created with GITHUB_TOKEN, so they sit in `action_required` without
+# running checks. With pull_request alone, shell-lint covered neither path.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'charts/*/upgrade.sh'
+      - 'Makefile'
+      - '.github/workflows/shell-lint.yml'
   pull_request:
     paths:
       - 'scripts/**'
@@ -17,7 +28,7 @@ concurrency:
 
 jobs:
   shell-lint:
-    name: bash + zsh syntax + shellcheck
+    name: bash + zsh syntax + shellcheck + zsh-portability guards
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
