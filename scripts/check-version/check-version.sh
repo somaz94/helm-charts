@@ -447,9 +447,14 @@ apply_chart_bump() {
     return 0
   fi
 
-  # Run upgrade.sh with explicit --version to avoid interactive image-not-found prompts.
-  echo "  Running upgrade.sh --version $latest..."
-  if ! (cd "$CHARTS_DIR/$chart" && bash ./upgrade.sh --version "$latest"); then
+  # --version pins the target so the image-fallback prompt never comes up, and
+  # --yes covers the prompts it cannot pre-empt (the major-bump confirmation
+  # fires after the version is already resolved). This runs unattended from
+  # check-versions.yml, where an unanswered prompt is an EOF and `set -e` kills
+  # the script with nothing but "upgrade.sh failed" to go on. The decision to
+  # allow a major bump is still gated upstream, by --include-major.
+  echo "  Running upgrade.sh --version $latest --yes..."
+  if ! (cd "$CHARTS_DIR/$chart" && bash ./upgrade.sh --version "$latest" --yes); then
     echo "  ERROR: upgrade.sh failed"
     restore_chart "$chart"
     git -C "$REPO_ROOT" checkout "$BASE_BRANCH" >/dev/null 2>&1

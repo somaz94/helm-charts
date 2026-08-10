@@ -126,7 +126,14 @@ cd charts/<chart-name>
 ./upgrade.sh --rollback             # restore files from backup/
 ./upgrade.sh --list-backups
 ./upgrade.sh --cleanup-backups      # keep last 5 (override via KEEP_BACKUPS=N)
+./upgrade.sh --version 10.1.2 --yes # unattended: take every confirmation's default
 ```
+
+Two paths stop to ask: a major-version bump, and accepting an older version when the
+latest one has no published image. Both are interactive by design, so **anything running
+`upgrade.sh` without a terminal — CI, a pipe, a subshell — must pass `--yes`**; without it
+the script reports what it needed and exits rather than guessing. `check-version.sh`
+already passes it, gating the major-bump decision on its own `--include-major` instead.
 
 `upgrade.sh` **does not touch any cluster**. It only rewrites local files and places the previous versions in `backup/<timestamp>/`. The chart's own SemVer (`Chart.yaml` `version`) is **not** auto-mirrored — bump it afterwards via `make bump CHART=<chart-name> LEVEL=minor`.
 

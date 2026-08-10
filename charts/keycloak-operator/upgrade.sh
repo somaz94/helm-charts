@@ -65,6 +65,55 @@ CRD_FILES=(
 # zsh's default NOMATCH. No-op in bash. Must run before any "$BACKUP_DIR"/2* glob.
 [ -n "${ZSH_VERSION:-}" ] && setopt nonomatch
 
+# --yes is pre-scanned rather than read in the parse loop below, because
+# --rollback exits from inside that loop — a trailing `--rollback --yes` would
+# reach the prompt before the flag was ever seen.
+ASSUME_YES=false
+for _arg in "$@"; do
+  case "$_arg" in -y|--yes) ASSUME_YES=true ;; esac
+done
+
+# --- interactive prompts ---------------------------------------------------
+# `read -rp` is NOT portable: zsh reads -p as "take input from the coprocess",
+# so under `set -euo pipefail` every prompt died with "read: -p: no coprocess"
+# before asking anything. Print the prompt with printf and read without -p.
+#
+# On top of that, neither helper is allowed to block blind: with --yes they take
+# the documented default, and with no TTY they say what they needed instead of
+# letting `read` hit EOF and abort the script through `set -e` with no message
+# (which is all CI ever saw).
+_prompt_guard() {
+  # _prompt_guard <prompt> <what --yes would answer>
+  [ -t 0 ] && return 0
+  echo "" >&2
+  echo "  ERROR: this step needs an answer but stdin is not a terminal:" >&2
+  echo "         $1" >&2
+  echo "         Re-run with --yes to answer '$2' non-interactively." >&2
+  exit 1
+}
+
+# Yes/no. Empty input is No, matching the [y/N] hint. --yes answers y.
+prompt_confirm() {
+  local reply=""
+  if $ASSUME_YES; then echo "$1y   [--yes]"; return 0; fi
+  _prompt_guard "$1" "y"
+  printf '%s' "$1"
+  read -r reply || reply=""
+  case "$reply" in [Yy]*) return 0 ;; *) return 1 ;; esac
+}
+
+# Free-form with a default for empty input. The answer lands in the global
+# PROMPT_REPLY — a named out-param would need `printf -v` or a nameref, and
+# neither is portable to zsh. --yes takes <default>.
+PROMPT_REPLY=""
+prompt_read() {
+  if $ASSUME_YES; then PROMPT_REPLY="$2"; echo "$1$2   [--yes]"; return 0; fi
+  _prompt_guard "$1" "$2"
+  printf '%s' "$1"
+  read -r PROMPT_REPLY || PROMPT_REPLY=""
+  PROMPT_REPLY="${PROMPT_REPLY:-$2}"
+}
+
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [COMMAND] [OPTIONS]
@@ -84,6 +133,9 @@ Commands:
   --rollback          Restore files from a previous backup
   --list-backups      List available backups
   --cleanup-backups   Keep only the last $KEEP_BACKUPS backups, remove older ones
+  -y, --yes           Answer every confirmation with its default. Required to
+                      run any prompting path non-interactively (CI, pipes) —
+                      without it the script stops rather than guessing.
   -h, --help          Show this help message
 
 Examples:
@@ -91,6 +143,7 @@ Examples:
   $(basename "$0") --dry-run                      # Preview without changes
   $(basename "$0") --dry-run --json               # Machine-readable preview
   $(basename "$0") --version 26.6.1               # Pin to a specific version
+  $(basename "$0") --version 26.6.1 --yes         # …unattended (e.g. a major bump in CI)
   $(basename "$0") --rollback                     # Restore files from backup
 
 After a successful bump, next steps are:
@@ -133,8 +186,9 @@ do_rollback() {
   list_backups
   local total
   total=$(ls -d "$BACKUP_DIR"/2*/ 2>/dev/null | wc -l | tr -d ' ')
-  read -rp "Select backup number to restore [1]: " choice
-  choice=${choice:-1}
+  local choice
+  prompt_read "Select backup number to restore [1]: " "1"
+  choice="$PROMPT_REPLY"
   if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$total" ]; then
     echo "Invalid selection."
     exit 1
@@ -376,6 +430,7 @@ while [[ $# -gt 0 ]]; do
     --cleanup-backups)  cleanup_backups; exit 0 ;;
     --dry-run)          DRY_RUN=true; shift ;;
     --json)             JSON_OUTPUT=true; shift ;;
+    -y|--yes)           shift ;;   # already applied by the pre-scan above
     --version)
       TARGET_VERSION="${2:-}"
       [ -z "$TARGET_VERSION" ] && { echo "ERROR: --version requires a version number"; exit 1; }
@@ -522,8 +577,8 @@ if [ -n "$CURRENT_MAJOR" ] && [ -n "$LATEST_MAJOR" ] && [ "$CURRENT_MAJOR" != "$
   echo "  !! Review breaking changes: $CHANGELOG_URL"
   echo "  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   if ! $DRY_RUN; then
-    read -rp "  Continue with major version bump? [y/N]: " major_confirm
-    [[ ! "$major_confirm" =~ ^[Yy]$ ]] && { echo "Aborted."; exit 1; }
+    prompt_confirm "  Continue with major version bump? [y/N]: " \
+      || { echo "Aborted."; exit 1; }
   fi
 fi
 
