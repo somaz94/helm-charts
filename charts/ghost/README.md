@@ -16,7 +16,7 @@ Helm chart for [Ghost](https://ghost.org/) — Node.js blogging platform — wit
 | `PersistentVolumeClaim` | `v1` | MySQL data volume |
 | `ConfigMap` | `v1` | MySQL `/etc/mysql/conf.d/custom.cnf` |
 | `Secret` | `v1` | DB credentials (rendered or externally supplied) |
-| `CronJob` | `batch/v1` | Daily backup job (optional, `backup.enabled`) — `mysqldump` + content tarball |
+| `CronJob` | `batch/v1` | Daily backup job (optional, `backup.enabled`) — `mysqldump` + content tarball, both verified at write time |
 | `PersistentVolumeClaim` | `v1` | Backup target volume |
 | `HTTPRoute` | `gateway.networking.k8s.io/v1` | Gateway API ingress (optional, `httproute.enabled`) |
 | `Ingress` | `networking.k8s.io/v1` | Legacy Ingress (optional, `ingress.enabled`) |
@@ -162,6 +162,8 @@ ingress:
 ```
 
 ### Daily backup (MySQL dump + content tarball, 30-day retention)
+
+Both artifacts are verified before the Job reports success. The dump is checked for the `Dump completed` comment `mysqldump` writes as its last line, and the tarball is walked with `tar tzf`; either check failing deletes the bad file and fails the Job. `set -e` does not cover this on its own — a dump or tarball cut short by a full disk or an OOM kill still exits 0. The tarball check matters most: a restore wipes the content directory before extracting, so a corrupt archive does not merely fail, it destroys what it was meant to replace.
 
 ```yaml
 url: https://blog.example.com
