@@ -2,8 +2,8 @@ apiVersion: v2
 name: kibana-eck
 description: Kibana Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, Ingress and PDB wrappers. Connects to an Elasticsearch CR deployed via elasticsearch-eck.
 type: application
-version: 0.1.6
-appVersion: "9.3.3"
+version: 0.1.7
+appVersion: "9.5.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
   - kibana
@@ -34,4 +34,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: "Exclude ci/ from the packaged chart via .helmignore (CI-only values, matching ghost/unity-mcp-server)."
+      description: Bump appVersion from 9.3.3 to 9.5.0
