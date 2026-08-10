@@ -104,7 +104,8 @@ Include a chart-local `upgrade.sh` **only** when the chart wraps a third-party c
 - Append a `- kind: changed` entry to `annotations.artifacthub.io/changes` on successful bump.
 - **Not** mirror `appVersion` into `Chart.yaml` `version` — chart SemVer stays under maintainer control via `make bump`.
 
-For sibling-dependent charts (e.g. `kibana-eck` needs Kibana ≤ Elasticsearch), read the sibling's `values.yaml` directly — never query a cluster.
+For sibling-dependent charts (e.g. `kibana-eck` needs Kibana ≤ Elasticsearch), read the sibling's `values.yaml` directly — never query a cluster. When latest exceeds the sibling, cap to the newest GA at or below it rather than refusing to move; never substitute an explicitly requested `--version`, and never downgrade below the chart's current version.
+- Anything the `fetch_ga_versions` python filters read from the environment (`MAJOR_PIN`, `GITHUB_TAG_PREFIX`) must be **exported**, not passed as a command prefix on one call. Every walk-down helper calls that function too, and an unexported pin makes them search unpinned — a 9.x chart will happily propose an 8.x release.
 
 <br/>
 

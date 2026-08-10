@@ -31,6 +31,12 @@ GITHUB_TAG_PREFIX="${GITHUB_TAG_PREFIX:-v}"
 # zsh compat: prevent a zero-match glob (empty backup/) from being fatal under
 # zsh's default NOMATCH. No-op in bash. Must run before any "$BACKUP_DIR"/2* glob.
 [ -n "${ZSH_VERSION:-}" ] && setopt nonomatch
+# The python filters inside fetch_ga_versions read these from the environment.
+# Exported once here rather than passed as a command prefix at a single call
+# site: every walk-down helper calls fetch_ga_versions too, and the ones that
+# did not carry the prefix silently searched *unpinned* — a sibling walk-down
+# on a 9.x-pinned chart happily proposed 8.19.20 as "at or below 9.0.0".
+export MAJOR_PIN GITHUB_TAG_PREFIX
 CHART_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_DIR="$CHART_DIR/backup"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -442,9 +448,9 @@ semver_compare() {
   else echo 0; fi
 }
 
-# File-based sibling check (no kubectl, no cluster access).
-check_sibling_version() {
-  local target="$1"
+# File-based sibling read (no kubectl, no cluster access). Empty output means
+# the sibling's pinned version could not be determined.
+read_sibling_version() {
   [ -n "$SIBLING_CHART_DIR" ] || return 0
   local sibling_values="$CHART_DIR/$SIBLING_CHART_DIR/values.yaml"
   local sibling_chart="$CHART_DIR/$SIBLING_CHART_DIR/Chart.yaml"
@@ -455,28 +461,38 @@ check_sibling_version() {
   if [ -z "$sibling_ver" ] && [ -f "$sibling_chart" ]; then
     sibling_ver=$(grep '^appVersion:' "$sibling_chart" | awk '{print $2}' | tr -d '"')
   fi
-  if [ -z "$sibling_ver" ]; then
-    echo "  WARN: could not determine sibling ($SIBLING_CHART_LABEL) version. Skipping check."
-    return 0
-  fi
-  echo "  Sibling $SIBLING_CHART_LABEL version: $sibling_ver"
-  local cmp
-  cmp=$(semver_compare "$target" "$sibling_ver")
-  if [ "$cmp" = "1" ]; then
-    JSON_STATUS="blocked"
-    JSON_LATEST=""
-    JSON_UPSTREAM_LATEST="$target"
-    JSON_SIBLING_NAME="$SIBLING_CHART_LABEL"
-    JSON_SIBLING_VERSION="$sibling_ver"
-    JSON_ERROR=""
-    echo ""
-    echo "  ERROR: target version $target is HIGHER than $SIBLING_CHART_LABEL version $sibling_ver."
-    echo "  Bump $SIBLING_CHART_LABEL first:"
-    echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $target"
-    return 1
-  fi
-  echo "  OK ($target <= $sibling_ver)."
-  return 0
+  printf '%s' "$sibling_ver"
+}
+
+# Highest GA release that does not exceed the sibling's pinned version.
+#
+# Without this, "latest is above the sibling" meant giving up entirely, and the
+# chart stayed wherever it was — Kibana sat two minors behind Elasticsearch for
+# weeks because its latest (9.5.1) was one patch above ES (9.5.0), even though
+# 9.5.0 itself was released, published, and legal to run. Matching the sibling
+# exactly is nearly always possible; only tracking *latest* is not.
+#
+# Mirrors find_latest_available_version: the feed is already sorted newest
+# first, so the first release at or below the ceiling wins.
+find_latest_sibling_capped_version() {
+  local ceiling="$1"
+  local max_attempts=15
+  local attempt=0
+  local v
+  while IFS= read -r v; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -gt "$max_attempts" ]; then
+      echo "    (stopped after $max_attempts attempts)" >&2
+      break
+    fi
+    if [ "$(semver_compare "$v" "$ceiling")" != "1" ]; then
+      echo "    $v: at or below $SIBLING_CHART_LABEL $ceiling" >&2
+      printf '%s\n' "$v"
+      return 0
+    fi
+    echo "    $v: above $SIBLING_CHART_LABEL $ceiling" >&2
+  done < <(fetch_ga_versions)
+  return 1
 }
 
 # Verify that a container image tag exists in the registry.
@@ -658,7 +674,7 @@ if [ -n "$TARGET_VERSION" ]; then
   LATEST_VERSION="$TARGET_VERSION"
   echo "  Using explicit target: $TARGET_VERSION"
 else
-  LATEST_VERSION=$(MAJOR_PIN="$MAJOR_PIN" fetch_latest_version)
+  LATEST_VERSION=$(fetch_latest_version)   # MAJOR_PIN is exported above
   if [ -z "$LATEST_VERSION" ]; then
     JSON_ERROR="failed to fetch latest version from $VERSION_SOURCE"
     echo "  ERROR: failed to fetch latest version"
@@ -685,8 +701,63 @@ echo "  Changelog: $CHANGELOG_URL"
 if [ -n "$SIBLING_CHART_DIR" ]; then
   echo ""
   echo "[Step 3/N] Sibling version check ($SIBLING_CHART_LABEL)..."
-  if ! check_sibling_version "$LATEST_VERSION"; then
-    exit 1
+  SIBLING_VERSION=$(read_sibling_version)
+  [ -n "$SIBLING_VERSION" ] && echo "  Sibling $SIBLING_CHART_LABEL version: $SIBLING_VERSION"
+  if [ -z "$SIBLING_VERSION" ]; then
+    echo "  WARN: could not determine sibling ($SIBLING_CHART_LABEL) version. Skipping check."
+  elif [ "$(semver_compare "$LATEST_VERSION" "$SIBLING_VERSION")" = "1" ]; then
+    echo ""
+    echo "  $LATEST_VERSION is HIGHER than $SIBLING_CHART_LABEL $SIBLING_VERSION."
+    JSON_SIBLING_NAME="$SIBLING_CHART_LABEL"
+    JSON_SIBLING_VERSION="$SIBLING_VERSION"
+    # An explicit --version is an instruction, not a suggestion — never
+    # substitute a different one behind the caller's back.
+    if [ -n "$TARGET_VERSION" ]; then
+      JSON_STATUS="blocked"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
+      echo "  Refusing an explicitly requested version. Bump $SIBLING_CHART_LABEL first:"
+      echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $LATEST_VERSION"
+      exit 1
+    fi
+    echo "  Searching for the newest GA release at or below it..."
+    CAPPED_VERSION=$(find_latest_sibling_capped_version "$SIBLING_VERSION") || true
+    if [ -z "$CAPPED_VERSION" ]; then
+      JSON_STATUS="blocked"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
+      echo "  ERROR: no GA release at or below $SIBLING_CHART_LABEL $SIBLING_VERSION."
+      echo "  Bump $SIBLING_CHART_LABEL first:"
+      echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $LATEST_VERSION"
+      exit 1
+    fi
+    # A cap must never move the chart backwards. If the sibling is pinned below
+    # where this chart already sits, the sibling is the thing that is wrong —
+    # downgrading to "obey" it would be a silent rollback of a released version.
+    if [ "$(semver_compare "$CAPPED_VERSION" "$CURRENT_VERSION")" != "1" ]; then
+      JSON_STATUS="blocked"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
+      if [ "$CAPPED_VERSION" = "$CURRENT_VERSION" ]; then
+        echo "  Already level with $SIBLING_CHART_LABEL at $CURRENT_VERSION — nothing to bump."
+      else
+        echo "  ERROR: $SIBLING_CHART_LABEL $SIBLING_VERSION is BEHIND this chart's $CURRENT_VERSION."
+        echo "  Refusing to downgrade to $CAPPED_VERSION. Bump $SIBLING_CHART_LABEL instead."
+      fi
+      echo "  Reaching $LATEST_VERSION needs $SIBLING_CHART_LABEL to move first:"
+      echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $LATEST_VERSION"
+      exit 1
+    fi
+    # Sibling-capped fallback succeeded. Preserve the upstream feed value
+    # separately from the actual bump target, same as the image fallback does.
+    JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+    LATEST_VERSION="$CAPPED_VERSION"
+    echo "  Capping at $SIBLING_CHART_LABEL: bumping to $LATEST_VERSION instead."
+  else
+    echo "  OK ($LATEST_VERSION <= $SIBLING_VERSION)."
   fi
 fi
 

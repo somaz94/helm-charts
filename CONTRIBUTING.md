@@ -139,6 +139,16 @@ already passes it, gating the major-bump decision on its own `--include-major` i
 
 Charts with sibling-version constraints (e.g. `kibana-eck` requires version ≤ `elasticsearch-eck`) enforce that by reading the sibling's `values.yaml` directly — no kubectl access is needed.
 
+When upstream's latest is above the sibling's ceiling, `upgrade.sh` does **not**
+give up: it walks the GA feed down to the newest release at or below the sibling
+and bumps to that. Only tracking *latest* waits on the sibling; matching it is
+almost always possible, and stalling instead is how Kibana ended up two minors
+behind Elasticsearch. Two things it will never do — substitute a version when
+one was named explicitly with `--version`, and move a chart backwards, even if
+the sibling is pinned below where this chart already sits (that means the
+*sibling* is stale, and downgrading would silently roll back a released
+version).
+
 <br/>
 
 ### `upgrade.sh` canonical template
