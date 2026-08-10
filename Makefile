@@ -263,7 +263,7 @@ SYNTAX_TARGETS     := $(shell find scripts -type f -name '*.sh' 2>/dev/null | so
 SHELLCHECK_TARGETS := $(shell find scripts -type f -name '*.sh' 2>/dev/null | sort)
 
 .PHONY: shell-lint
-shell-lint: ## Lint repo shell scripts: bash -n + zsh -n on every script, shellcheck (--severity=error) on scripts/ only. STRICT=1 to require shellcheck.
+shell-lint: ## Lint repo shell scripts: bash -n + zsh -n on every script, shellcheck (--severity=error) on scripts/ only, then the zsh-portability guards. STRICT=1 to require shellcheck.
 	@if [ -z "$(SYNTAX_TARGETS)" ]; then \
 		echo "shell-lint: no scripts found"; exit 0; \
 	fi; \
@@ -293,4 +293,6 @@ shell-lint: ## Lint repo shell scripts: bash -n + zsh -n on every script, shellc
 			echo "==> shellcheck skipped: $$msg"; \
 		fi; \
 	fi; \
+	echo "==> zsh-portability guards ($(words $(SYNTAX_TARGETS)) files)"; \
+	./scripts/shell-guards/shell-guards.sh $(SYNTAX_TARGETS) || rc=1; \
 	exit $$rc

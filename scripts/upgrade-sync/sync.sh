@@ -99,8 +99,13 @@ read_template_header() {
 #   <script-path>\t<status>\t<tmpl-or-empty>
 # where <status> is one of: managed, unmanaged-no-header, missing-template.
 classify_all_charts() {
+  # Declared once, OUTSIDE the loop: zsh's `local NAME` with no assignment
+  # prints "NAME=<value>" to stdout once the parameter is set, which would
+  # inject a tab-less line into this function's record stream from the second
+  # chart onward. Consumers that split on tab drop it silently, so the damage
+  # stays invisible until one of them doesn't.
+  local tmpl
   while IFS= read -r script; do
-    local tmpl
     tmpl=$(read_template_header "$script")
     if [ -z "$tmpl" ]; then
       printf '%s\t%s\t\n' "$script" "unmanaged-no-header"

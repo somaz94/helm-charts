@@ -2,7 +2,7 @@
 
 <br/>
 
-Maintainer automation for the helm-charts mono-repo. Four independent
+Maintainer automation for the helm-charts mono-repo. Five independent
 sub-systems collaborate through a small set of file-level contracts; nothing
 in here touches a live cluster.
 
@@ -12,6 +12,7 @@ scripts/
 ├─ check-version/   # drift detection + auto-bump PR orchestration
 ├─ changelog/       # Chart.yaml annotation -> charts/*/CHANGELOG.md mirror
 ├─ validate/        # kubeconform skip gate + CR schema vendoring
+├─ shell-guards/    # bash/zsh divergence checks that `zsh -n` cannot see
 └─ lib/             # shared helpers sourced by the scripts above (NOT executed)
 ```
 
@@ -25,6 +26,7 @@ scripts/
 | [`check-version/`](check-version/) | `check-version.sh` | Iterates every chart's `upgrade.sh --dry-run --json`, classifies drift (`uptodate` / `drift` / `blocked` / `no-image` / `error`), and (with `--apply`) opens one PR per drifted chart. | Weekly via `.github/workflows/check-versions.yml`, or manual `make version-check` / `make version-apply`. |
 | [`changelog/`](changelog/) | `sync-changelog.sh` | Renders per-chart `CHANGELOG.md` from `Chart.yaml`'s `annotations.artifacthub.io/changes` (Keep a Changelog format). Idempotent. | After `upgrade.sh` resets the annotation; via `make changelog CHART=<name>` or `make changelog-all`. |
 | [`validate/`](validate/) | `check-skips.sh` | Fails `make validate` when kubeconform skips a resource whose schema it could not resolve, unless the kind is declared in `allowed-skips.txt`. `vendor-crd-schema.sh` converts an upstream CRD into a repo-local schema under [`schemas/`](../schemas/) so the kind validates instead of skipping. | `check-skips.sh` on every `make validate` (and thus `make ci`). `vendor-crd-schema.sh` manually, when a new CR kind has no published schema. |
+| [`shell-guards/`](shell-guards/) | `shell-guards.sh` | Flags the three bash/zsh divergences that parse cleanly under both shells and then behave differently: `read -p`, a bare `local NAME` re-declared inside a loop, and a shell function piped into `head -N`. Each shipped undetected until someone ran the script under zsh. | Last stage of `make shell-lint`, over `scripts/**/*.sh` + `charts/*/upgrade.sh`; on every push via `shell-lint.yml`. |
 
 <br/>
 
