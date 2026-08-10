@@ -18,7 +18,7 @@ For HA prefer an external managed DB (RDS / CloudSQL / Patroni) — out of scope
 | `Secret` (dockerconfigjson) | when `imagePullSecret.create` is true | additive to `imagePullSecrets[]` |
 | `ServiceAccount` | when `serviceAccount.create` is true | scope-pinned IRSA / pull Secrets |
 | `NetworkPolicy` | when `networkPolicy.enabled` is true | native `networking.k8s.io/v1` shape |
-| `CronJob` + backup `PersistentVolumeClaim` | when `backup.enabled` is true | daily `pg_dump` (or `pg_dumpall` when `auth.database` is empty) + retention |
+| `CronJob` + backup `PersistentVolumeClaim` | when `backup.enabled` is true | daily `pg_dump` (or `pg_dumpall` when `auth.database` is empty) + write-time verification + retention |
 
 <br/>
 
@@ -164,6 +164,8 @@ kubectl --context $KCTX -n $NS patch svc myapp-postgresql-db \
 <br/>
 
 ### 4. Backup CronJob — daily pg_dump
+
+The job checks its own output before it counts as done: `pg_dump` writes a terminating comment as the last line of a plain-SQL dump, so the CronJob greps the tail for it and deletes the file and fails the Job when it is missing. `set -e` alone does not cover this — a dump cut short by a full disk, a dropped connection or an OOM kill still exits 0 and leaves a plausible-looking `.sql` behind, and the truncation is then discovered at restore time, which is the one moment it cannot be fixed.
 
 ```yaml
 auth:

@@ -2,7 +2,7 @@ apiVersion: v2
 name: postgresql
 description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump), NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: "18-alpine"
 kubeVersion: ">=1.25.0-0"
 keywords:
