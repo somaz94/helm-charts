@@ -1082,6 +1082,47 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 5.130.6
+    created: "2026-08-10T04:02:23.265277403Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: df333855fc5ddb3ac2537972b825c70b00baf65fe05faffce6e4035de46a2104
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.8/ghost-0.1.8.tgz
+    version: 0.1.8
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: added
+          description: "Add checksum/config and checksum/secret pod annotations to the bundled MySQL and Ghost Deployments so mysql config or credential changes trigger a rollout on helm upgrade."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.130.6
     created: "2026-07-06T06:04:05.338670653Z"
     description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
       backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
@@ -2761,6 +2802,48 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 18-alpine
+    created: "2026-08-10T04:02:23.642862212Z"
+    description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf
+      + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump),
+      NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate
+      strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations
+      (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: 6391816da31017682286482ae6b5e559b9fe587cb56da37f2940daaa8021115a
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: postgresql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/postgres
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/postgresql-0.1.3/postgresql-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
+        - kind: changed
+          description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: PostgreSQL Docker image
+          url: https://hub.docker.com/_/postgres
+        - name: PostgreSQL documentation
+          url: https://www.postgresql.org/docs/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 18-alpine
     created: "2026-07-13T06:54:29.281834456Z"
     description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf
       + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump),
@@ -3484,4 +3567,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-10T03:38:47.904585643Z"
+generated: "2026-08-10T04:02:23.832137154Z"
