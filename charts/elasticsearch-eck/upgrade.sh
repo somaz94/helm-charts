@@ -321,8 +321,13 @@ for v in ga:
       local url="$base"
       local page=1
       local all_tags=""
+      # Declared once, OUTSIDE the loop on purpose. zsh's `local NAME` with no
+      # assignment PRINTS "NAME=<current value>" to stdout when the parameter is
+      # already set, so re-declaring inside the loop dumped the previous page's
+      # whole curl response (200KB+) into this function's output from iteration
+      # two onward. bash prints nothing, which is why it only ever broke on zsh.
+      local resp
       while [ "$page" -le 5 ] && [ -n "$url" ]; do
-        local resp
         resp=$(curl -sSfL "$url" 2>/dev/null) || break
         all_tags+="$(printf '%s' "$resp" | python3 -c "
 import json, sys
@@ -398,7 +403,18 @@ for v in ga:
   esac
 }
 
-fetch_latest_version() { fetch_ga_versions | head -1; }
+# Deliberately NOT `fetch_ga_versions | head -1`: head exits after one line while
+# the producer is still writing (docker-hub walks up to 5 pages of 100 tags), so
+# the producer takes SIGPIPE, `pipefail` promotes that to a pipeline failure, and
+# `set -e` turns it into a silent exit 141. Whether the race is lost depends on
+# how much the producer still had to write — ghost (2300+ tags) lost it every
+# time under zsh while the smaller charts happened to pass. Buffer, then slice.
+fetch_latest_version() {
+  local all
+  all=$(fetch_ga_versions)
+  [ -n "$all" ] || return 0
+  printf '%s\n' "${all%%$'\n'*}"
+}
 
 find_latest_available_version() {
   local max_attempts=15

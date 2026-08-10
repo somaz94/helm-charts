@@ -97,6 +97,9 @@ Include a chart-local `upgrade.sh` **only** when the chart wraps a third-party c
 - Be **file-only**: rewrite `Chart.yaml` `appVersion` and `values.yaml` `version`. **Never** call `kubectl`, `helm`, or `helmfile`.
 - Ship `--dry-run`, `--version <v>`, `--rollback`, `--list-backups`, `--cleanup-backups`, `--yes`.
 - Never prompt with `read -rp`: zsh reads `-p` as "from the coprocess", which aborts the script under `set -e`. Use the canonical body's `prompt_confirm` / `prompt_read` helpers — they print with `printf`, honour `--yes`, and refuse to block when stdin is not a terminal.
+- Never put a bare `local NAME` (no assignment) inside a loop: on the second pass the parameter is already set, and zsh's `local` then **prints `NAME=<value>` to stdout**, corrupting the output of any function whose stdout is captured. Declare it once above the loop. bash prints nothing, so this only ever shows up under zsh.
+- Do not pipe a still-producing function into `head -1`: the reader exits first, the producer takes SIGPIPE, and `pipefail` + `set -e` turn that into a silent exit 141. Capture the output, then slice it (`${all%%$'\n'*}`).
+- `zsh -n` in `make shell-lint` only parses — it catches none of the three above. They need a real run under both shells.
 - Back up to `backup/<timestamp>/` before writing. Keep `KEEP_BACKUPS` (default 5).
 - Append a `- kind: changed` entry to `annotations.artifacthub.io/changes` on successful bump.
 - **Not** mirror `appVersion` into `Chart.yaml` `version` — chart SemVer stays under maintainer control via `make bump`.
