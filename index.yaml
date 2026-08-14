@@ -1069,6 +1069,47 @@ entries:
   - annotations:
       artifacthub.io/category: integration-delivery
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "Backup CronJob no longer leaves an empty .sql or .tar.gz behind when mysqldump or tar fails outright. Both the output redirect and tar czf create their file before writing content, and set -e then exited past the cleanup, so a failed run left a 0-byte artifact that reads as real when listing the backup directory. Cleanup now runs from per-artifact traps, each disarmed only after that artifact passes verification; a verified DB dump is still kept when the content archive is what fails."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Ghost
+          url: https://ghost.org/
+        - name: Ghost Docker image
+          url: https://hub.docker.com/_/ghost
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 5.130.6
+    created: "2026-08-14T01:53:26.168237926Z"
+    description: Ghost CMS (Node.js blogging platform) with optional bundled MySQL,
+      backup CronJob, HTTPRoute (Gateway API) and Ingress. Geared for self-hosted
+      blogs on Kubernetes with a single-release install.
+    digest: c00f0a3361d510130f0f607610a6bdf631458b402252310c78a16de3cb84bb9f
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - ghost
+    - blog
+    - cms
+    - publishing
+    - mysql
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: ghost
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/TryGhost/Ghost
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/ghost-0.1.9/ghost-0.1.9.tgz
+    version: 0.1.9
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
         - kind: added
           description: "Add checksum/config and checksum/secret pod annotations to the bundled MySQL and Ghost Deployments so mysql config or credential changes trigger a rollout on helm upgrade."
       artifacthub.io/license: Apache-2.0
@@ -2478,6 +2519,48 @@ entries:
   - annotations:
       artifacthub.io/category: database
       artifacthub.io/changes: |
+        - kind: added
+          description: "Backup CronJob now verifies the dump before counting it as a success, checking for the mysqldump \"Dump completed\" trailer. A dump cut short by a full disk, a dropped connection or an OOM previously exited zero and was retained, and on an --all-databases dump the file is large enough that size alone reveals nothing."
+        - kind: fixed
+          description: "Backup CronJob no longer leaves an empty .sql behind when mysqldump fails outright. The output redirect created the file before mysqldump ran, and set -e then exited before anything could clean it up, so a failed run left a 0-byte dump that reads as real when listing the backup directory. Cleanup now runs from a trap that is disarmed only after the dump passes verification."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: MySQL Docker image
+          url: https://hub.docker.com/_/mysql
+        - name: MySQL 8.0 Reference Manual
+          url: https://dev.mysql.com/doc/refman/8.0/en/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 8.0.43
+    created: "2026-08-14T01:53:26.358004253Z"
+    description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret
+      + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount.
+      Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML
+      migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: 5f6f85b0325f4e8e7be82108d789ac90ae4b4475f5115eb08a606cb83414700e
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mysql
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: mysql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/mysql
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/mysql-0.1.3/mysql-0.1.3.tgz
+    version: 0.1.3
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
         - kind: changed
           description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
       artifacthub.io/license: Apache-2.0
@@ -2786,6 +2869,48 @@ entries:
     - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.1.0/nginx-gateway-cr-0.1.0.tgz
     version: 0.1.0
   postgresql:
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "Backup CronJob no longer leaves an empty .sql behind when pg_dump fails outright. The output redirect created the file before pg_dump ran, and set -e then exited past the cleanup, so a failed run left a 0-byte dump that reads as real when listing the backup directory. Cleanup now runs from a trap that is disarmed only after the dump passes verification."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: PostgreSQL Docker image
+          url: https://hub.docker.com/_/postgres
+        - name: PostgreSQL documentation
+          url: https://www.postgresql.org/docs/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 18-alpine
+    created: "2026-08-14T01:53:26.563321788Z"
+    description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf
+      + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump),
+      NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate
+      strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations
+      (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: 59ba329993ea379a6b5ec7da401e3c9dc772a449da9c7f744a1a2ac5a18e5f51
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: postgresql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/postgres
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/postgresql-0.1.4/postgresql-0.1.4.tgz
+    version: 0.1.4
   - annotations:
       artifacthub.io/category: database
       artifacthub.io/changes: |
@@ -3567,4 +3692,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-10T04:02:23.832137154Z"
+generated: "2026-08-14T01:53:26.563488629Z"
