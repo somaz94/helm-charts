@@ -5,6 +5,11 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.9] - 2026-08-14
+
+### Fixed
+- Backup CronJob no longer leaves an empty .sql or .tar.gz behind when mysqldump or tar fails outright. Both the output redirect and tar czf create their file before writing content, and set -e then exited past the cleanup, so a failed run left a 0-byte artifact that reads as real when listing the backup directory. Cleanup now runs from per-artifact traps, each disarmed only after that artifact passes verification; a verified DB dump is still kept when the content archive is what fails.
+
 ## [v0.1.8] - 2026-08-10
 
 ### Added

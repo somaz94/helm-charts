@@ -73,18 +73,49 @@ spec:
 
                   if [ -n "$TARGET_DB" ]; then
                     OUT="$BACKUP_DIR/mysql-${TARGET_DB}-${DATE}.sql"
+                  else
+                    OUT="$BACKUP_DIR/mysql-all-${DATE}.sql"
+                  fi
+
+                  # Nothing below may leave a file behind unless it is verified complete.
+                  # The redirects create $OUT before mysqldump has written a byte, so a dump
+                  # that fails outright — refused connection, bad credentials, unknown
+                  # database — leaves an empty file while `set -e` exits before anything can
+                  # clean it up. An empty .sql sitting in the backup directory reads as a
+                  # real dump to anyone listing it. The trap owns cleanup for every failure
+                  # path and is disarmed only once the dump has passed verification.
+                  trap 'rm -f "$OUT"' EXIT
+
+                  if [ -n "$TARGET_DB" ]; then
                     mysqldump -h "$DB_HOST" -P "$DB_PORT" \
                       -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
                       --single-transaction --quick --lock-tables=false \
                       "$TARGET_DB" > "$OUT"
                   else
-                    OUT="$BACKUP_DIR/mysql-all-${DATE}.sql"
                     mysqldump -h "$DB_HOST" -P "$DB_PORT" \
                       -u root -p"$MYSQL_ROOT_PASSWORD" \
                       --single-transaction --quick --lock-tables=false \
                       --all-databases > "$OUT"
                   fi
-                  echo "[$(date)] DB backup: $(basename "$OUT") ($(du -h "$OUT" | cut -f1))"
+
+                  # Verify at write time. `set -e` aborts on a mysqldump that exits
+                  # non-zero, but one cut short by a full disk, a dropped connection or an
+                  # OOM exits zero and leaves a plausible-looking .sql file — and on an
+                  # --all-databases dump that file is large enough that size alone tells you
+                  # nothing. mysqldump writes a "Dump completed" comment as its last line,
+                  # so its absence means the file is truncated however large it looks.
+                  # Catching that here instead of at restore time is the whole point of
+                  # having a backup.
+                  if ! tail -n 5 "$OUT" | grep -q 'Dump completed'; then
+                    echo "[$(date)] ERROR: $(basename "$OUT") is truncated — the dump-completed marker is missing"
+                    exit 1
+                  fi
+
+                  # Verified complete, so it must survive every later exit path. Disarming
+                  # here rather than at the end of the script is deliberate: retention and
+                  # the listing below must never be able to delete the dump just taken.
+                  trap - EXIT
+                  echo "[$(date)] DB backup: $(basename "$OUT") ($(du -h "$OUT" | cut -f1)) — verified"
 
                   DEL=$(find "$BACKUP_DIR" -name "mysql-*.sql" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
                   echo "[$(date)] Retention: deleted $DEL backups older than ${RETENTION_DAYS} days"

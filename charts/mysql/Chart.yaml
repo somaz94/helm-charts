@@ -2,7 +2,7 @@ apiVersion: v2
 name: mysql
 description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: "8.0.43"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -29,5 +29,7 @@ annotations:
       url: https://dev.mysql.com/doc/refman/8.0/en/
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Refactor templates — split Service and PVC into dedicated service.yaml and pvc.yaml (one file per kind), and hoist reusable service/persistence shapes into schema $defs. Rendered output is unchanged."
+    - kind: added
+      description: "Backup CronJob now verifies the dump before counting it as a success, checking for the mysqldump \"Dump completed\" trailer. A dump cut short by a full disk, a dropped connection or an OOM previously exited zero and was retained, and on an --all-databases dump the file is large enough that size alone reveals nothing."
+    - kind: fixed
+      description: "Backup CronJob no longer leaves an empty .sql behind when mysqldump fails outright. The output redirect created the file before mysqldump ran, and set -e then exited before anything could clean it up, so a failed run left a 0-byte dump that reads as real when listing the backup directory. Cleanup now runs from a trap that is disarmed only after the dump passes verification."

@@ -167,6 +167,8 @@ kubectl --context $KCTX -n $NS patch svc myapp-postgresql-db \
 
 The job checks its own output before it counts as done: `pg_dump` writes a terminating comment as the last line of a plain-SQL dump, so the CronJob greps the tail for it and deletes the file and fails the Job when it is missing. `set -e` alone does not cover this — a dump cut short by a full disk, a dropped connection or an OOM kill still exits 0 and leaves a plausible-looking `.sql` behind, and the truncation is then discovered at restore time, which is the one moment it cannot be fixed.
 
+A failed run leaves nothing on the volume either. The output redirect creates the file before `pg_dump` writes a byte, so a dump that fails outright — a client/server version mismatch, a refused connection, a bad credential — would otherwise leave a 0-byte `.sql` that reads as real when listing the directory. Cleanup runs from a `trap`, disarmed only once the dump has passed verification — and disarmed *before* retention runs, so it can never delete the dump just taken.
+
 ```yaml
 auth:
   user: myapp

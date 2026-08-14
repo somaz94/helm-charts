@@ -68,33 +68,48 @@ spec:
 
                   echo "[$(date)] Starting Ghost backup..."
 
+                  DB_OUT="$BACKUP_DIR/ghost-db-${DATE}.sql"
+                  CONTENT_OUT="$BACKUP_DIR/ghost-content-${DATE}.tar.gz"
+
+                  # Each artifact is guarded from the moment its file can first exist until
+                  # it has passed verification. Both the redirect below and `tar czf` create
+                  # their file before writing any content, so a command that fails outright
+                  # leaves an empty file while `set -e` exits past the block that would have
+                  # removed it — an empty .sql or .tar.gz reads as a real backup to anyone
+                  # listing the directory. The traps are staged rather than combined so the
+                  # verified DB dump is kept when the content archive is what fails: a
+                  # partial backup is worth more than none, and that was the behaviour here
+                  # before the traps were introduced.
+                  trap 'rm -f "$DB_OUT"' EXIT
+
                   mysqldump -h "$DB_HOST" -P "$DB_PORT" \
                     -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
                     --single-transaction --quick --lock-tables=false \
-                    "$MYSQL_DATABASE" > "$BACKUP_DIR/ghost-db-${DATE}.sql"
-                  # Verify at write time. `set -e` catches a mysqldump that exits non-zero,
-                  # but not one cut short by a full disk, a dropped connection or an OOM —
-                  # those leave a plausible-looking .sql file. mysqldump writes a
-                  # "Dump completed" comment as its last line, so its absence means the
-                  # file is truncated however large it looks. Catching that here instead of
-                  # at restore time is the whole point of having a backup.
-                  if ! tail -n 5 "$BACKUP_DIR/ghost-db-${DATE}.sql" | grep -q 'Dump completed'; then
+                    "$MYSQL_DATABASE" > "$DB_OUT"
+                  # Verify at write time. `set -e` aborts on a mysqldump that exits
+                  # non-zero, but one cut short by a full disk, a dropped connection or an
+                  # OOM exits zero and leaves a plausible-looking .sql file. mysqldump
+                  # writes a "Dump completed" comment as its last line, so its absence means
+                  # the file is truncated however large it looks. Catching that here instead
+                  # of at restore time is the whole point of having a backup.
+                  if ! tail -n 5 "$DB_OUT" | grep -q 'Dump completed'; then
                     echo "[$(date)] ERROR: ghost-db-${DATE}.sql is truncated — the dump-completed marker is missing"
-                    rm -f "$BACKUP_DIR/ghost-db-${DATE}.sql"
                     exit 1
                   fi
-                  echo "[$(date)] DB backup: ghost-db-${DATE}.sql ($(du -h "$BACKUP_DIR/ghost-db-${DATE}.sql" | cut -f1)) — verified"
+                  trap - EXIT
+                  echo "[$(date)] DB backup: ghost-db-${DATE}.sql ($(du -h "$DB_OUT" | cut -f1)) — verified"
 
-                  tar czf "$BACKUP_DIR/ghost-content-${DATE}.tar.gz" -C /ghost-content .
+                  trap 'rm -f "$CONTENT_OUT"' EXIT
+                  tar czf "$CONTENT_OUT" -C /ghost-content .
                   # The restore wipes the content directory before extracting, so a corrupt
                   # archive is not merely useless — it destroys what it was meant to replace.
                   # `tar tzf` walks the whole archive and fails on a truncated or corrupt one.
-                  if ! tar tzf "$BACKUP_DIR/ghost-content-${DATE}.tar.gz" >/dev/null 2>&1; then
+                  if ! tar tzf "$CONTENT_OUT" >/dev/null 2>&1; then
                     echo "[$(date)] ERROR: ghost-content-${DATE}.tar.gz is corrupt or truncated"
-                    rm -f "$BACKUP_DIR/ghost-content-${DATE}.tar.gz"
                     exit 1
                   fi
-                  echo "[$(date)] Content backup: ghost-content-${DATE}.tar.gz ($(du -h "$BACKUP_DIR/ghost-content-${DATE}.tar.gz" | cut -f1)) — verified"
+                  trap - EXIT
+                  echo "[$(date)] Content backup: ghost-content-${DATE}.tar.gz ($(du -h "$CONTENT_OUT" | cut -f1)) — verified"
 
                   DB_DEL=$(find "$BACKUP_DIR" -name "ghost-db-*.sql" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
                   CONTENT_DEL=$(find "$BACKUP_DIR" -name "ghost-content-*.tar.gz" -mtime +${RETENTION_DAYS} -delete -print | wc -l)

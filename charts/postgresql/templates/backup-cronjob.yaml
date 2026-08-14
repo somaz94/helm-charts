@@ -74,28 +74,46 @@ spec:
 
                   if [ -n "$TARGET_DB" ]; then
                     OUT="$BACKUP_DIR/postgres-${TARGET_DB}-${DATE}.sql"
+                  else
+                    OUT="$BACKUP_DIR/postgres-all-${DATE}.sql"
+                  fi
+
+                  # Nothing below may leave a file behind unless it is verified complete.
+                  # The redirects create $OUT before pg_dump has written a byte, so a dump
+                  # that fails outright — version mismatch, refused connection, bad
+                  # credentials — leaves an empty file while `set -e` exits straight past
+                  # the verification block that would have removed it. An empty .sql sitting
+                  # in the backup directory reads as a real dump to anyone listing it.
+                  # The trap owns cleanup for every failure path and is disarmed only once
+                  # the dump has passed verification.
+                  trap 'rm -f "$OUT"' EXIT
+
+                  if [ -n "$TARGET_DB" ]; then
                     pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$POSTGRES_USER" \
                       --clean --if-exists --no-owner --no-acl \
                       "$TARGET_DB" > "$OUT"
                   else
-                    OUT="$BACKUP_DIR/postgres-all-${DATE}.sql"
                     pg_dumpall -h "$DB_HOST" -p "$DB_PORT" -U "$POSTGRES_USER" \
                       --clean --if-exists --no-owner --no-role-passwords \
                       > "$OUT"
                   fi
 
-                  # Verify at write time. `set -e` already catches a pg_dump that exits
-                  # non-zero, but not a dump that was cut short — a full disk, a killed
-                  # connection or a container OOM all leave a plausible-looking .sql file
-                  # behind. pg_dump writes a terminating comment as its very last line, so
-                  # its absence means the file is truncated no matter how large it looks.
+                  # Verify at write time. `set -e` aborts on a pg_dump that exits non-zero,
+                  # but a dump cut short — a full disk, a killed connection or a container
+                  # OOM — exits zero and leaves a plausible-looking .sql file behind.
+                  # pg_dump writes a terminating comment as its very last line, so its
+                  # absence means the file is truncated no matter how large it looks.
                   # Without this the truncation is discovered at restore time, which is the
                   # one moment it cannot be fixed.
                   if ! tail -n 5 "$OUT" | grep -q 'PostgreSQL database dump complete'; then
                     echo "[$(date)] ERROR: $(basename "$OUT") is truncated — the dump-complete marker is missing"
-                    rm -f "$OUT"
                     exit 1
                   fi
+
+                  # Verified complete, so it must survive every later exit path. Disarming
+                  # here rather than at the end of the script is deliberate: retention and
+                  # the listing below must never be able to delete the dump just taken.
+                  trap - EXIT
                   echo "[$(date)] DB backup: $(basename "$OUT") ($(du -h "$OUT" | cut -f1)) — verified"
 
                   DEL=$(find "$BACKUP_DIR" -name "postgres-*.sql" -mtime +${RETENTION_DAYS} -delete -print | wc -l)

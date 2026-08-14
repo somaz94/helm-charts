@@ -165,6 +165,8 @@ ingress:
 
 Both artifacts are verified before the Job reports success. The dump is checked for the `Dump completed` comment `mysqldump` writes as its last line, and the tarball is walked with `tar tzf`; either check failing deletes the bad file and fails the Job. `set -e` does not cover this on its own — a dump or tarball cut short by a full disk or an OOM kill still exits 0. The tarball check matters most: a restore wipes the content directory before extracting, so a corrupt archive does not merely fail, it destroys what it was meant to replace.
 
+A failed run leaves nothing partial on the volume either. Both the output redirect and `tar czf` create their file before writing any content, so a command that fails outright would otherwise leave a 0-byte artifact that reads as real when listing the directory. Cleanup runs from per-artifact `trap`s, each disarmed once that artifact passes verification. The traps are staged rather than combined on purpose: when the content archive is what fails, the already-verified DB dump is kept, because a partial backup is worth more than none.
+
 ```yaml
 url: https://blog.example.com
 mysql:

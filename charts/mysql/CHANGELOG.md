@@ -5,6 +5,14 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.3] - 2026-08-14
+
+### Added
+- Backup CronJob now verifies the dump before counting it as a success, checking for the mysqldump "Dump completed" trailer. A dump cut short by a full disk, a dropped connection or an OOM previously exited zero and was retained, and on an --all-databases dump the file is large enough that size alone reveals nothing.
+
+### Fixed
+- Backup CronJob no longer leaves an empty .sql behind when mysqldump fails outright. The output redirect created the file before mysqldump ran, and set -e then exited before anything could clean it up, so a failed run left a 0-byte dump that reads as real when listing the backup directory. Cleanup now runs from a trap that is disarmed only after the dump passes verification.
+
 ## [v0.1.2] - 2026-07-13
 
 ### Changed

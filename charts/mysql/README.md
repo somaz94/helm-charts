@@ -18,7 +18,7 @@ For HA prefer an external managed DB (RDS / CloudSQL / Vitess) — out of scope.
 | `Secret` (dockerconfigjson) | when `imagePullSecret.create` is true | additive to `imagePullSecrets[]` |
 | `ServiceAccount` | when `serviceAccount.create` is true | scope-pinned IRSA / pull Secrets |
 | `NetworkPolicy` | when `networkPolicy.enabled` is true | native `networking.k8s.io/v1` shape |
-| `CronJob` + backup `PersistentVolumeClaim` | when `backup.enabled` is true | daily `mysqldump`, configurable retention |
+| `CronJob` + backup `PersistentVolumeClaim` | when `backup.enabled` is true | daily `mysqldump` + write-time verification + retention |
 
 <br/>
 
@@ -178,6 +178,10 @@ backup:
 ```
 
 When `auth.database` is set, the CronJob runs `mysqldump <db>` with the user credential. When empty, it runs `mysqldump --all-databases` with the root credential. Backups are written to `/backup-data/mysql-<db|all>-<YYYYMMDD>.sql`; files older than `retentionDays` are pruned each run.
+
+The job checks its own output before it counts as done: `mysqldump` writes a `Dump completed` comment as the last line, so the CronJob greps the tail for it and fails the Job when it is missing. `set -e` alone does not cover this — a dump cut short by a full disk, a dropped connection or an OOM kill still exits 0 and leaves a plausible-looking `.sql` behind, and on an `--all-databases` dump that file is large enough that size alone tells you nothing. The truncation would otherwise be discovered at restore time, which is the one moment it cannot be fixed.
+
+A failed run leaves nothing on the volume. The output redirect creates the file before `mysqldump` writes a byte, so a dump that fails outright would otherwise leave a 0-byte `.sql` that reads as real when listing the directory. Cleanup runs from a `trap`, disarmed only once the dump has passed verification — and disarmed *before* retention runs, so it can never delete the dump just taken.
 
 Trigger an ad-hoc run:
 
