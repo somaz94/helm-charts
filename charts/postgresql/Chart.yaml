@@ -2,7 +2,7 @@ apiVersion: v2
 name: postgresql
 description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump), NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
 type: application
-version: 0.1.4
+version: 0.1.5
 appVersion: "18-alpine"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -31,4 +31,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Backup CronJob no longer leaves an empty .sql behind when pg_dump fails outright. The output redirect created the file before pg_dump ran, and set -e then exited past the cleanup, so a failed run left a 0-byte dump that reads as real when listing the backup directory. Cleanup now runs from a trap that is disarmed only after the dump passes verification."
+      description: "A chart version bump no longer restarts the database. The checksum/config and checksum/secret pod annotations hashed the whole rendered ConfigMap and Secret, which carry a helm.sh/chart label containing the chart version, so every release changed them and rolled the pod — and with strategy Recreate that is downtime, not a rolling swap. They now hash only the data / stringData payload, so they move when the config or the credentials move and stay put otherwise."

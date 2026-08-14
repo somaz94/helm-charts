@@ -26,9 +26,20 @@ spec:
       labels:
         {{- include "mysql.selectorLabels" . | nindent 8 }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- /*
+          Hash only the payload, never the whole rendered object. The rendered
+          ConfigMap and Secret carry `helm.sh/chart: mysql-<version>` from the
+          shared labels helper, so hashing the full file made every chart
+          version bump change these annotations — restarting the database on a
+          release that touched nothing it runs on, and with strategy Recreate
+          that is downtime rather than a rolling swap. `pick` keeps the payload
+          keys (`data` on the ConfigMap, `stringData` on the Secret) and drops
+          metadata, so the annotation moves when the config or the credentials
+          move and stays put otherwise.
+        */}}
+        checksum/config: {{ pick (include (print $.Template.BasePath "/configmap.yaml") . | fromYaml) "data" "stringData" | toYaml | sha256sum }}
         {{- if not .Values.auth.existingSecret }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        checksum/secret: {{ pick (include (print $.Template.BasePath "/secret.yaml") . | fromYaml) "data" "stringData" | toYaml | sha256sum }}
         {{- end }}
     spec:
       {{- if .Values.serviceAccount.create }}

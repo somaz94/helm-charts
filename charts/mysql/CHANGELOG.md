@@ -5,6 +5,11 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.4] - 2026-08-14
+
+### Fixed
+- A chart version bump no longer restarts the database. The checksum/config and checksum/secret pod annotations hashed the whole rendered ConfigMap and Secret, which carry a helm.sh/chart label containing the chart version, so every release changed them and rolled the pod — and with strategy Recreate that is downtime, not a rolling swap. They now hash only the data / stringData payload, so they move when the config or the credentials move and stay put otherwise.
+
 ## [v0.1.3] - 2026-08-14
 
 ### Added

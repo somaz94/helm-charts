@@ -286,6 +286,10 @@ The chart-managed Secret is **additive** to `imagePullSecrets[]` — set both fo
 | `auth.secretKeys.rootPassword` | `MYSQL_ROOT_PASSWORD` | secret key for `MYSQL_ROOT_PASSWORD` |
 | `auth.secretKeys.database` | `MYSQL_DATABASE` | secret key for `MYSQL_DATABASE` (only used when `auth.database` is set) |
 
+Changing `customConfig` or the credentials restarts the Pod, by design: the Deployment carries `checksum/config` and `checksum/secret` pod annotations so a config or credential change actually reaches the running server. The strategy is `Recreate`, so that restart is a short outage rather than a rolling swap — batch config edits rather than applying them one at a time.
+
+Those checksums hash only the ConfigMap `data` and the Secret `stringData`, never the rendered objects as a whole. Hashing the whole object would fold in the `helm.sh/chart` label, which carries the chart version, and every chart upgrade would then restart the database whether or not anything it runs on had changed.
+
 <br/>
 
 ### Pod scheduling + resources
