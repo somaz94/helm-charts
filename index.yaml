@@ -2519,6 +2519,46 @@ entries:
   - annotations:
       artifacthub.io/category: database
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "A chart version bump no longer restarts the database. The checksum/config and checksum/secret pod annotations hashed the whole rendered ConfigMap and Secret, which carry a helm.sh/chart label containing the chart version, so every release changed them and rolled the pod — and with strategy Recreate that is downtime, not a rolling swap. They now hash only the data / stringData payload, so they move when the config or the credentials move and stay put otherwise."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: MySQL Docker image
+          url: https://hub.docker.com/_/mysql
+        - name: MySQL 8.0 Reference Manual
+          url: https://dev.mysql.com/doc/refman/8.0/en/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 8.0.43
+    created: "2026-08-14T02:04:35.823555705Z"
+    description: Standalone single-node MySQL 8 — Deployment + ConfigMap + Secret
+      + PVC + Service, optional backup CronJob (mysqldump), NetworkPolicy, ServiceAccount.
+      Recreate strategy. Suits dev/staging single-replica installs and legacy raw-YAML
+      migrations (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: b6dc9548156b8043198617770c0897b64e99b3bafc802f754e96ee26464afa09
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mysql
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: mysql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/mysql
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/mysql-0.1.4/mysql-0.1.4.tgz
+    version: 0.1.4
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
         - kind: added
           description: "Backup CronJob now verifies the dump before counting it as a success, checking for the mysqldump \"Dump completed\" trailer. A dump cut short by a full disk, a dropped connection or an OOM previously exited zero and was retained, and on an --all-databases dump the file is large enough that size alone reveals nothing."
         - kind: fixed
@@ -2869,6 +2909,48 @@ entries:
     - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.1.0/nginx-gateway-cr-0.1.0.tgz
     version: 0.1.0
   postgresql:
+  - annotations:
+      artifacthub.io/category: database
+      artifacthub.io/changes: |
+        - kind: fixed
+          description: "A chart version bump no longer restarts the database. The checksum/config and checksum/secret pod annotations hashed the whole rendered ConfigMap and Secret, which carry a helm.sh/chart label containing the chart version, so every release changed them and rolled the pod — and with strategy Recreate that is downtime, not a rolling swap. They now hash only the data / stringData payload, so they move when the config or the credentials move and stay put otherwise."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: PostgreSQL Docker image
+          url: https://hub.docker.com/_/postgres
+        - name: PostgreSQL documentation
+          url: https://www.postgresql.org/docs/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 18-alpine
+    created: "2026-08-14T02:04:35.978660849Z"
+    description: Standalone single-node PostgreSQL — Deployment + ConfigMap (postgresql.conf
+      + pg_hba.conf) + Secret + PVC + Service, optional backup CronJob (pg_dump),
+      NetworkPolicy, ServiceAccount, log emptyDir for logging_collector. Recreate
+      strategy. Suits dev/staging single-replica installs and legacy raw-YAML migrations
+      (existingClaim / existingSecret / fullnameOverride for in-place adoption).
+    digest: 0b71137c8e9677a6bf57d982e449db4718033540b7e710e95ac133d98da6847f
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - rdbms
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: postgresql
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://hub.docker.com/_/postgres
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/postgresql-0.1.5/postgresql-0.1.5.tgz
+    version: 0.1.5
   - annotations:
       artifacthub.io/category: database
       artifacthub.io/changes: |
@@ -3692,4 +3774,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-14T01:53:26.563488629Z"
+generated: "2026-08-14T02:04:35.978836568Z"
