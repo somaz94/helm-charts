@@ -63,7 +63,7 @@ name: ""
 
 # Kibana version. Must match or be compatible with the linked Elasticsearch.
 # Bump via upgrade.sh (sibling elasticsearch-eck version check built in).
-version: "9.5.0"
+version: "9.5.2"
 
 # Optional image override for private mirrors / air-gapped registries.
 image: ""
