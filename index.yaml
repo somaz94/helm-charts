@@ -1722,6 +1722,54 @@ entries:
       artifacthub.io/category: security
       artifacthub.io/changes: |
         - kind: changed
+          description: Bump appVersion from 26.7.1 to 26.7.2 (refresh templates/crd-*.yaml from upstream)
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+        - name: Keycloak Release Notes
+          url: https://www.keycloak.org/docs/latest/release_notes/index.html
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Seamless Upgrades
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 26.7.2
+    created: "2026-08-24T06:37:05.858439648Z"
+    description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped
+      from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via
+      upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+    digest: 081219319f413ced80f885364cce6681f4daab5264e125dd88b7d7f3a2207c71
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - keycloak-operator
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-operator
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    - https://github.com/keycloak/keycloak
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.2.2/keycloak-operator-0.2.2.tgz
+    version: 0.2.2
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: changed
           description: Bump appVersion from 26.7.0 to 26.7.1 (refresh templates/crd-*.yaml from upstream)
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
@@ -3816,4 +3864,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-24T06:36:35.652307038Z"
+generated: "2026-08-24T06:37:05.858559893Z"
