@@ -42,6 +42,25 @@ nodeClassDefaults:
   tags: {}
 
 nodePoolDefaults:
+  # Which NodeClass API the NodePool binds to. The defaults target the upstream Karpenter
+  # AWS provider, which serves EC2NodeClass and is what `nodeClasses` below renders.
+  #
+  # EKS Auto Mode is the other case: AWS runs Karpenter for you and serves its own
+  # NodeClass API, so a pool there must point at `eks.amazonaws.com` / `NodeClass` and
+  # reference the built-in class (`nodeClassRef: default`). Leave `nodeClasses` empty in
+  # that mode — Auto Mode owns the class, and rendering an EC2NodeClass would apply a CRD
+  # that cluster does not serve.
+  #
+  #   nodePoolDefaults:
+  #     nodeClassGroup: eks.amazonaws.com
+  #     nodeClassKind: NodeClass
+  #
+  # The NodePool kind itself is `karpenter.sh/v1` in BOTH modes; only the class differs.
+  nodeClassGroup: karpenter.k8s.aws
+  nodeClassKind: EC2NodeClass
+  # Upper bound on how long a node may take to drain before it is removed anyway (e.g.
+  # 24h). Empty leaves the field off so Karpenter's own default applies.
+  terminationGracePeriod: ""
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 30s
@@ -52,6 +71,7 @@ nodePoolDefaults:
 
 # ---------------------------------------------------------------------------
 # EC2NodeClasses — one per distinct launch profile (AMI / role / disk / IMDS).
+# Leave empty under EKS Auto Mode; see nodePoolDefaults.nodeClassGroup above.
 # Schema per entry:
 #   name (required), role, amiFamily, amiAlias, amiSelectorTerms,
 #   subnetSelectorTerms, securityGroupSelectorTerms (default: discovery tag),
@@ -61,7 +81,8 @@ nodeClasses: []
 
 # ---------------------------------------------------------------------------
 # NodePools — what Karpenter may provision. Schema per entry:
-#   name (required), nodeClassRef (default: name), labels, annotations, taints,
-#   startupTaints, requirements (raw list, required), limits, disruption, weight
+#   name (required), nodeClassRef (default: name), nodeClassGroup, nodeClassKind,
+#   labels, annotations, taints, startupTaints, requirements (raw list, required),
+#   limits, disruption, terminationGracePeriod, weight
 # ---------------------------------------------------------------------------
 nodePools: []

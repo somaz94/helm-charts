@@ -5,6 +5,12 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.0] - 2026-08-31
+
+### Added
+- Support EKS Auto Mode: nodeClassGroup / nodeClassKind select the node class API a NodePool binds to (eks.amazonaws.com/NodeClass), settable per pool or in nodePoolDefaults. Defaults are unchanged, so self-managed Karpenter values render byte-identically.
+- Add terminationGracePeriod to NodePool entries and nodePoolDefaults, so a pool can cap how long a node may take to drain.
+
 ## [v0.1.2] - 2026-07-06
 
 ### Changed

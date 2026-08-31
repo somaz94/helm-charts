@@ -19,6 +19,9 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "nodeClassGroup": { "type": "string", "minLength": 1 },
+        "nodeClassKind": { "type": "string", "minLength": 1 },
+        "terminationGracePeriod": { "type": "string" },
         "disruption": { "$ref": "#/$defs/disruption" },
         "limits": { "type": "object" }
       }
@@ -82,6 +85,8 @@
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "nodeClassRef": { "type": "string" },
+        "nodeClassGroup": { "type": "string", "minLength": 1 },
+        "nodeClassKind": { "type": "string", "minLength": 1 },
         "labels": { "type": "object", "additionalProperties": { "type": "string" } },
         "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
         "podAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
@@ -90,6 +95,7 @@
         "requirements": { "type": "array" },
         "limits": { "type": "object" },
         "disruption": { "$ref": "#/$defs/disruption" },
+        "terminationGracePeriod": { "type": "string" },
         "weight": { "type": "integer", "minimum": 1, "maximum": 100 }
       }
     }

@@ -29,8 +29,8 @@ spec:
     {{- end }}
     spec:
       nodeClassRef:
-        group: karpenter.k8s.aws
-        kind: EC2NodeClass
+        group: {{ required (printf "nodePools[%s]: nodeClassGroup must not be empty" $np.name) (default $defaults.nodeClassGroup $np.nodeClassGroup) }}
+        kind: {{ required (printf "nodePools[%s]: nodeClassKind must not be empty" $np.name) (default $defaults.nodeClassKind $np.nodeClassKind) }}
         name: {{ default $np.name $np.nodeClassRef }}
       {{- with $np.taints }}
       taints:
@@ -44,6 +44,9 @@ spec:
         {{- toYaml (required (printf "nodePools[%s]: requirements (raw list) is required" $np.name) $np.requirements) | nindent 8 }}
       {{- with $disruption.expireAfter }}
       expireAfter: {{ . }}
+      {{- end }}
+      {{- with default $defaults.terminationGracePeriod $np.terminationGracePeriod }}
+      terminationGracePeriod: {{ . }}
       {{- end }}
   {{- with default $defaults.limits $np.limits }}
   limits:
