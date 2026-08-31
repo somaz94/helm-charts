@@ -1519,6 +1519,47 @@ entries:
   - annotations:
       artifacthub.io/category: integration-delivery
       artifacthub.io/changes: |
+        - kind: added
+          description: "Support EKS Auto Mode: nodeClassGroup / nodeClassKind select the node class API a NodePool binds to (eks.amazonaws.com/NodeClass), settable per pool or in nodePoolDefaults. Defaults are unchanged, so self-managed Karpenter values render byte-identically."
+        - kind: added
+          description: "Add terminationGracePeriod to NodePool entries and nodePoolDefaults, so a pool can cap how long a node may take to drain."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Karpenter
+          url: https://karpenter.sh/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.13.0
+    created: "2026-08-31T05:43:39.766216719Z"
+    description: Custom resources (EC2NodeClass, NodePool) for AWS Karpenter, deployed
+      alongside the upstream Karpenter controller chart. Data-driven — render any
+      number of node classes / pools from values.
+    digest: e32e9078da25b28c23c6e6a442e699c9540cc2c3278a0d0f14cb68325e99b06c
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - karpenter
+    - nodepool
+    - ec2nodeclass
+    - autoscaling
+    - kubernetes
+    - aws
+    kubeVersion: '>=1.31.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: karpenter-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/aws/karpenter-provider-aws
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/karpenter-cr-0.2.0/karpenter-cr-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
         - kind: changed
           description: "Add app.kubernetes.io/name and app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection."
       artifacthub.io/license: Apache-2.0
@@ -3907,4 +3948,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-24T06:40:06.838484752Z"
+generated: "2026-08-31T05:43:39.766396305Z"
