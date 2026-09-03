@@ -21,6 +21,24 @@ referenceGrants:
     to:
       - group: ""
         kind: Service
+clientSettingsPolicies:
+  - name: ngf-keepalive
+    targetRef:
+      name: ngf
+    keepAlive:
+      minTimeout: 21s
+      requests: 1000
+      time: 1h
+      timeout:
+        server: 75s
+        header: 60s
+  - name: ngf-body
+    targetRef:
+      kind: HTTPRoute
+      name: ngf-route
+    body:
+      maxSize: 10m
+      timeout: 60s
 serviceMonitor:
   namespace: monitoring
   releaseLabel: kube-prometheus-stack

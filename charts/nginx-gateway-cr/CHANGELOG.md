@@ -5,6 +5,12 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.4.0] - 2026-09-03
+
+### Added
+- Add clientSettingsPolicies[] rendering ClientSettingsPolicy resources, attachable to a Gateway, HTTPRoute or GRPCRoute and covering spec.body and spec.keepAlive.
+- Support keepAlive.minTimeout (NGF 2.6.0+, nginx 1.27.4+) to hold idle keep-alive connections open across an nginx reload.
+
 ## [v0.3.3] - 2026-07-06
 
 ### Changed

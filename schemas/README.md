@@ -44,11 +44,31 @@ catalog coverage catches up, and can be contributed upstream as-is.
 | Schema | Kind | Upstream source |
 |---|---|---|
 | `gateway.nginx.org/proxysettingspolicy_v1alpha1.json` | `ProxySettingsPolicy` (NGINX Gateway Fabric) | [`config/crd/bases/gateway.nginx.org_proxysettingspolicies.yaml`](https://github.com/nginx/nginx-gateway-fabric/blob/main/config/crd/bases/gateway.nginx.org_proxysettingspolicies.yaml) |
+| `gateway.nginx.org/clientsettingspolicy_v1alpha1.json` | `ClientSettingsPolicy` (NGINX Gateway Fabric) | [`config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml` @ v2.6.7](https://github.com/nginx/nginx-gateway-fabric/blob/v2.6.7/config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml) |
 
-`ProxySettingsPolicy` is a current, valid NGF kind — the datree catalog carries
-its siblings (`clientsettingspolicy`, `observabilitypolicy`,
-`upstreamsettingspolicy`, `snippetsfilter`, `nginxproxy`) but not this one. It is
-emitted by the `unity-mcp-server` chart.
+These are the two reasons to vendor, one each.
+
+`ProxySettingsPolicy` is ABSENT from the datree catalog, which carries its
+siblings (`observabilitypolicy`, `upstreamsettingspolicy`, `snippetsfilter`,
+`nginxproxy`) but not this one. It is emitted by the `unity-mcp-server` chart.
+
+The `ClientSettingsPolicy` link is pinned to a tag, not `main`, because the two
+must stay reproducible together: re-running `vendor-crd-schema.sh` against the
+link has to reproduce the file byte for byte. NGF v2.7.0 already adds
+`spec.body.bufferSize`, so a `main` link would not.
+
+`ClientSettingsPolicy` IS in the catalog, but STALE: the catalog entry predates
+`spec.keepAlive.minTimeout` (added upstream in NGF v2.6.0) and sets
+`additionalProperties: false`, so kubeconform's `-strict` rejects a valid policy
+that sets it. This is the failure mode the second paragraph of "Why this exists"
+describes — a published entry that is wrong rather than missing — and it fails
+loudly (`invalid`), not as a silent skip. It is emitted by the
+`nginx-gateway-cr` chart.
+
+One consequence worth knowing: upstream CRDs do not set `additionalProperties`,
+and neither does a file vendored from one. The datree entry it replaces did. So
+for a vendored kind, kubeconform stops rejecting unknown keys — validation of
+misspelled fields falls entirely to the chart's own `values.schema.json`.
 
 <br/>
 

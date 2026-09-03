@@ -13,6 +13,7 @@ The upstream chart installs the controller and CRDs, but does **not** create the
 | `Gateway` | `gateway.networking.k8s.io/v1` | One per entry in `gateways[]`, with shorthand or fully custom listeners |
 | `NginxProxy` | `gateway.nginx.org/v1alpha2` | One per Gateway, configures the dataplane Service + nginx-level options |
 | `ReferenceGrant` | `gateway.networking.k8s.io/v1beta1` | Optional. Cross-namespace access (e.g. Gateway → TLS Secret in another ns) |
+| `ClientSettingsPolicy` | `gateway.nginx.org/v1alpha1` | Optional. Client-side (downstream) nginx tuning — request body limits and keep-alive behaviour — attached to a Gateway or route |
 | `ServiceMonitor` (controller) | `monitoring.coreos.com/v1` | Optional. Scrapes the NGF control-plane metrics via the Service |
 | `ServiceMonitor` (dataplane) | `monitoring.coreos.com/v1` | Optional. Scrapes nginx pod metrics from the dataplane Service |
 | `PodMonitor` (controller) | `monitoring.coreos.com/v1` | Optional. Scrapes the NGF control-plane Pod directly. **Recommended for NGF 2.x** (controller `/metrics` is exposed on the Pod, not the Service) |
@@ -35,7 +36,7 @@ The upstream chart installs the controller and CRDs, but does **not** create the
 
 ```bash
 helm install ngf-cr oci://ghcr.io/somaz94/charts/nginx-gateway-cr \
-  --version 0.3.0 \
+  --version 0.4.0 \
   --namespace nginx-gateway \
   -f my-values.yaml
 ```
@@ -132,6 +133,31 @@ referenceGrants:
         name: wildcard-example-tls
 ```
 
+### Surviving an nginx reload without dropped keep-alive connections
+
+An nginx reload (any config change — including a backend rollout that shifts
+endpoints) shuts the old workers down gracefully, and graceful shutdown closes
+idle keep-alive connections with no notice. HTTP/1.1 has no GOAWAY equivalent, so
+a client that reuses such a connection at that exact moment sees a connection
+reset instead of a response.
+
+Holding idle connections open for at least as long as the client's own idle
+timeout removes the race: the client either reuses the connection well inside the
+window, or drops it first.
+
+```yaml
+clientSettingsPolicies:
+  - name: public-keepalive
+    targetRef:
+      name: public                 # kind defaults to Gateway
+    keepAlive:
+      minTimeout: 21s              # >= the client's keep-alive idle timeout
+```
+
+Keep `minTimeout` at or below `keepAlive.timeout.server` (nginx's
+`keepalive_timeout`, default `75s` when unset). The trade-off is that shutting-down
+workers linger for up to `minTimeout` after each reload.
+
 ### Prometheus scraping
 
 For NGF 2.x, prefer `PodMonitor` for the controller because the upstream chart exposes `/metrics:9113` only on the Pod, not on the controller Service:
@@ -223,6 +249,33 @@ Used when a Gateway entry does not set `listeners` directly.
 | `namespace` | string | yes | Target namespace (the one being granted access TO). |
 | `from` | list | yes | Passthrough into `spec.from`. |
 | `to` | list | yes | Passthrough into `spec.to`. |
+
+### `clientSettingsPolicies[]`
+
+| Key | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | yes | Policy name. |
+| `namespace` | string | no | Defaults to the release namespace. A policy must share a namespace with its target. |
+| `labels` | object | no | Extra labels on the policy. |
+| `annotations` | object | no | Extra annotations on the policy. |
+| `targetRef.name` | string | yes | Name of the object to attach to. |
+| `targetRef.kind` | string | no | `Gateway` (default), `HTTPRoute`, or `GRPCRoute`. |
+| `targetRef.group` | string | no | Defaults to `gateway.networking.k8s.io`. |
+| `body.maxSize` | string | no | `client_max_body_size`. `"0"` disables the check. |
+| `body.timeout` | string | no | `client_body_timeout`. |
+| `keepAlive.requests` | int | no | `keepalive_requests`. |
+| `keepAlive.time` | string | no | `keepalive_time`. |
+| `keepAlive.minTimeout` | string | no | `keepalive_min_timeout`. **Requires NGF >= 2.6.0** (nginx >= 1.27.4). |
+| `keepAlive.timeout.server` | string | no | `keepalive_timeout` server value. |
+| `keepAlive.timeout.header` | string | no | `Keep-Alive: timeout=N` response header. Only valid alongside `timeout.server`. |
+
+Durations and sizes are strings in the CRD (`21s`, `500m`), so quote anything YAML
+would otherwise read as a number. The values schema rejects unknown keys inside
+these blocks on purpose: a mistyped field would otherwise be dropped silently and
+produce an accepted policy that configures nothing.
+
+Attaching to a `Gateway` applies the settings to every route on it; attach to an
+`HTTPRoute` / `GRPCRoute` to scope them to one route.
 
 ### `serviceMonitor` / `podMonitor`
 

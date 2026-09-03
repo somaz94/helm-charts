@@ -1,8 +1,8 @@
 apiVersion: v2
 name: nginx-gateway-cr
-description: Custom resources (Gateway, NginxProxy, ServiceMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
+description: Custom resources (Gateway, NginxProxy, ReferenceGrant, ClientSettingsPolicy, ServiceMonitor / PodMonitor) for NGINX Gateway Fabric, deployed alongside the upstream NGF controller chart.
 type: application
-version: 0.3.3
+version: 0.4.0
 appVersion: "0.1.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -27,6 +27,8 @@ annotations:
     - name: NGINX Gateway Fabric
       url: https://github.com/nginx/nginx-gateway-fabric
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Add app.kubernetes.io/name and app.kubernetes.io/version to the common label set for standard-label consistency across the chart collection."
+    - kind: added
+      description: "Add clientSettingsPolicies[] rendering ClientSettingsPolicy resources, attachable to a Gateway, HTTPRoute or GRPCRoute and covering spec.body and spec.keepAlive."
+    - kind: added
+      description: "Support keepAlive.minTimeout (NGF 2.6.0+, nginx 1.27.4+) to hold idle keep-alive connections open across an nginx reload."
   artifacthub.io/prerelease: "false"

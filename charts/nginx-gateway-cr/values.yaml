@@ -146,6 +146,57 @@ referenceGrants: []
 #           name: wildcard-example-tls
 
 # ---------------------------------------------------------------------------
+# ClientSettingsPolicies
+# ---------------------------------------------------------------------------
+# ClientSettingsPolicy resources (gateway.nginx.org/v1alpha1) tuning how nginx
+# handles the CLIENT (downstream) side of a connection. A policy lives in the
+# same namespace as the object it targets, so it defaults to the release
+# namespace — where this chart creates its Gateways.
+#
+# Per-entry fields:
+#   name         (required) Policy name.
+#   namespace    (optional) Defaults to the release namespace.
+#   labels       (optional) Extra labels on the policy.
+#   annotations  (optional) Extra annotations on the policy.
+#   targetRef    (required) Object to attach to.
+#                  name  (required)
+#                  kind  (optional) Gateway | HTTPRoute | GRPCRoute. Default Gateway.
+#                  group (optional) Default gateway.networking.k8s.io.
+#   body         (optional) spec.body — maxSize, timeout.
+#   keepAlive    (optional) spec.keepAlive — requests, time, minTimeout, timeout.
+#
+# Duration and size fields are STRINGS in the CRD ("21s", "10m"). Quote any
+# value a YAML parser would otherwise read as a number.
+#
+# NOTE: keepAlive.minTimeout requires NGF >= 2.6.0 (nginx >= 1.27.4). The
+# values schema rejects unknown keys, so a new upstream field needs a schema
+# entry here before it can be set — that is deliberate: a silently dropped
+# typo would render an accepted policy that configures nothing.
+clientSettingsPolicies: []
+# Example:
+#   clientSettingsPolicies:
+#     # Survive an nginx reload without dropping idle keep-alive connections.
+#     # On reload the old workers shut down gracefully and close idle
+#     # connections with no notice; HTTP/1.1 has no GOAWAY, so a client reusing
+#     # one at that moment sees a connection reset. Holding the connection for
+#     # at least as long as the client's own idle timeout removes the race.
+#     - name: public-keepalive
+#       targetRef:
+#         name: public
+#       keepAlive:
+#         minTimeout: 21s
+#
+#     # Larger upload limit for one route, in its own namespace.
+#     - name: uploads-body
+#       namespace: apps
+#       targetRef:
+#         kind: HTTPRoute
+#         name: uploads
+#       body:
+#         maxSize: 500m
+#         timeout: 120s
+
+# ---------------------------------------------------------------------------
 # ServiceMonitors (Prometheus Operator / kube-prometheus-stack)
 # ---------------------------------------------------------------------------
 # The upstream NGF chart does not create ServiceMonitors. This chart provides

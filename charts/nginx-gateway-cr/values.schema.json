@@ -66,6 +66,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/referenceGrant" }
     },
+    "clientSettingsPolicies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/clientSettingsPolicy" }
+    },
     "serviceMonitor": {
       "type": "object",
       "additionalProperties": false,
@@ -196,6 +200,57 @@
         "selector": { "type": "object" },
         "namespaceSelector": { "type": "object" },
         "additionalEndpoints": { "type": "array" }
+      }
+    },
+    "clientSettingsPolicy": {
+      "type": "object",
+      "required": ["name", "targetRef"],
+      "anyOf": [
+        { "required": ["body"] },
+        { "required": ["keepAlive"] }
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "namespace": { "type": "string" },
+        "labels": { "type": "object" },
+        "annotations": { "type": "object" },
+        "targetRef": {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "kind": { "type": "string", "enum": ["Gateway", "HTTPRoute", "GRPCRoute"] },
+            "group": { "type": "string", "enum": ["gateway.networking.k8s.io"] }
+          }
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxSize": { "type": "string", "pattern": "^\\d{1,4}(k|m|g)?$" },
+            "timeout": { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" }
+          }
+        },
+        "keepAlive": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "requests": { "type": "integer", "minimum": 0 },
+            "time": { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" },
+            "minTimeout": { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" },
+            "timeout": {
+              "type": "object",
+              "additionalProperties": false,
+              "dependencies": { "header": ["server"] },
+              "properties": {
+                "server": { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" },
+                "header": { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" }
+              }
+            }
+          }
+        }
       }
     }
   }

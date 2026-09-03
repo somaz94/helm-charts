@@ -1,0 +1,36 @@
+{{- $top := . -}}
+{{- range $csp := .Values.clientSettingsPolicies -}}
+{{- $targetRef := $csp.targetRef -}}
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: {{ $csp.name }}
+  {{- /* A ClientSettingsPolicy must live in the same namespace as its target, and
+         every Gateway this chart creates lands in the release namespace, so that
+         is the default. Override only when targeting a route in another namespace. */}}
+  namespace: {{ default $top.Release.Namespace $csp.namespace }}
+  labels:
+    {{- include "nginx-gateway-cr.labels" $top | nindent 4 }}
+    {{- with $csp.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $annot := include "nginx-gateway-cr.annotations" (dict "top" $top "extra" $csp.annotations) }}
+  {{- if $annot }}
+  annotations:
+    {{- $annot | nindent 4 }}
+  {{- end }}
+spec:
+  targetRef:
+    group: {{ default "gateway.networking.k8s.io" $targetRef.group }}
+    kind: {{ default "Gateway" $targetRef.kind }}
+    name: {{ $targetRef.name }}
+  {{- with $csp.body }}
+  body:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $csp.keepAlive }}
+  keepAlive:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+{{ end -}}
