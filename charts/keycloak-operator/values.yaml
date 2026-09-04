@@ -77,8 +77,9 @@ imagePullSecrets: []
 # ---------------------------------------------------------------------------
 replicas: 1
 
-# Container resources. Defaults match the upstream manifest at version 26.7.0
-# (request == limit on memory, generous CPU bursting).
+# Container resources. Defaults mirror the upstream operator manifest
+# (request == limit on memory, generous CPU bursting); re-check them when
+# upgrade.sh bumps appVersion.
 resources:
   requests:
     cpu: 300m

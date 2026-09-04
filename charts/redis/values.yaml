@@ -65,7 +65,7 @@ configMap:
 # ---------------------------------------------------------------------------
 image:
   repository: redis
-  tag: ""                         # empty → defaults to .Chart.AppVersion (8.2-alpine).
+  tag: ""                         # empty → defaults to .Chart.AppVersion.
                                   # NOTE: Redis 7.5+ is licensed under RSALv2 / SSPL (not OSI-approved).
                                   # Pin to `7.4-alpine` if you need to stay on the last BSD-licensed
                                   # Redis. The chart itself is Apache-2.0 — license applies to the

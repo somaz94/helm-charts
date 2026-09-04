@@ -48,7 +48,7 @@ The consumer side then picks it up on its next `check-versions.sh` run:
   GitHub Release tag: ghost-0.5.4
 
 [Stage 2: Consumer — kuberntes-infra]
-  tools/ghost/upgrade.sh              tracks somaz94/helm-charts releases
+  <component>/upgrade.sh              tracks somaz94/helm-charts releases
                                        (GITHUB_TAG_PREFIX=ghost-)
     -> detects ghost-0.5.4
     -> rewrites helmfile.yaml.gotmpl chart version to 0.5.4
@@ -59,13 +59,16 @@ The consumer side then picks it up on its next `check-versions.sh` run:
 Charts wired into this flow today (each has both a publisher-side
 `upgrade.sh` here and a consumer-side `upgrade.sh` in kuberntes-infra):
 
-| Publisher (this repo) | Publisher source | Consumer (kuberntes-infra) | Consumer template |
-|---|---|---|---|
-| `charts/ghost` | Docker Hub `library/ghost` | `tools/ghost` | `external-oci-with-mirror` |
-| `charts/unity-mcp-server` | GitHub `CoplayDev/unity-mcp` | `tools/unity-mcp-server` | `external-oci-with-mirror` |
-| `charts/keycloak-operator` | GitHub `keycloak/keycloak-k8s-resources` | `security/keycloak-operator` | `external-oci` |
-| `charts/elasticsearch-eck` | Elastic artifacts API | `observability/logging/elasticsearch` | `external-oci-cr-version` |
-| `charts/kibana-eck` | Elastic artifacts API | `observability/logging/kibana` | `external-oci-cr-version` |
+| Publisher (this repo) | Publisher source | Consumer template |
+|---|---|---|
+| `charts/ghost` | Docker Hub `library/ghost` | `external-oci-with-mirror` |
+| `charts/unity-mcp-server` | GitHub `CoplayDev/unity-mcp` | `external-oci-with-mirror` |
+| `charts/keycloak-operator` | GitHub `keycloak/keycloak-k8s-resources` | `external-oci` |
+| `charts/elasticsearch-eck` | Elastic artifacts API | `external-oci-cr-version` |
+| `charts/kibana-eck` | Elastic artifacts API | `external-oci-cr-version` |
+
+Which directory each consumer lives in is deliberately not recorded here — that
+is the consumer repo's own layout, and it rots on this side with no signal.
 
 Charts with no upstream release feed worth tracking — pure CR wrappers, and
 wrappers pinned to an image the maintainer bumps by hand — ship no `upgrade.sh`

@@ -87,8 +87,8 @@ url: ""
 
 image:
   repository: ghost
-  # Empty = default to `<Chart.AppVersion>-alpine` (e.g. "5.117.0-alpine").
-  # Override to pin a specific tag or switch variants (e.g. "5.117.0" for glibc).
+  # Empty = default to `<Chart.AppVersion>-alpine`.
+  # Override to pin a specific tag, or drop the `-alpine` suffix for the glibc variant.
   tag: ""
   pullPolicy: IfNotPresent
 
