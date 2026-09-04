@@ -32,18 +32,24 @@ No backup CronJob — Redis is typically a cache, and its canonical persistence 
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `redis-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
-helm install dev-redis oci://ghcr.io/somaz94/charts/redis --version 0.1.0 \
+helm install dev-redis oci://ghcr.io/somaz94/charts/redis \
   --namespace myapp-db-redis --create-namespace
 ```
+
+<br/>
 
 ### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
-helm install dev-redis somaz94/redis --version 0.1.0 \
+helm install dev-redis somaz94/redis \
   --namespace myapp-db-redis --create-namespace \
   -f my-values.yaml
 ```
@@ -158,6 +164,8 @@ image:
 <br/>
 
 ## Values reference
+
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
 
 <br/>
 

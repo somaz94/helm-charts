@@ -32,14 +32,19 @@ The upstream chart installs the controller and CRDs, but does **not** create the
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `nginx-gateway-cr-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install ngf-cr oci://ghcr.io/somaz94/charts/nginx-gateway-cr \
-  --version 0.5.0 \
   --namespace nginx-gateway \
   -f my-values.yaml
 ```
+
+<br/>
 
 ### Classic Helm repo
 
@@ -55,6 +60,8 @@ helm install ngf-cr somaz94/nginx-gateway-cr \
 
 ## Quick examples
 
+<br/>
+
 ### Single HTTPS gateway
 
 ```yaml
@@ -66,6 +73,8 @@ gateways:
       hostname: "*.example.com"
       tlsSecretName: wildcard-example-tls
 ```
+
+<br/>
 
 ### Multiple gateways with per-gateway overrides
 
@@ -92,6 +101,8 @@ gateways:
           metallb.universe.tf/address-pool: prod-pool
 ```
 
+<br/>
+
 ### Custom listener (TLS passthrough)
 
 ```yaml
@@ -108,6 +119,8 @@ gateways:
           kinds:
             - kind: TLSRoute
 ```
+
+<br/>
 
 ### Cross-namespace TLS secret via ReferenceGrant
 
@@ -132,6 +145,8 @@ referenceGrants:
         kind: Secret
         name: wildcard-example-tls
 ```
+
+<br/>
 
 ### Surviving an nginx reload without dropped keep-alive connections
 
@@ -158,6 +173,8 @@ Keep `minTimeout` at or below `keepAlive.timeout.server` (nginx's
 `keepalive_timeout`, default `75s` when unset). The trade-off is that shutting-down
 workers linger for up to `minTimeout` after each reload.
 
+<br/>
+
 ### Prometheus scraping
 
 For NGF 2.x, prefer `PodMonitor` for the controller because the upstream chart exposes `/metrics:9113` only on the Pod, not on the controller Service:
@@ -178,6 +195,10 @@ podMonitor:
 
 ## Values reference
 
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
+
+<br/>
+
 ### Top-level
 
 | Key | Type | Default | Description |
@@ -185,6 +206,8 @@ podMonitor:
 | `commonLabels` | object | `{}` | Labels added to every resource. |
 | `commonAnnotations` | object | `{}` | Annotations added to every resource. |
 | `gatewayClassName` | string | `ngf` | Default GatewayClassName. Per-gateway overridable. |
+
+<br/>
 
 ### `listenerDefaults`
 
@@ -200,6 +223,8 @@ Used when a Gateway entry does not set `listeners` directly.
 | `https.hostname` | string | `""` | Listener hostname (wildcards supported). |
 | `https.tlsSecretName` | string | `""` | TLS Secret used for termination. |
 | `https.allowedRoutes` | object | `{namespaces: {from: All}}` | `allowedRoutes` for the HTTPS listener. |
+
+<br/>
 
 ### `proxy` (defaults applied to every NginxProxy)
 
@@ -227,6 +252,8 @@ Used when a Gateway entry does not set `listeners` directly.
 | `kubernetesExtra` | object | `{}` | **Escape hatch.** Merged into `spec.kubernetes`. |
 | `specExtra` | object | `{}` | **Escape hatch.** Merged into `spec` (top-level). |
 
+<br/>
+
 ### `gateways[]`
 
 | Key | Type | Required | Description |
@@ -241,6 +268,8 @@ Used when a Gateway entry does not set `listeners` directly.
 | `listeners` | list | no | Full listener list. **If set, shorthand is ignored.** |
 | `proxy` | object | no | Per-gateway NginxProxy overrides (deep-merged with top-level `proxy`). |
 
+<br/>
+
 ### `referenceGrants[]`
 
 | Key | Type | Required | Description |
@@ -249,6 +278,8 @@ Used when a Gateway entry does not set `listeners` directly.
 | `namespace` | string | yes | Target namespace (the one being granted access TO). |
 | `from` | list | yes | Passthrough into `spec.from`. |
 | `to` | list | yes | Passthrough into `spec.to`. |
+
+<br/>
 
 ### `clientSettingsPolicies[]`
 
@@ -277,6 +308,8 @@ produce an accepted policy that configures nothing.
 
 Attaching to a `Gateway` applies the settings to every route on it; attach to an
 `HTTPRoute` / `GRPCRoute` to scope them to one route.
+
+<br/>
 
 ### `serviceMonitor` / `podMonitor`
 

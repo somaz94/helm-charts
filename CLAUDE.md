@@ -10,7 +10,7 @@ Adding a chart under `charts/<name>/` **requires updating three index files in t
 
 | File | What to update |
 |---|---|
-| `README.md` | Append a row to the "Charts" table with name, version, and one-line description. |
+| `README.md` | Append a row to the "Charts" table — chart name (linked to its directory) and a one-line description. The table carries no version column on purpose; released versions live in the Helm repo / OCI tags / GitHub Releases. |
 | `SECURITY.md` | Append a row to the "Supported Versions" table. Every chart the repo owner commits to patching must be listed, otherwise the new chart is silently out of security policy scope. |
 | `CONTRIBUTING.md` | Only update if the chart introduces a new pattern (e.g. `upgrade.sh` tooling, new helper script). No change needed for plain wrapper charts. |
 
@@ -81,6 +81,10 @@ annotations:
 ## Maintaining this chart  # only if upgrade.sh / make bump flow exists
 ## License
 ```
+
+One framing section may precede `## What it deploys` when the rest of the README does not make sense without it — `unity-mcp-server` opens with "Bring your own image" (the chart ships no default image, so a bare install fails to render) and `karpenter-cr` with "Modes" (the mode decides which resources render at all). That is the only sanctioned deviation from the order above; everything else follows it.
+
+Chart-specific extras (`Required values`, `Notes`, `NFS notes`, `Known limitations`) go after `## Quick examples` and before `## Maintaining this chart`.
 
 Add `<br/>` between every `##` and `###` heading. English only — this repo does not have Korean `README.md` siblings.
 

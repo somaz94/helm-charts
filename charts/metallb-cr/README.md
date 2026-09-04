@@ -30,7 +30,11 @@ Every list defaults to empty, so an unconfigured `helm install` creates nothing.
 
 ## Install
 
-OCI registry:
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `metallb-cr-<version>`.
+
+<br/>
+
+### OCI registry (Helm 3.8+)
 
 ```bash
 helm install metallb-config oci://ghcr.io/somaz94/charts/metallb-cr \
@@ -38,7 +42,9 @@ helm install metallb-config oci://ghcr.io/somaz94/charts/metallb-cr \
   -f my-values.yaml
 ```
 
-Classic Helm repo:
+<br/>
+
+### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
@@ -50,6 +56,8 @@ helm install metallb-config somaz94/metallb-cr \
 <br/>
 
 ## Quick examples
+
+<br/>
 
 ### L2 mode (the common bare-metal case)
 
@@ -65,6 +73,8 @@ l2Advertisements:
     ipAddressPools:
       - ip-pool
 ```
+
+<br/>
 
 ### L2 advertised only from worker nodes
 
@@ -82,6 +92,8 @@ l2Advertisements:
       - matchLabels:
           node-role.kubernetes.io/worker: ""
 ```
+
+<br/>
 
 ### BGP mode with BFD
 
@@ -113,6 +125,8 @@ bgpAdvertisements:
 
 > BGP requires a BGP backend (`frrk8s.enabled` / `frr.enabled`) in the upstream MetalLB chart.
 
+<br/>
+
 ### Namespace-restricted pool
 
 ```yaml
@@ -131,12 +145,18 @@ ipAddressPools:
 
 ## Values reference
 
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
+
+<br/>
+
 ### Metadata
 
 | Key | Default | Description |
 |---|---|---|
 | `commonLabels` | `{}` | Labels added to every resource. |
 | `commonAnnotations` | `{}` | Annotations added to every resource. |
+
+<br/>
 
 ### IPAddressPools — `ipAddressPools[]`
 
@@ -150,6 +170,8 @@ ipAddressPools:
 | `labels` / `annotations` | no | Extra metadata on this resource. |
 | `specExtra` | no | Arbitrary YAML merged into `spec` for unsurfaced fields. |
 
+<br/>
+
 ### L2Advertisements — `l2Advertisements[]`
 
 | Field | Required | Description |
@@ -160,6 +182,8 @@ ipAddressPools:
 | `nodeSelectors` | no | Limit announcing nodes. |
 | `interfaces` | no | Limit announcing interfaces. |
 | `labels` / `annotations` / `specExtra` | no | — |
+
+<br/>
 
 ### BGPAdvertisements — `bgpAdvertisements[]`
 
@@ -175,6 +199,8 @@ ipAddressPools:
 | `nodeSelectors` | no | Limit announcing nodes. |
 | `peers` | no | Limit to specific `BGPPeer` names. |
 | `labels` / `annotations` / `specExtra` | no | — |
+
+<br/>
 
 ### BGPPeers — `bgpPeers[]`
 
@@ -196,6 +222,8 @@ ipAddressPools:
 | `nodeSelectors` | no | Limit which nodes peer. |
 | `labels` / `annotations` / `specExtra` | no | — |
 
+<br/>
+
 ### Communities — `communities[]`
 
 | Field | Required | Description |
@@ -203,6 +231,8 @@ ipAddressPools:
 | `name` | yes | Resource name. |
 | `communities` | yes | List of `{ name, value }` alias entries. |
 | `labels` / `annotations` | no | — |
+
+<br/>
 
 ### BFDProfiles — `bfdProfiles[]`
 

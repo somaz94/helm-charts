@@ -50,7 +50,11 @@ EKS Auto Mode — none of the above apply. The controller, the CRDs, the node ro
 
 ## Install
 
-OCI registry:
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `karpenter-cr-<version>`.
+
+<br/>
+
+### OCI registry (Helm 3.8+)
 
 ```bash
 helm install karpenter-cr oci://ghcr.io/somaz94/charts/karpenter-cr \
@@ -58,7 +62,9 @@ helm install karpenter-cr oci://ghcr.io/somaz94/charts/karpenter-cr \
   -f my-values.yaml
 ```
 
-Classic Helm repo:
+<br/>
+
+### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
@@ -143,6 +149,8 @@ Note the requirement keys: Auto Mode exposes `eks.amazonaws.com/instance-*`, not
 <br/>
 
 ## Values reference
+
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
 
 | Key | Description | Default |
 |-----|-------------|---------|

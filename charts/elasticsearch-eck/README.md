@@ -70,11 +70,14 @@ kubectl get storageclass
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `elasticsearch-eck-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install es oci://ghcr.io/somaz94/charts/elasticsearch-eck \
-  --version 0.1.1 \
   --namespace logging --create-namespace \
   -f my-values.yaml
 ```
@@ -94,6 +97,8 @@ helm install es somaz94/elasticsearch-eck \
 <br/>
 
 ## Quick examples
+
+<br/>
 
 ### 1. Minimal (single-node, dev/staging)
 
@@ -124,7 +129,7 @@ Omitting `storageClass` falls back to the cluster's default SC — only works if
 
 > **Pick block storage**, not NFS. NFS RWO works for single-node dev but causes data corruption risk with multiple writers. AWS: `gp3`/`io2`, GCP: `premium-rwo`, Ceph: `ceph-block`, vSphere: `vsphere-csi`.
 
-> Zero-downtime rolling upgrades in HA topology are verified against chart 0.1.1. See [../../docs/ha-rolling-verification.md](../../docs/ha-rolling-verification.md) for the test procedure, load generator, and result log.
+> Zero-downtime rolling upgrades in HA topology are verified; the doc header records the chart and Stack versions the run used. See [../../docs/ha-rolling-verification.md](../../docs/ha-rolling-verification.md) for the test procedure, load generator, and result log.
 
 ```yaml
 nodeSets:
@@ -228,6 +233,8 @@ nodeSets:
 
 ## Values reference
 
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
+
 <br/>
 
 ### Top-level
@@ -238,7 +245,7 @@ nodeSets:
 | `commonAnnotations` | `{}` | Annotations applied to every resource (merged with per-resource extras). |
 | `resourceMetadata` | `{}` | Per-resource `labels`/`annotations` override. Keys: `elasticsearch`, `elasticUserSecret`, `podDisruptionBudget`, `httproute`, `backendTLSPolicy`, `serviceMonitor`. |
 | `name` | `""` | CR name. Empty → Helm release name. |
-| `version` | `"9.3.3"` | Elastic Stack version (ES `spec.version`). Bump via `./upgrade.sh`. |
+| `version` | tracks `Chart.yaml` `appVersion` — see [`values.yaml`](values.yaml) | Elastic Stack version (ES `spec.version`). Bump via `./upgrade.sh`. |
 | `image` | `""` | Optional image override (private mirrors / air-gapped). |
 | `elasticPassword` | `""` | Password for the `elastic` superuser. Empty → ECK auto-generates. |
 | `serviceAccountName` | `""` | Optional SA for IRSA / restricted RBAC. |
@@ -336,6 +343,8 @@ Standard Gateway API HTTPRoute fields; see the values.yaml for the full shape. `
 <br/>
 
 ## Maintaining this chart
+
+<br/>
 
 ### Bumping the Elasticsearch version
 

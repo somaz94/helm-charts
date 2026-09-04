@@ -32,21 +32,27 @@ For HA prefer an external managed DB (RDS / CloudSQL / Patroni) — out of scope
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `postgresql-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
-helm install myapp-postgres oci://ghcr.io/somaz94/charts/postgresql --version 0.1.0 \
+helm install myapp-postgres oci://ghcr.io/somaz94/charts/postgresql \
   --namespace myapp-db-redis --create-namespace \
   --set auth.user=myapp \
   --set auth.password='<password>' \
   --set auth.database=myapp
 ```
 
+<br/>
+
 ### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
-helm install myapp-postgres somaz94/postgresql --version 0.1.0 \
+helm install myapp-postgres somaz94/postgresql \
   --namespace myapp-db-redis --create-namespace \
   -f my-values.yaml
 ```
@@ -210,6 +216,8 @@ image:
 <br/>
 
 ## Values reference
+
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
 
 <br/>
 

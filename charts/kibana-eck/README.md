@@ -58,11 +58,14 @@ The chart renders the ECK `Kibana` Custom Resource plus optional siblings (Servi
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `kibana-eck-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install kibana oci://ghcr.io/somaz94/charts/kibana-eck \
-  --version 0.1.1 \
   --namespace logging \
   --set elasticsearchRef.name=elasticsearch \
   -f my-values.yaml
@@ -84,6 +87,8 @@ helm install kibana somaz94/kibana-eck \
 
 ## Quick examples
 
+<br/>
+
 ### 1. Minimal (single replica, linked to sibling ES)
 
 ```yaml
@@ -95,7 +100,7 @@ elasticsearchRef:
 
 ### 2. HA (2+ replicas + PDB)
 
-> Zero-downtime rolling upgrades in HA topology are verified against chart 0.1.1. See [../../docs/ha-rolling-verification.md](../../docs/ha-rolling-verification.md).
+> Zero-downtime rolling upgrades in HA topology are verified; the doc header records the chart and Stack versions the run used. See [../../docs/ha-rolling-verification.md](../../docs/ha-rolling-verification.md).
 > **Minimum memory per replica: 1 GiB** — lower values OOMKill during startup.
 
 ```yaml
@@ -200,7 +205,7 @@ See [values.yaml](values.yaml) and [values.schema.json](values.schema.json) for 
 | Key | Default | Description |
 |---|---|---|
 | `name` | `""` | CR name. Empty → Helm release name. |
-| `version` | `"9.3.3"` | Kibana version. Must be ≤ linked ES version. |
+| `version` | tracks `Chart.yaml` `appVersion` — see [`values.yaml`](values.yaml) | Kibana version. Must be ≤ linked ES version. |
 | `image` | `""` | Optional image override. |
 | `replicas` | `1` | Number of Kibana pods. |
 | `elasticsearchRef.name` | `elasticsearch` | ES CR name (same namespace unless `namespace` is set — requires ReferenceGrant). |

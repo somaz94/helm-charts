@@ -31,13 +31,14 @@ This chart does **not** install the Keycloak Operator itself — install the [`k
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `keycloak-cr-<version>`.
+
 <br/>
 
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install keycloak oci://ghcr.io/somaz94/charts/keycloak-cr \
-  --version 0.1.0 \
   --namespace keycloak \
   -f my-values.yaml
 ```
@@ -198,6 +199,10 @@ keycloak:
 
 ## Values reference
 
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
+
+<br/>
+
 ### Top-level
 
 | Key | Type | Default | Description |
@@ -206,6 +211,8 @@ keycloak:
 | `commonLabels` | object | `{}` | Labels added to every resource. |
 | `commonAnnotations` | object | `{}` | Annotations added to every resource. |
 | `resourceMetadata.<resource>.{labels,annotations}` | object | `{}` | Per-resource metadata override. Resources: `keycloak`, `realmImport`, `httproute`, `ingress`, `dbSecret`, `adminSecret`. |
+
+<br/>
 
 ### `keycloak`
 
@@ -246,6 +253,8 @@ keycloak:
 | `env` | list | `[]` | Env vars on Keycloak Pods (use `additionalOptions` for first-class flags). |
 | `specExtra` | object | `{}` | **Escape hatch.** Merged into `spec` (top-level) of the Keycloak CR. |
 
+<br/>
+
 ### `realmImport`
 
 | Key | Type | Default | Description |
@@ -257,6 +266,8 @@ keycloak:
 | `resources` | object | `{}` | Compute resources for the import Job (NOT for Keycloak itself). |
 | `specExtra` | object | `{}` | Escape hatch merged into `spec` of the KeycloakRealmImport. |
 
+<br/>
+
 ### `dbSecret` / `adminSecret`
 
 | Key | Type | Default | Description |
@@ -265,6 +276,8 @@ keycloak:
 | `name` | string | `""` | Secret name. Defaults: `<release>-db-credentials` / `<release>-bootstrap-admin`. |
 | `username` / `password` | string | `""` | **Plaintext** values rendered into the Secret. **Rotate post-install** or use ExternalSecrets / Vault. |
 | `usernameKey` / `passwordKey` | string | `username` / `password` | Keys inside the Secret. |
+
+<br/>
 
 ### `ingress` (chart-rendered, standalone Ingress)
 
@@ -280,6 +293,8 @@ Use this block when Gateway API is unavailable in the cluster, or when the opera
 | `tls[]` | list | `[]` | TLS entries `{ hosts, secretName }`. |
 | `backend.serviceName` / `.servicePort` | string / int | empty / `8080` | Backend Service override. Empty → operator-rendered `<release>-service`. |
 | `extraPaths[]` | list | `[]` | Additional paths on the same host (`/admin`, `/metrics`, …). |
+
+<br/>
 
 ### `httproute`
 

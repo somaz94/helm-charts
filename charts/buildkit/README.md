@@ -23,6 +23,14 @@ No backup CronJob — the cache PVC is rebuildable, not authoritative state.
 
 <br/>
 
+## Versioning
+
+- Chart `version` — this chart's own SemVer, bumped on every change.
+- `appVersion` — the `moby/buildkit` release the chart targets; `image.tag` defaults to it when left empty. Upstream publishes only `v`-prefixed image tags, so `appVersion` carries the `v` as well.
+- Bumped by [`upgrade.sh`](upgrade.sh), which tracks `moby/buildkit` GitHub releases. See [Maintaining this chart](#maintaining-this-chart).
+
+<br/>
+
 ## Prerequisites
 
 - Kubernetes >= 1.25
@@ -33,18 +41,24 @@ No backup CronJob — the cache PVC is rebuildable, not authoritative state.
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `buildkit-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
-helm install dev-buildkit oci://ghcr.io/somaz94/charts/buildkit --version 0.1.0 \
+helm install dev-buildkit oci://ghcr.io/somaz94/charts/buildkit \
   --namespace gitlab-runner --create-namespace
 ```
+
+<br/>
 
 ### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
-helm install dev-buildkit somaz94/buildkit --version 0.1.0 \
+helm install dev-buildkit somaz94/buildkit \
   --namespace gitlab-runner --create-namespace \
   -f my-values.yaml
 ```
@@ -158,6 +172,8 @@ The default rootful BuildKit listener has no auth — restrict the Service via N
 <br/>
 
 ## Values reference
+
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
 
 <br/>
 
@@ -296,6 +312,8 @@ For Harbor (token-auth), only the **system trust store overlay** path lets Build
 <br/>
 
 ## Maintaining this chart
+
+<br/>
 
 ### Bumping the BuildKit version
 

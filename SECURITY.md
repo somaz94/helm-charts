@@ -12,7 +12,8 @@ The current latest version of every chart below is published to:
 - Classic Helm repo: `https://charts.somaz.blog` (run `helm repo update` then `helm search repo somaz94/<chart>`)
 - GitHub Releases: tagged `<chart>-<version>` per release
 
-Charts in scope:
+Every directory under [`charts/`](charts/) is in scope, so the table below must list all of them
+(`ls -1d charts/*/ | xargs -n1 basename`):
 
 | Chart |
 |---|
@@ -40,9 +41,13 @@ Charts in scope:
 
 If you discover a security vulnerability in any chart in this repository, **please do not open a public issue.** Instead, report it privately so that a fix can be prepared before the issue becomes public.
 
+<br/>
+
 ### Preferred channel: GitHub Security Advisories
 
 Use the **"Report a vulnerability"** button on the [Security tab](https://github.com/somaz94/helm-charts/security/advisories/new) of this repository. This opens a private advisory visible only to maintainers.
+
+<br/>
 
 ### Alternative channel: email
 

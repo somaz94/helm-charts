@@ -9,6 +9,8 @@ a tiny Configuration block at the top of `upgrade.sh`, and the long common
 body is sourced from a single template. Drifted bodies are a bug;
 `sync.sh --check` catches them.
 
+<br/>
+
 ### How this differs from `kuberntes-infra/scripts/upgrade-sync/`
 
 | Aspect | This repo (publisher) | kuberntes-infra (consumer) |
@@ -24,6 +26,8 @@ The two systems are **not** code-shared and intentionally so — they live in
 different repos and serve opposite ends of the chart lifecycle (publish vs
 consume). They are linked only by the OCI artifact at
 `ghcr.io/somaz94/charts/<name>` (see "Publisher-Consumer flow" below).
+
+<br/>
 
 ### Publisher-Consumer flow
 
@@ -63,9 +67,12 @@ Charts wired into this flow today (each has both a publisher-side
 | `charts/elasticsearch-eck` | Elastic artifacts API | `observability/logging/elasticsearch` | `external-oci-cr-version` |
 | `charts/kibana-eck` | Elastic artifacts API | `observability/logging/kibana` | `external-oci-cr-version` |
 
-Pure CR-wrapper charts (`certmanager-letsencrypt`, `keycloak-cr`,
-`nginx-gateway-cr`) and simple wrapper charts (`mysql`, `postgresql`, `redis`)
-do **not** ship `upgrade.sh` — see "Authoring a new chart's upgrade.sh" below.
+Charts with no upstream release feed worth tracking — pure CR wrappers, and
+wrappers pinned to an image the maintainer bumps by hand — ship no `upgrade.sh`
+at all. `sync.sh --list` classifies every chart; see "Authoring a new chart's
+upgrade.sh" below to add one.
+
+<br/>
 
 ## How it works
 
@@ -95,12 +102,16 @@ VERSION_SOURCE_ARG="library/ghost"
 
 `sync.sh` only rewrites the region between `# === BEGIN CANONICAL BODY ===` and `# === END CANONICAL BODY ===`. The Configuration block is untouched.
 
+<br/>
+
 ## Available templates
 
 | Template | Use case | Required CONFIG |
 |---|---|---|
-| `chart-appversion` | Chart maintainers tracking an upstream GA version to bump `Chart.yaml.appVersion` (and optionally `values.yaml.<key>`). Used by `ghost`, `unity-mcp-server`, `elasticsearch-eck`, `kibana-eck`. | `VERSION_SOURCE` ∈ {`elastic-artifacts`, `docker-hub`, `github-release`}, plus source-specific args (see below). |
-| `helm-charts/external-tracked` | Chart maintainers tracking an upstream GitHub repo that ships **both** a versioned image **and** companion CRD manifests. Refreshes `Chart.yaml.appVersion`, `values.yaml.version`, and `templates/crd-*.yaml`. Used by `keycloak-operator`. | `GITHUB_REPO`, `CONTAINER_IMAGE`, `CRD_FILES` (array), plus the helm-template gate vars (`GATE_OPEN`/`GATE_CLOSE`/`LABELS_ANN_BLOCK`). |
+| `chart-appversion` | Chart maintainers tracking an upstream GA version to bump `Chart.yaml.appVersion` (and optionally `values.yaml.<key>`). | `VERSION_SOURCE` ∈ {`elastic-artifacts`, `docker-hub`, `github-release`}, plus source-specific args (see below). |
+| `helm-charts/external-tracked` | Chart maintainers tracking an upstream GitHub repo that ships **both** a versioned image **and** companion CRD manifests. Refreshes `Chart.yaml.appVersion`, `values.yaml.version`, and `templates/crd-*.yaml`. | `GITHUB_REPO`, `CONTAINER_IMAGE`, `CRD_FILES` (array), plus the helm-template gate vars (`GATE_OPEN`/`GATE_CLOSE`/`LABELS_ANN_BLOCK`). |
+
+<br/>
 
 ### `VERSION_SOURCE` options (inside `chart-appversion.sh`)
 
@@ -109,6 +120,27 @@ VERSION_SOURCE_ARG="library/ghost"
 | `elastic-artifacts` | _(empty)_ | Queries `https://artifacts-api.elastic.co/v1/versions` — Elastic Stack products (elasticsearch, kibana, logstash, beats). |
 | `docker-hub` | `"library/ghost"`, `"bitnami/redis"`, … | Docker Hub Registry API. Pulls paginated tag list, filters to plain `X.Y.Z` tags. |
 | `github-release` | `"owner/repo"` (e.g. `"CoplayDev/unity-mcp"`) | GitHub Releases API. `GITHUB_TAG_PREFIX` env (default `v`) is stripped. Set `GITHUB_TOKEN` to avoid rate limits. |
+
+Which charts use which template is not listed here — it drifts on every new
+chart. Run `scripts/upgrade-sync/sync.sh --list` for the live mapping.
+
+<br/>
+
+### Optional CONFIG knobs (`chart-appversion`)
+
+| Knob | Effect |
+|---|---|
+| `MAJOR_PIN` | restrict candidate versions to one major, e.g. `"8.0"` |
+| `CONTAINER_IMAGE` | verify the image tag exists in the registry before bumping |
+| `TAG_SUFFIX` | suffix appended when verifying image existence, e.g. `-alpine` |
+| `TAG_PREFIX` | prefix carried by BOTH the upstream tag and this chart's `appVersion`, e.g. `v` for `moby/buildkit`. Every version source emits bare `x.y.z`, so the prefix is stripped on read and re-applied on write; comparison and semver logic in between stay on bare versions. |
+| `VALUES_FILE` / `VERSION_KEY` | also rewrite `<CHART_DIR>/<VALUES_FILE>.<VERSION_KEY>`; empty `VALUES_FILE` means `Chart.yaml` `appVersion` only |
+| `SIBLING_CHART_DIR` / `SIBLING_CHART_LABEL` | a sibling chart's version acts as an upper bound |
+| `UPDATE_ARTIFACTHUB_CHANGES` | when `"true"`, append a `- kind: changed` entry to the `Chart.yaml` annotation on success |
+
+The template header in [`templates/chart-appversion.sh`](templates/chart-appversion.sh) is authoritative for this list.
+
+<br/>
 
 ## Commands
 
@@ -121,6 +153,8 @@ scripts/upgrade-sync/sync.sh --apply   # overwrite canonical bodies to match tem
 
 CI should run `--check` on every PR that touches `charts/*/upgrade.sh` or `scripts/upgrade-sync/templates/`.
 
+<br/>
+
 ## Authoring a new chart's `upgrade.sh`
 
 1. Copy a sibling chart's `upgrade.sh` (e.g. `charts/ghost/upgrade.sh`) as a starting point.
@@ -129,11 +163,15 @@ CI should run `--check` on every PR that touches `charts/*/upgrade.sh` or `scrip
 4. Make it executable: `chmod +x charts/<name>/upgrade.sh`.
 5. Smoke-test: `./charts/<name>/upgrade.sh --dry-run`.
 
+<br/>
+
 ## Authoring a new template
 
 1. Add `scripts/upgrade-sync/templates/<name>.sh` with the full script shape: shebang, per-chart CONFIG placeholders, `# === BEGIN CANONICAL BODY ===` … `# === END CANONICAL BODY ===`.
 2. Update charts to reference it via `# upgrade-template: <name>` on line 2.
 3. Run `sync.sh --apply` and commit.
+
+<br/>
 
 ## What the template does NOT do
 
@@ -141,9 +179,13 @@ CI should run `--check` on every PR that touches `charts/*/upgrade.sh` or `scrip
 - It does not bump the chart's own SemVer (`Chart.yaml.version`). That's a maintainer decision — use `make bump CHART=<name> LEVEL=patch|minor|major`.
 - It does not push to a registry or trigger a release. `Chart.yaml.version` bumps drive `chart-releaser-action`.
 
+<br/>
+
 ## Backup directory
 
 Each successful bump writes `backup/<timestamp>/` inside the chart's directory. These are **tracked in git** (rollback trail) — do not add them to `.gitignore`. Old backups are auto-pruned to `KEEP_BACKUPS` (default 5).
+
+<br/>
 
 ## Dry-run JSON contract
 
@@ -151,6 +193,8 @@ Each successful bump writes `backup/<timestamp>/` inside the chart's directory. 
 output of each chart's `upgrade.sh`. This is the **API surface** between the
 templates and the orchestrator — when you change either side, change both in
 the same PR and re-run `make version-check` to verify.
+
+<br/>
 
 ### Schema
 
@@ -170,6 +214,8 @@ redirected to stderr in this mode.
 | `sibling` | object\|null | `blocked` only | `{"name": "<sibling-chart>", "version": "<sibling-current>"}` — the constraint that's holding the bump. |
 | `error` | string\|null | `error` and some `no-image` | Human-readable reason. `null` for happy-path states. |
 
+<br/>
+
 ### Status transitions
 
 | `status` | `latest` | `upstream_latest` | Notes |
@@ -179,6 +225,8 @@ redirected to stderr in this mode.
 | `blocked` | `null` | the version that was attempted | Sibling check rejected the target. `sibling.name` and `sibling.version` describe the constraint. |
 | `no-image` | `null` (exhausted) or `current` (matches-current) | upstream feed value | Newer GA exists upstream but the container image isn't published yet. Re-run later. |
 | `error` | `null` | maybe `null` | Fetch failed, `Chart.yaml`/`values.yaml` unreadable, etc. See `error`. |
+
+<br/>
 
 ### Two ways to break the contract silently
 

@@ -30,7 +30,7 @@ Helm chart for [Ghost](https://ghost.org/) — Node.js blogging platform — wit
 ## Versioning
 
 - Chart `version` — this chart's own SemVer, bumped on every change.
-- `appVersion` — the Ghost upstream version the defaults target (`image.tag` default, e.g. `5.117.0-alpine`).
+- `appVersion` — the Ghost upstream version the defaults target; `image.tag` defaults to its `-alpine` variant.
 
 <br/>
 
@@ -46,11 +46,14 @@ Helm chart for [Ghost](https://ghost.org/) — Node.js blogging platform — wit
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `ghost-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install blog oci://ghcr.io/somaz94/charts/ghost \
-  --version 0.1.0 \
   --namespace blog --create-namespace \
   --set url=https://blog.example.com \
   --set mysql.auth.user=ghost \
@@ -59,12 +62,14 @@ helm install blog oci://ghcr.io/somaz94/charts/ghost \
   --set mysql.auth.rootPassword=CHANGE_ME_ROOT
 ```
 
+<br/>
+
 ### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
 helm repo update
-helm install blog somaz94/ghost --version 0.1.0 -f values.yaml
+helm install blog somaz94/ghost -f values.yaml
 ```
 
 <br/>
@@ -81,6 +86,8 @@ The chart **fails at render time** unless you provide:
 
 ## Quick examples
 
+<br/>
+
 ### Minimal (bundled MySQL, cluster-internal access only)
 
 ```yaml
@@ -92,6 +99,8 @@ mysql:
     database: ghost
     rootPassword: s3cret-root
 ```
+
+<br/>
 
 ### External MySQL (no bundled DB)
 
@@ -106,6 +115,8 @@ externalDatabase:
   user: ghost
   existingSecret: ghost-db-creds   # keys: MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 ```
+
+<br/>
 
 ### Gateway API (HTTPRoute) with NGINX Gateway Fabric body-size policy
 
@@ -139,6 +150,8 @@ uploads:
   maxFileSize: 524288000             # 500 MiB, mirrored into Ghost config
 ```
 
+<br/>
+
 ### Legacy Ingress (ingress-nginx)
 
 ```yaml
@@ -160,6 +173,8 @@ ingress:
     - hosts: [blog.example.com]
       secretName: blog-tls
 ```
+
+<br/>
 
 ### Daily backup (MySQL dump + content tarball, 30-day retention)
 
@@ -188,6 +203,8 @@ kubectl -n blog create job --from=cronjob/blog-ghost-backup manual-$(date +%s)
 kubectl -n blog logs -l job-name=manual-...
 ```
 
+<br/>
+
 ### Pulling from a private registry (chart-managed Secret)
 
 When the chart should also render the `kubernetes.io/dockerconfigjson` Secret (instead of you creating it ahead of time), set `imagePullSecret.create=true` and provide the base64-encoded `dockerconfigjson` blob. The Pod-level `imagePullSecrets` is then injected into Ghost, MySQL and the backup CronJob automatically; existing `imagePullSecrets[]` references (BYOIPS) are still honored and merged additively.
@@ -211,11 +228,11 @@ Then in your values:
 url: https://blog.example.com
 image:
   repository: registry.example.com/library/ghost
-  tag: 5.117.0-alpine
+  tag: <ghost-tag>            # e.g. the chart's appVersion + -alpine
 mysql:
   image:
     repository: registry.example.com/library/mysql
-    tag: "8.0.40"
+    tag: "<mysql-tag>"
   auth: { user: ghost, password: s3cret, database: ghost, rootPassword: s3cret-root }
 
 imagePullSecret:
@@ -229,6 +246,8 @@ Or keep `imagePullSecret.create: false` and reference an externally-managed Secr
 imagePullSecrets:
   - name: my-pull-secret
 ```
+
+<br/>
 
 ### Adopting pre-existing legacy resources
 
@@ -326,6 +345,8 @@ Key blocks:
 <br/>
 
 ## Maintaining this chart
+
+<br/>
 
 ### Bumping the Ghost version
 

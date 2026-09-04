@@ -45,13 +45,14 @@ After installing this chart, use the [`keycloak-cr`](../keycloak-cr) chart to re
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `keycloak-operator-<version>`.
+
 <br/>
 
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install keycloak-operator oci://ghcr.io/somaz94/charts/keycloak-operator \
-  --version 0.1.0 \
   --namespace keycloak-system --create-namespace
 ```
 
@@ -113,12 +114,12 @@ rbac:
 ```yaml
 image:
   repository: registry.internal.example.com/keycloak/keycloak-operator
-  tag: 26.7.0                            # operator image (defaults to .Values.version)
+  tag: <operator-tag>                    # operator image (defaults to .Values.version)
   pullPolicy: IfNotPresent
 
 serverImage:
   repository: registry.internal.example.com/keycloak/keycloak
-  tag: 26.7.0                            # rendered into RELATED_IMAGE_KEYCLOAK env
+  tag: <server-tag>                      # rendered into RELATED_IMAGE_KEYCLOAK env
 
 imagePullSecrets:
   - name: registry-internal-pull
@@ -139,6 +140,10 @@ When this flag is off, the chart skips all four CRDs — the operator still refe
 
 ## Values reference
 
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
+
+<br/>
+
 ### Top-level
 
 | Key | Type | Default | Description |
@@ -147,6 +152,8 @@ When this flag is off, the chart skips all four CRDs — the operator still refe
 | `commonLabels` | object | `{}` | Labels added to every resource. |
 | `commonAnnotations` | object | `{}` | Annotations added to every resource. |
 | `resourceMetadata.<resource>.{labels,annotations}` | object | `{}` | Per-resource overrides. Resources: `serviceAccount`, `deployment`, `service`, `role`, `clusterRoles`, `roleBinding`, `clusterRoleBindings`. |
+
+<br/>
 
 ### Image
 
@@ -159,12 +166,14 @@ When this flag is off, the chart skips all four CRDs — the operator still refe
 | `serverImage.tag` | string | `""` | Empty → uses `.Values.version`. |
 | `imagePullSecrets[]` | list | `[]` | Pull secrets attached to the operator Pods. |
 
+<br/>
+
 ### Deployment
 
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `replicas` | int | `1` | Operator replicas. The operator does not support active-active — keep at 1 unless using leader election. |
-| `resources` | object | `{cpu: 300m–700m, mem: 450Mi}` | Compute resources. Defaults match upstream 26.7.0. |
+| `resources` | object | `{cpu: 300m–700m, mem: 450Mi}` | Compute resources. Defaults mirror the upstream operator manifests for the tracked `appVersion`. |
 | `nodeSelector`, `tolerations`, `affinity`, `priorityClassName`, `topologySpreadConstraints` | — | — | Standard pod-scheduling fields. |
 | `podLabels`, `podAnnotations`, `podSecurityContext`, `securityContext` | object | `{}` | Pod template metadata + security contexts. |
 | `extraEnv[]` | list | `[]` | Additional env vars (chart already wires `KUBERNETES_NAMESPACE`, `RELATED_IMAGE_KEYCLOAK`, watch-scope vars). |
@@ -173,6 +182,8 @@ When this flag is off, the chart skips all four CRDs — the operator still refe
 | `volumes`, `volumeMounts` | list | `[]` | Operator container volumes. |
 | `deploymentExtra` | object | `{}` | **Escape hatch.** Merged into `Deployment.spec`. |
 | `containerExtra` | object | `{}` | **Escape hatch.** Merged into the operator container spec. |
+
+<br/>
 
 ### Service / ServiceAccount / RBAC / CRDs
 

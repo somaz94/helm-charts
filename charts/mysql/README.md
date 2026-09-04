@@ -22,6 +22,14 @@ For HA prefer an external managed DB (RDS / CloudSQL / Vitess) — out of scope.
 
 <br/>
 
+## Versioning
+
+- Chart `version` — this chart's own SemVer, bumped on every change.
+- `appVersion` — the upstream MySQL release the chart targets; `image.tag` defaults to it when left empty.
+- Bumped by [`upgrade.sh`](upgrade.sh), which tracks Docker Hub `library/mysql` and stays pinned to the 8.0 line. See [Maintaining this chart](#maintaining-this-chart).
+
+<br/>
+
 ## Prerequisites
 
 - Kubernetes >= 1.25
@@ -32,21 +40,27 @@ For HA prefer an external managed DB (RDS / CloudSQL / Vitess) — out of scope.
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `mysql-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
-helm install myapp-db oci://ghcr.io/somaz94/charts/mysql --version 0.1.0 \
+helm install myapp-db oci://ghcr.io/somaz94/charts/mysql \
   --namespace myapp-db-redis --create-namespace \
   --set auth.user=myapp \
   --set auth.password='<password>' \
   --set auth.rootPassword='<root-password>'
 ```
 
+<br/>
+
 ### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
-helm install myapp-db somaz94/mysql --version 0.1.0 \
+helm install myapp-db somaz94/mysql \
   --namespace myapp-db-redis --create-namespace \
   -f my-values.yaml
 ```
@@ -200,7 +214,7 @@ imagePullSecret:
   dockerconfigjson: <base64 ~/.docker/config.json>
 image:
   repository: harbor.example.com/library/mysql
-  tag: "8.0.46"
+  tag: "<mysql-tag>"          # defaults to Chart.AppVersion when unset
 ```
 
 Generate the `dockerconfigjson` value:
@@ -220,7 +234,24 @@ The chart-managed Secret is **additive** to `imagePullSecrets[]` — set both fo
 
 <br/>
 
+## NFS notes
+
+NFS-backed PVCs require three options to avoid InnoDB lock errors and `O_DIRECT` failures. Append to `customConfig`:
+
+```yaml
+customConfig: |
+  [mysqld]
+  innodb_use_native_aio=0
+  innodb_flush_method=fsync
+  skip_external_locking=1
+  # ... rest of your config
+```
+
+<br/>
+
 ## Values reference
+
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
 
 <br/>
 
@@ -239,7 +270,7 @@ The chart-managed Secret is **additive** to `imagePullSecrets[]` — set both fo
 | Key | Default | Description |
 |---|---|---|
 | `image.repository` | `mysql` | container image repository |
-| `image.tag` | `""` (= `Chart.AppVersion`, e.g. `8.0.46`) | tag override |
+| `image.tag` | `""` (= `Chart.AppVersion`) | tag override |
 | `image.pullPolicy` | `IfNotPresent` | |
 | `imagePullSecrets[]` | `[]` | bring-your-own pull Secrets, additive |
 | `imagePullSecret.create` | `false` | render a `dockerconfigjson` Secret |
@@ -339,6 +370,8 @@ Those checksums hash only the ConfigMap `data` and the Secret `stringData`, neve
 
 ## Maintaining this chart
 
+<br/>
+
 ### Bumping the MySQL version
 
 ```bash
@@ -364,21 +397,6 @@ After reviewing the diff:
 make bump CHART=mysql LEVEL=patch
 make lint CHART=mysql
 make template CHART=mysql
-```
-
-<br/>
-
-## NFS notes
-
-NFS-backed PVCs require three options to avoid InnoDB lock errors and `O_DIRECT` failures. Append to `customConfig`:
-
-```yaml
-customConfig: |
-  [mysqld]
-  innodb_use_native_aio=0
-  innodb_flush_method=fsync
-  skip_external_locking=1
-  # ... rest of your config
 ```
 
 <br/>

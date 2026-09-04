@@ -29,7 +29,11 @@ This chart only creates StorageClass objects; it does not install the CSI driver
 
 ## Install
 
-OCI registry:
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `aws-storageclass-<version>`.
+
+<br/>
+
+### OCI registry (Helm 3.8+)
 
 ```bash
 helm install storageclasses oci://ghcr.io/somaz94/charts/aws-storageclass \
@@ -37,7 +41,9 @@ helm install storageclasses oci://ghcr.io/somaz94/charts/aws-storageclass \
   -f my-values.yaml
 ```
 
-Classic Helm repo:
+<br/>
+
+### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
@@ -49,6 +55,8 @@ helm install storageclasses somaz94/aws-storageclass \
 <br/>
 
 ## Quick examples
+
+<br/>
 
 ### A single gp3 encrypted default class
 
@@ -64,6 +72,8 @@ storageClasses:
       type: gp3
       encrypted: "true"
 ```
+
+<br/>
 
 ### Multiple EBS tiers + EFS, gp2 kept off
 
@@ -103,6 +113,8 @@ storageClasses:
       directoryPerms: "700"
 ```
 
+<br/>
+
 ### Zone-restricted io2 (allowedTopologies)
 
 ```yaml
@@ -127,6 +139,10 @@ storageClasses:
 
 ## Values reference
 
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
+
+<br/>
+
 ### Top level
 
 | Key | Type | Default | Description |
@@ -134,6 +150,8 @@ storageClasses:
 | `commonLabels` | map | `{}` | Labels added to every StorageClass. |
 | `commonAnnotations` | map | `{}` | Annotations added to every StorageClass. |
 | `storageClasses` | list | `[]` | StorageClass definitions (see below). Empty = no-op install. |
+
+<br/>
 
 ### `storageClasses[]` entry
 

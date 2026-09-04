@@ -66,13 +66,30 @@ image:
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `unity-mcp-server-<version>`.
+
+<br/>
+
+### OCI registry (Helm 3.8+)
+
 ```bash
 helm install unity-mcp oci://ghcr.io/somaz94/charts/unity-mcp-server \
-  --version 0.1.0 \
   --namespace mcp --create-namespace \
   --set image.repository=ghcr.io/yourorg/unity-mcp-server \
   --set image.tag=YOUR_TAG \
   --set apiKey.value=CHANGE_ME
+```
+
+<br/>
+
+### Classic Helm repo
+
+```bash
+helm repo add somaz94 https://charts.somaz.blog
+helm repo update
+helm install unity-mcp somaz94/unity-mcp-server \
+  --namespace mcp --create-namespace \
+  -f my-values.yaml
 ```
 
 <br/>
@@ -87,6 +104,8 @@ helm install unity-mcp oci://ghcr.io/somaz94/charts/unity-mcp-server \
 
 ## Quick examples
 
+<br/>
+
 ### Minimal (cluster-internal access only)
 
 ```yaml
@@ -96,6 +115,8 @@ image:
 apiKey:
   value: super-secret-key
 ```
+
+<br/>
 
 ### External access via NGINX Gateway Fabric (SSE-friendly)
 
@@ -129,6 +150,8 @@ nginxGatewayFabric:
     enabled: true            # turn off response buffering for SSE
 ```
 
+<br/>
+
 ### Pulling the BYOI image from a private registry (chart-managed Secret)
 
 When the chart should also render the `kubernetes.io/dockerconfigjson` Secret (instead of you creating it ahead of time), set `imagePullSecret.create=true` and provide the base64-encoded `dockerconfigjson` blob. The Pod-level `imagePullSecrets` is then injected into the Deployment automatically; existing `imagePullSecrets[]` references (BYOIPS) are still honored and merged additively.
@@ -160,6 +183,8 @@ imagePullSecret:
   dockerconfigjson: ewogICJhdXRoc...    # output from the command above
 ```
 
+<br/>
+
 ### Legacy Ingress (ingress-nginx)
 
 ```yaml
@@ -184,6 +209,8 @@ ingress:
 <br/>
 
 ## Values reference
+
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
 
 Top-level blocks:
 
@@ -217,6 +244,8 @@ Top-level blocks:
 <br/>
 
 ## Maintaining this chart
+
+<br/>
 
 ### Bumping the Unity MCP Server version
 

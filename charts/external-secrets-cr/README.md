@@ -30,7 +30,11 @@ Every list defaults to empty, so an unconfigured `helm install` creates nothing.
 
 ## Install
 
-OCI registry:
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `external-secrets-cr-<version>`.
+
+<br/>
+
+### OCI registry (Helm 3.8+)
 
 ```bash
 helm install eso-config oci://ghcr.io/somaz94/charts/external-secrets-cr \
@@ -38,7 +42,9 @@ helm install eso-config oci://ghcr.io/somaz94/charts/external-secrets-cr \
   -f my-values.yaml
 ```
 
-Classic Helm repo:
+<br/>
+
+### Classic Helm repo
 
 ```bash
 helm repo add somaz94 https://charts.somaz.blog
@@ -158,6 +164,8 @@ pushSecrets:
 <br/>
 
 ## Values reference
+
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
 
 <br/>
 

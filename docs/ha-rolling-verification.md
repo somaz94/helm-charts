@@ -37,6 +37,8 @@ Prove three properties of the charts in HA mode:
 
 ## HA topology
 
+<br/>
+
 ### Elasticsearch (`es-ha`)
 
 Three all-role nodes. `podDisruptionBudget.native: true` + `maxUnavailable: 1`
@@ -67,6 +69,8 @@ podDisruptionBudget:
   external: false
   maxUnavailable: 1
 ```
+
+<br/>
 
 ### Kibana (`kb-ha`)
 
@@ -118,6 +122,8 @@ on connection resets from Kibana reloading). Full script is in
 
 ## Test results
 
+<br/>
+
 ### Test 1 — ES rolling restart (triggered by `resources` change)
 
 `helm upgrade` with a changed CPU request (`100m` → `150m`), which changes the
@@ -139,6 +145,8 @@ least 2 nodes hold shard copies throughout).
 
 **Result: PASS ✅**
 
+<br/>
+
 ### Test 2 — Kibana rolling restart (triggered by `resources` change)
 
 `helm upgrade` with changed CPU request on the Kibana CR.
@@ -157,6 +165,8 @@ PDB + Deployment rollout ensures at least one replica is always Ready, users
 never see a 5xx.
 
 **Result: PASS ✅**
+
+<br/>
 
 ### Test 3 — Cosmetic CR annotation change (expect no restart)
 

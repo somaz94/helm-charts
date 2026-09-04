@@ -87,11 +87,15 @@ The output matches the [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Three GitHub Actions cooperate so that no chart ever ships with an unsynced `CHANGELOG.md`, regardless of how the version bump landed on `main`.
 
+<br/>
+
 ### Shared detection — `scripts/changelog/detect-bumped-charts.sh`
 
 Both `changelog-auto.yml` (PR flow) and `release.yml` (push-to-main fallback) call `detect-bumped-charts.sh <ref-a> <ref-b>` to find charts that need a sync. It prints one chart name per line on stdout — the names of charts whose `Chart.yaml` `version:` line changed in the diff without a matching `CHANGELOG.md` change.
 
 `lint.yml`'s `changelog-check` job intentionally keeps its own inline copy of the same `awk` logic. That duplication is the independent safeguard — if `detect-bumped-charts.sh` ever has a bug, lint.yml still catches unsynced PRs.
+
+<br/>
 
 ### `changelog-auto.yml` — auto-generate and commit on PRs
 
@@ -109,6 +113,8 @@ Loop guard: the job is gated on `github.actor != 'github-actions[bot]'`, so the 
 
 Fork PRs: `secrets.PAT_TOKEN` is sanitized away on fork PRs and the workflow's `GITHUB_TOKEN` is read-only against the fork's head ref. The job exits early in that case (gated on `github.event.pull_request.head.repo.full_name == github.repository`). Fork contributors fall through to `lint.yml`'s `changelog-check` job, whose error message instructs them to run `make changelog CHART=<name>` and push the result.
 
+<br/>
+
 ### `release.yml` — release-time fallback for direct pushes
 
 [`.github/workflows/release.yml`](../../.github/workflows/release.yml) covers the case where a `Chart.yaml` `version:` bump lands on `main` without going through `changelog-auto.yml` — e.g. an admin merge that bypassed PR review, a direct push, a hotfix, or a PR that pre-dated the auto-sync workflow.
@@ -124,6 +130,8 @@ Sync failure aborts the release. This is intentional fail-safe behavior — bett
 
 The PAT_TOKEN-driven sync push retriggers `release.yml` once. The follow-up run is a no-op: `detect-bumped-charts.sh` finds no version bumps in the sync commit's delta, and chart-releaser's `skip_existing: true` short-circuits already-released versions. ~30s of CI lost, but no double-publish.
 
+<br/>
+
 ### `dry_run` mode for safe verification
 
 `release.yml` exposes a `workflow_dispatch.inputs.dry_run` boolean. When `true`:
@@ -138,6 +146,8 @@ Use this to verify the release-time sync logic safely on `main` without publishi
 ```bash
 gh workflow run release.yml -f dry_run=true
 ```
+
+<br/>
 
 ### `changelog-check` job in `lint.yml` — independent safeguard
 

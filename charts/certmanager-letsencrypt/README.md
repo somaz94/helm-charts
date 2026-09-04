@@ -28,14 +28,19 @@ The upstream cert-manager chart installs the operator and CRDs, but does **not**
 
 ## Install
 
+These snippets install the latest published chart. To pin an exact chart version, add `--version <x.y.z>` — released versions are the GitHub Release tags named `certmanager-letsencrypt-<version>`.
+
+<br/>
+
 ### OCI registry (Helm 3.8+)
 
 ```bash
 helm install cert oci://ghcr.io/somaz94/charts/certmanager-letsencrypt \
-  --version 0.2.0 \
   --namespace cert-manager \
   -f my-values.yaml
 ```
+
+<br/>
 
 ### Classic Helm repo
 
@@ -54,6 +59,8 @@ helm install cert somaz94/certmanager-letsencrypt \
 Each per-provider example below is a **complete, end-to-end install**: credential `Secret` → `ClusterIssuer` (prod + staging) → `Certificate` → `Ingress` (with the cert-manager annotation pre-wired). Drop into a single values file and `helm install`.
 
 > Use the **staging** issuer (`letsencrypt-staging`) while iterating to avoid Let's Encrypt rate limits, then switch `issuerRef.name` to `letsencrypt-prod` once everything works.
+
+<br/>
 
 ### Cloudflare DNS-01
 
@@ -121,6 +128,8 @@ ingresses:
           - example.com
         secretName: example-com-tls
 ```
+
+<br/>
 
 ### AWS Route53 DNS-01
 
@@ -192,6 +201,8 @@ ingresses:
 ```
 
 > For IRSA / IAM Roles for Service Accounts: omit `accessKeyID` and `secretAccessKeySecretRef`, use cert-manager's `serviceAccount` ServiceAccount referenced via `eks.amazonaws.com/role-arn` annotation. See [cert-manager Route53 docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/).
+
+<br/>
 
 ### Google Cloud DNS DNS-01
 
@@ -266,6 +277,10 @@ ingresses:
 
 ## Values reference
 
+The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`values.schema.json`](values.schema.json) enforces the shape.
+
+<br/>
+
 ### Top-level
 
 | Key | Type | Default | Description |
@@ -274,6 +289,8 @@ ingresses:
 | `commonAnnotations` | object | `{}` | Annotations added to every resource. |
 | `acmeServers.letsencryptProd` | string | LE prod URL | Production ACME endpoint (helper constant). |
 | `acmeServers.letsencryptStaging` | string | LE staging URL | Staging ACME endpoint (helper constant). |
+
+<br/>
 
 ### `secrets[]`
 
@@ -284,6 +301,8 @@ ingresses:
 | `type` | string | no | Default: `Opaque`. |
 | `stringData` | object | one of | Plaintext key/value pairs. |
 | `data` | object | one of | Pre-base64-encoded values. |
+
+<br/>
 
 ### `clusterIssuers[]` and `issuers[]`
 
@@ -296,6 +315,8 @@ ingresses:
 | `server` | string | yes | ACME directory URL (use `acmeServers.letsencryptProd` etc.). |
 | `privateKeySecretRef` | string | no | ACME account key secret name. Default: `<name>-account-key`. |
 | `solvers` | list | yes | cert-manager solvers (DNS-01, HTTP-01) — passthrough. |
+
+<br/>
 
 ### `certificates[]`
 
@@ -315,6 +336,8 @@ ingresses:
 | `isCA` | bool | no | Mark cert as a CA. |
 | `secretTemplate` | object | no | Labels/annotations on the resulting Secret. |
 
+<br/>
+
 ### `ingresses[]` (optional)
 
 Optional. Most users keep Ingress in their app chart and just add a `cert-manager.io/cluster-issuer` annotation; this block exists for the one-shot install pattern (issuer + cert + ingress in one values file).
@@ -333,6 +356,8 @@ Optional. Most users keep Ingress in their app chart and just add a `cert-manage
 
 ## Notes
 
+<br/>
+
 ### Ingress
 
 This chart can optionally create Ingress resources via the `ingresses[]` block (see examples above). It's **off by default** because most users keep Ingress in their app chart and only add the cert-manager annotation:
@@ -349,6 +374,8 @@ spec:
 ```
 
 cert-manager sees the annotation, looks up the matching Certificate, and ensures the TLS Secret is in place. Use the `ingresses[]` block only when you want the chart to bundle the Ingress alongside the cert.
+
+<br/>
 
 ### Use staging while iterating
 

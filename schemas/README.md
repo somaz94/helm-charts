@@ -46,11 +46,11 @@ catalog coverage catches up, and can be contributed upstream as-is.
 | `gateway.nginx.org/proxysettingspolicy_v1alpha1.json` | `ProxySettingsPolicy` (NGINX Gateway Fabric) | [`config/crd/bases/gateway.nginx.org_proxysettingspolicies.yaml`](https://github.com/nginx/nginx-gateway-fabric/blob/main/config/crd/bases/gateway.nginx.org_proxysettingspolicies.yaml) |
 | `gateway.nginx.org/clientsettingspolicy_v1alpha1.json` | `ClientSettingsPolicy` (NGINX Gateway Fabric) | [`config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml` @ v2.7.0](https://github.com/nginx/nginx-gateway-fabric/blob/v2.7.0/config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml) |
 
-These are the two reasons to vendor, one each.
+There are two reasons to vendor, and the table above has one of each.
 
 `ProxySettingsPolicy` is ABSENT from the datree catalog, which carries its
 siblings (`observabilitypolicy`, `upstreamsettingspolicy`, `snippetsfilter`,
-`nginxproxy`) but not this one. It is emitted by the `unity-mcp-server` chart.
+`nginxproxy`) but not this one.
 
 The `ClientSettingsPolicy` link is pinned to a tag, not `main`, because the two
 must stay reproducible together: re-running `vendor-crd-schema.sh` against the
@@ -75,8 +75,15 @@ sets
 `additionalProperties: false`, so kubeconform's `-strict` rejects a valid policy
 that sets it. This is the failure mode the second paragraph of "Why this exists"
 describes — a published entry that is wrong rather than missing — and it fails
-loudly (`invalid`), not as a silent skip. It is emitted by the
-`nginx-gateway-cr` chart.
+loudly (`invalid`), not as a silent skip.
+
+Before re-pinning either schema, list its emitters — every chart that renders the
+kind validates against this one file, so a re-pin driven by a single chart can
+silently break a sibling:
+
+```bash
+grep -rl 'kind: ClientSettingsPolicy' charts/*/templates/
+```
 
 One consequence worth knowing: upstream CRDs do not set `additionalProperties`,
 and neither does a file vendored from one. The datree entry it replaces did. So
