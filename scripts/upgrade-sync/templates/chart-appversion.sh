@@ -25,6 +25,14 @@
 #                             exists in the registry before bumping
 #   TAG_SUFFIX                suffix appended to the version when verifying
 #                             image existence, e.g. "-alpine" for Ghost
+#   TAG_PREFIX                prefix carried by the upstream tag AND by this
+#                             chart's appVersion, e.g. "v" for moby/buildkit,
+#                             whose image is published as `v0.33.0` and whose
+#                             appVersion therefore has to read `v0.33.0` too.
+#                             Every version source emits BARE `x.y.z`, so the
+#                             prefix is stripped on read and re-applied on
+#                             write: comparison, semver and sibling logic in
+#                             between all keep working on bare versions.
 #   VALUES_FILE / VERSION_KEY if VALUES_FILE is set, update
 #                             <CHART_DIR>/<VALUES_FILE>.<VERSION_KEY>;
 #                             empty VALUES_FILE means only Chart.yaml
@@ -52,6 +60,7 @@ MAJOR_PIN="__MAJOR_PIN__"
 CHANGELOG_URL="__CHANGELOG_URL__"
 CONTAINER_IMAGE="__CONTAINER_IMAGE__"
 TAG_SUFFIX="__TAG_SUFFIX__"
+TAG_PREFIX="__TAG_PREFIX__"
 VALUES_FILE="__VALUES_FILE__"
 VERSION_KEY="__VERSION_KEY__"
 SIBLING_CHART_DIR="__SIBLING_CHART_DIR__"
@@ -531,7 +540,7 @@ find_latest_sibling_capped_version() {
 
 # Verify that a container image tag exists in the registry.
 verify_image_exists() {
-  local tag="$1${TAG_SUFFIX}"
+  local tag="${TAG_PREFIX:-}$1${TAG_SUFFIX}"
   if [ -z "$CONTAINER_IMAGE" ] || [ -z "$1" ]; then
     return 0
   fi
@@ -693,12 +702,14 @@ else
     exit 1
   fi
   echo "  Current appVersion: $CURRENT_VERSION"
+  CURRENT_VERSION="${CURRENT_VERSION#${TAG_PREFIX:-}}"
 fi
 
 CURRENT_APP_VERSION=""
 if [ -f "$CHART_DIR/Chart.yaml" ]; then
   CURRENT_APP_VERSION=$(grep '^appVersion:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
   echo "  Chart.yaml appVersion:       $CURRENT_APP_VERSION"
+  CURRENT_APP_VERSION="${CURRENT_APP_VERSION#${TAG_PREFIX:-}}"
 fi
 
 # Step 2: fetch latest upstream
@@ -799,7 +810,7 @@ fi
 echo ""
 echo "[Step 4/N] Verifying container image..."
 if [ -n "$CONTAINER_IMAGE" ]; then
-  echo "  Checking: $CONTAINER_IMAGE:${LATEST_VERSION}${TAG_SUFFIX}"
+  echo "  Checking: $CONTAINER_IMAGE:${TAG_PREFIX:-}${LATEST_VERSION}${TAG_SUFFIX}"
   if verify_image_exists "$LATEST_VERSION"; then
     echo "  Image verified OK."
   else
@@ -885,8 +896,8 @@ if [ -n "$VALUES_FILE" ]; then
   echo "  Updated $VALUES_FILE ($VERSION_KEY: $CURRENT_VERSION -> $LATEST_VERSION)"
 fi
 
-update_yaml_value "$CHART_DIR/Chart.yaml" "appVersion" "$LATEST_VERSION"
-echo "  Updated Chart.yaml (appVersion: ${CURRENT_APP_VERSION:-unset} -> $LATEST_VERSION)"
+update_yaml_value "$CHART_DIR/Chart.yaml" "appVersion" "${TAG_PREFIX:-}$LATEST_VERSION"
+echo "  Updated Chart.yaml (appVersion: ${TAG_PREFIX:-}${CURRENT_APP_VERSION:-unset} -> ${TAG_PREFIX:-}$LATEST_VERSION)"
 
 if [ "$MIRROR_CHART_VERSION" = "true" ]; then
   CURRENT_CHART_VERSION=$(grep '^version:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
@@ -896,7 +907,10 @@ if [ "$MIRROR_CHART_VERSION" = "true" ]; then
   fi
 fi
 
-update_artifacthub_changes "$CHART_DIR/Chart.yaml" "$CURRENT_APP_VERSION" "$LATEST_VERSION"
+# Both versions carry TAG_PREFIX here: the entry is user-facing changelog text
+# and has to name the values that actually appear in appVersion, not the bare
+# forms the comparison logic works on.
+update_artifacthub_changes "$CHART_DIR/Chart.yaml" "${TAG_PREFIX:-}$CURRENT_APP_VERSION" "${TAG_PREFIX:-}$LATEST_VERSION"
 
 auto_prune_backups
 

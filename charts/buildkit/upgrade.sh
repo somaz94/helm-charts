@@ -1,28 +1,32 @@
 #!/usr/bin/env bash
 # upgrade-template: chart-appversion
 #
-# Purpose: as a chart maintainer, track the latest Elasticsearch GA version
-# and bump Chart.yaml `appVersion` + values.yaml `version` safely. Chart
-# `version` (SemVer of the chart itself) is NOT mirrored — bump manually with
-# `make bump CHART=elasticsearch-eck LEVEL=patch|minor|major` after reviewing
-# the diff. No cluster-side operations are performed; rollback restores files
-# from backup/<timestamp>/ only.
+# Purpose: as a chart maintainer, track the latest moby/buildkit GA release and
+# bump Chart.yaml `appVersion`. The chart templates derive the default image tag
+# from `.Chart.AppVersion` (see templates/_helpers.tpl), so values.yaml is not
+# touched (VALUES_FILE="").
+#
+# TAG_PREFIX is "v" because BOTH sides carry it: upstream publishes the image as
+# `moby/buildkit:v0.33.0` (a bare `0.33.0` tag does not exist), so this chart's
+# appVersion has to read `v0.33.0` as well. Every version source emits bare
+# `x.y.z`, so the canonical body strips the prefix on read and re-applies it on
+# write — the comparison and semver logic in between stays on bare versions.
 set -euo pipefail
 
 # ============================================================
 # Configuration — per chart
 # ============================================================
-SCRIPT_NAME="elasticsearch-eck Helm Chart appVersion Bump"
-COMPONENT_LABEL="elasticsearch"
-VERSION_SOURCE="elastic-artifacts"
-VERSION_SOURCE_ARG=""
-MAJOR_PIN="9"
-CHANGELOG_URL="https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html"
-CONTAINER_IMAGE="docker.elastic.co/elasticsearch/elasticsearch"
+SCRIPT_NAME="BuildKit Helm Chart appVersion Bump"
+COMPONENT_LABEL="buildkit"
+VERSION_SOURCE="github-release"
+VERSION_SOURCE_ARG="moby/buildkit"
+MAJOR_PIN=""
+CHANGELOG_URL="https://github.com/moby/buildkit/releases"
+CONTAINER_IMAGE="docker.io/moby/buildkit"
 TAG_SUFFIX=""
-TAG_PREFIX=""
-VALUES_FILE="values.yaml"
-VERSION_KEY="version"
+TAG_PREFIX="v"
+VALUES_FILE=""
+VERSION_KEY=""
 SIBLING_CHART_DIR=""
 SIBLING_CHART_LABEL=""
 UPDATE_ARTIFACTHUB_CHANGES="true"

@@ -294,6 +294,37 @@ For Harbor (token-auth), only the **system trust store overlay** path lets Build
 
 <br/>
 
+## Maintaining this chart
+
+### Bumping the BuildKit version
+
+```bash
+cd charts/buildkit
+./upgrade.sh --dry-run           # preview
+./upgrade.sh                     # bump to latest
+./upgrade.sh --version 0.33.0    # pin to a specific version (bare, no "v")
+./upgrade.sh --rollback          # restore files from backup/
+```
+
+`upgrade.sh` updates `Chart.yaml` `appVersion` only — the image tag is derived
+from `.Chart.AppVersion`, so `values.yaml` is left untouched. It does NOT bump
+the chart's own SemVer or touch any cluster.
+
+Upstream publishes the image as `moby/buildkit:v<x.y.z>`, so this chart's
+`appVersion` carries the `v` too (`TAG_PREFIX="v"`). Version sources report bare
+`x.y.z`, so pass `--version` bare — the script re-applies the prefix when it
+writes.
+
+After reviewing the diff:
+
+```bash
+make bump CHART=buildkit LEVEL=patch
+make lint CHART=buildkit
+make template CHART=buildkit
+```
+
+<br/>
+
 ## License
 
 [Apache-2.0](../../LICENSE)
