@@ -1,0 +1,887 @@
+#!/usr/bin/env bash
+# upgrade-template: chart-appversion
+#
+# Purpose: as a chart maintainer, track the latest MySQL 8.0 GA patch on Docker
+# Hub and bump Chart.yaml `appVersion`. The chart templates derive the default
+# image tag from `.Chart.AppVersion` (see templates/_helpers.tpl), so values.yaml
+# is not touched (VALUES_FILE="").
+#
+# MAJOR_PIN is "8.0", not "8": the filter is a string prefix, so "8" would also
+# match the 8.4 LTS line and silently walk this chart off the 8.0 series.
+set -euo pipefail
+
+# ============================================================
+# Configuration — per chart
+# ============================================================
+SCRIPT_NAME="MySQL Helm Chart appVersion Bump"
+COMPONENT_LABEL="mysql"
+VERSION_SOURCE="docker-hub"
+VERSION_SOURCE_ARG="library/mysql"
+MAJOR_PIN="8.0"
+CHANGELOG_URL="https://dev.mysql.com/doc/relnotes/mysql/8.0/en/"
+CONTAINER_IMAGE="docker.io/library/mysql"
+TAG_SUFFIX=""
+VALUES_FILE=""
+VERSION_KEY=""
+SIBLING_CHART_DIR=""
+SIBLING_CHART_LABEL=""
+UPDATE_ARTIFACTHUB_CHANGES="true"
+MIRROR_CHART_VERSION="false"
+GITHUB_TAG_PREFIX="${GITHUB_TAG_PREFIX:-v}"
+# ============================================================
+
+# === BEGIN CANONICAL BODY ===
+# zsh compat: prevent a zero-match glob (empty backup/) from being fatal under
+# zsh's default NOMATCH. No-op in bash. Must run before any "$BACKUP_DIR"/2* glob.
+[ -n "${ZSH_VERSION:-}" ] && setopt nonomatch
+# The python filters inside fetch_ga_versions read these from the environment.
+# Exported once here rather than passed as a command prefix at a single call
+# site: every walk-down helper calls fetch_ga_versions too, and the ones that
+# did not carry the prefix silently searched *unpinned* — a sibling walk-down
+# on a 9.x-pinned chart happily proposed 8.19.20 as "at or below 9.0.0".
+export MAJOR_PIN GITHUB_TAG_PREFIX
+CHART_DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKUP_DIR="$CHART_DIR/backup"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+KEEP_BACKUPS="${KEEP_BACKUPS:-5}"
+
+# --yes is pre-scanned rather than read in the parse loop below, because
+# --rollback exits from inside that loop — a trailing `--rollback --yes` would
+# reach the prompt before the flag was ever seen.
+ASSUME_YES=false
+for _arg in "$@"; do
+  case "$_arg" in -y|--yes) ASSUME_YES=true ;; esac
+done
+
+# --- interactive prompts ---------------------------------------------------
+# `read -rp` is NOT portable: zsh reads -p as "take input from the coprocess",
+# so under `set -euo pipefail` every prompt died with "read: -p: no coprocess"
+# before asking anything. Print the prompt with printf and read without -p.
+#
+# On top of that, neither helper is allowed to block blind: with --yes they take
+# the documented default, and with no TTY they say what they needed instead of
+# letting `read` hit EOF and abort the script through `set -e` with no message
+# (which is all CI ever saw).
+_prompt_guard() {
+  # _prompt_guard <prompt> <what --yes would answer>
+  [ -t 0 ] && return 0
+  echo "" >&2
+  echo "  ERROR: this step needs an answer but stdin is not a terminal:" >&2
+  echo "         $1" >&2
+  echo "         Re-run with --yes to answer '$2' non-interactively." >&2
+  exit 1
+}
+
+# Yes/no. Empty input is No, matching the [y/N] hint. --yes answers y.
+prompt_confirm() {
+  local reply=""
+  if $ASSUME_YES; then echo "$1y   [--yes]"; return 0; fi
+  _prompt_guard "$1" "y"
+  printf '%s' "$1"
+  read -r reply || reply=""
+  case "$reply" in [Yy]*) return 0 ;; *) return 1 ;; esac
+}
+
+# Free-form with a default for empty input. The answer lands in the global
+# PROMPT_REPLY — a named out-param would need `printf -v` or a nameref, and
+# neither is portable to zsh. --yes takes <default>.
+PROMPT_REPLY=""
+prompt_read() {
+  if $ASSUME_YES; then PROMPT_REPLY="$2"; echo "$1$2   [--yes]"; return 0; fi
+  _prompt_guard "$1" "$2"
+  printf '%s' "$1"
+  read -r PROMPT_REPLY || PROMPT_REPLY=""
+  PROMPT_REPLY="${PROMPT_REPLY:-$2}"
+}
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [COMMAND] [OPTIONS]
+
+$SCRIPT_NAME
+Tracks the upstream $COMPONENT_LABEL GA version and bumps Chart.yaml
+appVersion${VALUES_FILE:+ + $VALUES_FILE.$VERSION_KEY}. Does NOT touch any cluster.
+${SIBLING_CHART_LABEL:+
+Sibling check: target version must be <= $SIBLING_CHART_LABEL version.
+}
+Commands:
+  (default)           Check latest version and bump
+  --version <VER>     Bump to a specific version (skips upstream query)
+  --dry-run           Preview changes only (no files will be modified)
+  --json              With --dry-run, emit a single-line JSON record on stdout
+                      (schema: helm-charts.upgrade.dryrun.v1). Human progress
+                      output is redirected to stderr. Consumed by
+                      scripts/check-version/check-version.sh.
+  --rollback          Restore files from a previous backup
+  --list-backups      List available backups
+  --cleanup-backups   Keep only the last $KEEP_BACKUPS backups, remove older ones
+  -y, --yes           Answer every confirmation with its default. Required to
+                      run any prompting path non-interactively (CI, pipes) —
+                      without it the script stops rather than guessing.
+  -h, --help          Show this help message
+
+Examples:
+  $(basename "$0")                                # Bump to latest GA
+  $(basename "$0") --dry-run                      # Preview without changes
+  $(basename "$0") --dry-run --json               # Machine-readable preview
+  $(basename "$0") --version X.Y.Z                # Pin to a specific version
+  $(basename "$0") --version X.Y.Z --yes          # …unattended (e.g. a major bump in CI)
+  $(basename "$0") --rollback                     # Restore files from backup
+
+After a successful bump, next steps are:
+  1. git diff (review Chart.yaml${VALUES_FILE:+, $VALUES_FILE})
+  2. make bump CHART=$(basename "$CHART_DIR") LEVEL=patch   # bump chart SemVer
+  3. make ci CHART=$(basename "$CHART_DIR")                 # lint + template + validate
+  4. git add $(basename "$CHART_DIR") && git commit -m "feat($(basename "$CHART_DIR")): bump appVersion"
+EOF
+  exit 0
+}
+
+list_backups() {
+  echo "Available backups:"
+  echo ""
+  if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -d "$BACKUP_DIR"/2* 2>/dev/null)" ]; then
+    echo "  No backups found."
+    exit 0
+  fi
+  local i=1
+  for dir in $(ls -dt "$BACKUP_DIR"/2*/); do
+    local dirname=$(basename "$dir")
+    local app_ver="unknown"
+    [ -f "$dir/Chart.yaml" ] && app_ver=$(grep '^appVersion:' "$dir/Chart.yaml" | awk '{print $2}' | tr -d '"')
+    local files=$(ls "$dir" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+    printf "  [%d] %s (appVersion: %s) — %s\n" "$i" "$dirname" "$app_ver" "$files"
+    i=$((i + 1))
+  done
+  echo ""
+}
+
+do_rollback() {
+  if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -d "$BACKUP_DIR"/2* 2>/dev/null)" ]; then
+    echo "No backups found."
+    exit 1
+  fi
+  list_backups
+  local total
+  total=$(ls -d "$BACKUP_DIR"/2*/ 2>/dev/null | wc -l | tr -d ' ')
+  local choice
+  prompt_read "Select backup number to restore [1]: " "1"
+  choice="$PROMPT_REPLY"
+  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$total" ]; then
+    echo "Invalid selection."
+    exit 1
+  fi
+  # Re-select by line number instead of array indexing: sed is 1-based in both
+  # bash and zsh, avoiding the 0-vs-1-indexed array divergence between shells.
+  local selected
+  selected=$(ls -dt "$BACKUP_DIR"/2*/ | sed -n "${choice}p")
+  local dirname=$(basename "$selected")
+  echo ""
+  echo "Restoring from backup/$dirname..."
+  [ -f "$selected/Chart.yaml" ] && cp "$selected/Chart.yaml" "$CHART_DIR/Chart.yaml" && echo "  Restored Chart.yaml"
+  if [ -n "$VALUES_FILE" ] && [ -f "$selected/$(basename "$VALUES_FILE")" ]; then
+    cp "$selected/$(basename "$VALUES_FILE")" "$CHART_DIR/$VALUES_FILE"
+    echo "  Restored $VALUES_FILE"
+  fi
+  echo ""
+  echo "Rollback complete. Run 'git diff' to review."
+}
+
+cleanup_backups() {
+  if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -d "$BACKUP_DIR"/2* 2>/dev/null)" ]; then
+    echo "No backups found."
+    exit 0
+  fi
+  local total=$(ls -d "$BACKUP_DIR"/2*/ 2>/dev/null | wc -l | tr -d ' ')
+  echo "Total backups: $total (keeping last $KEEP_BACKUPS)"
+  if [ "$total" -le "$KEEP_BACKUPS" ]; then
+    echo "Nothing to clean up."
+    exit 0
+  fi
+  local to_delete=$((total - KEEP_BACKUPS))
+  echo "Removing $to_delete old backup(s)..."
+  ls -dt "$BACKUP_DIR"/2*/ | tail -n "$to_delete" | while read -r dir; do
+    rm -rf "$dir"
+    echo "  Removed: $(basename "$dir")"
+  done
+  echo "Done."
+}
+
+auto_prune_backups() {
+  [ -d "$BACKUP_DIR" ] || return 0
+  local total
+  total=$(ls -d "$BACKUP_DIR"/2*/ 2>/dev/null | wc -l | tr -d ' ')
+  [ "$total" -le "$KEEP_BACKUPS" ] && return 0
+  local to_delete=$((total - KEEP_BACKUPS))
+  ls -dt "$BACKUP_DIR"/2*/ | tail -n "$to_delete" | while read -r dir; do rm -rf "$dir"; done
+  echo "  Auto-pruned $to_delete old backup(s) (KEEP_BACKUPS=$KEEP_BACKUPS)."
+}
+
+# Read a top-level YAML string value. Handles quoted and unquoted values.
+read_yaml_value() {
+  local file="$1"
+  local key="$2"
+  awk -v k="$key" '
+    $0 ~ "^" k ":" {
+      sub("^" k ":[[:space:]]*", "")
+      gsub(/^["\x27]|["\x27]$/, "")
+      sub(/[[:space:]]+#.*$/, "")
+      print
+      exit
+    }
+  ' "$file"
+}
+
+# Replace a top-level YAML string value (quotes preserved where possible).
+update_yaml_value() {
+  local file="$1"
+  local key="$2"
+  local new="$3"
+  local tmp
+  tmp=$(mktemp)
+  awk -v k="$key" -v v="$new" '
+    BEGIN { done = 0 }
+    {
+      if (!done && $0 ~ "^" k ":") {
+        line = $0
+        if (match(line, /: *"[^"]*"/)) {
+          sub(/"[^"]*"/, "\"" v "\"", line)
+        } else if (match(line, /: *\x27[^\x27]*\x27/)) {
+          sub(/\x27[^\x27]*\x27/, "\x27" v "\x27", line)
+        } else {
+          sub(/:[[:space:]].*$/, ": " v, line)
+        }
+        print line
+        done = 1
+        next
+      }
+      print
+    }
+  ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+# Reset the Chart.yaml artifacthub.io/changes literal block to a single
+# `Bump appVersion ...` entry, replacing whatever was there. RESET semantics:
+# the annotation only describes the changes for the release currently being
+# cut, never an ever-growing accumulation of past entries. Manual entries
+# added by humans during PR review are preserved across the same release
+# cycle but are wiped out at the next bump (when this function runs).
+update_artifacthub_changes() {
+  local file="$1"
+  local from="$2"
+  local to="$3"
+  [ "$UPDATE_ARTIFACTHUB_CHANGES" = "true" ] || return 0
+  [ -f "$file" ] || return 0
+  local desc="Bump appVersion from ${from} to ${to}"
+  python3 - "$file" "$desc" <<'PYEOF'
+import sys, re, pathlib
+path = pathlib.Path(sys.argv[1])
+desc = sys.argv[2]
+text = path.read_text()
+pat = re.compile(
+    r'(?P<head>^(?P<indent>\s+)artifacthub\.io/changes:\s*\|\s*\n)'
+    r'(?P<body>(?:(?P=indent)\s+.*\n?)*)',
+    re.MULTILINE,
+)
+m = pat.search(text)
+if not m:
+    sys.stderr.write("WARN: artifacthub.io/changes block not found; skipping.\n")
+    sys.exit(0)
+indent = m.group('indent')
+entry_indent = indent + '  '
+new_body = f"{entry_indent}- kind: changed\n{entry_indent}  description: {desc}\n"
+if m.group('body') == new_body:
+    print("  artifacthub.io/changes already at the target reset state. Skipped.")
+    sys.exit(0)
+new_text = text[:m.start('body')] + new_body + text[m.end('body'):]
+path.write_text(new_text)
+print("  Reset artifacthub.io/changes to single 'Bump appVersion ...' entry.")
+PYEOF
+}
+
+# Fetch sorted list of GA versions (newest first, respecting MAJOR_PIN).
+fetch_ga_versions() {
+  case "$VERSION_SOURCE" in
+    elastic-artifacts)
+      local url="https://artifacts-api.elastic.co/v1/versions"
+      curl -sSfL "$url" 2>/dev/null | python3 -c "
+import json, sys, re, os
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+versions = d.get('versions', [])
+ga = [v for v in versions if re.fullmatch(r'\d+\.\d+\.\d+', v)]
+major = os.environ.get('MAJOR_PIN', '').strip()
+if major:
+    ga = [v for v in ga if v.startswith(major + '.')]
+ga.sort(key=lambda v: tuple(int(p) for p in v.split('.')), reverse=True)
+for v in ga:
+    print(v)
+" 2>/dev/null
+      ;;
+    docker-hub)
+      local repo="${VERSION_SOURCE_ARG}"
+      [ -z "$repo" ] && return 0
+      local base="https://hub.docker.com/v2/repositories/${repo}/tags/?page_size=100"
+      local url="$base"
+      local page=1
+      local all_tags=""
+      # Declared once, OUTSIDE the loop on purpose. zsh's `local NAME` with no
+      # assignment PRINTS "NAME=<current value>" to stdout when the parameter is
+      # already set, so re-declaring inside the loop dumped the previous page's
+      # whole curl response (200KB+) into this function's output from iteration
+      # two onward. bash prints nothing, which is why it only ever broke on zsh.
+      local resp
+      while [ "$page" -le 5 ] && [ -n "$url" ]; do
+        resp=$(curl -sSfL "$url" 2>/dev/null) || break
+        all_tags+="$(printf '%s' "$resp" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    for r in d.get('results', []):
+        print(r.get('name', ''))
+except Exception:
+    pass
+" 2>/dev/null)
+"
+        url=$(printf '%s' "$resp" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    print(d.get('next') or '')
+except Exception:
+    print('')
+" 2>/dev/null)
+        page=$((page + 1))
+      done
+      printf '%s' "$all_tags" | python3 -c "
+import sys, re, os
+major = os.environ.get('MAJOR_PIN', '').strip()
+ga = set()
+for line in sys.stdin:
+    t = line.strip()
+    if re.fullmatch(r'\d+\.\d+\.\d+', t):
+        if major and not t.startswith(major + '.'):
+            continue
+        ga.add(t)
+ga = sorted(ga, key=lambda v: tuple(int(p) for p in v.split('.')), reverse=True)
+for v in ga:
+    print(v)
+"
+      ;;
+    github-release)
+      local repo="${VERSION_SOURCE_ARG}"
+      [ -z "$repo" ] && return 0
+      local url="https://api.github.com/repos/${repo}/releases?per_page=100"
+      curl -sSfL \
+        ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
+        -H 'Accept: application/vnd.github+json' \
+        "$url" 2>/dev/null \
+        | python3 -c "
+import json, sys, re, os
+try:
+    releases = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+major = os.environ.get('MAJOR_PIN', '').strip()
+prefix = os.environ.get('GITHUB_TAG_PREFIX', 'v')
+ga = set()
+for r in releases:
+    if r.get('draft') or r.get('prerelease'):
+        continue
+    tag = r.get('tag_name') or ''
+    if prefix and tag.startswith(prefix):
+        tag = tag[len(prefix):]
+    if re.fullmatch(r'\d+\.\d+\.\d+', tag):
+        if major and not tag.startswith(major + '.'):
+            continue
+        ga.add(tag)
+ga = sorted(ga, key=lambda v: tuple(int(p) for p in v.split('.')), reverse=True)
+for v in ga:
+    print(v)
+" 2>/dev/null
+      ;;
+    *)
+      echo "  ERROR: unknown VERSION_SOURCE: $VERSION_SOURCE" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Deliberately NOT `fetch_ga_versions | head -1`: head exits after one line while
+# the producer is still writing (docker-hub walks up to 5 pages of 100 tags), so
+# the producer takes SIGPIPE, `pipefail` promotes that to a pipeline failure, and
+# `set -e` turns it into a silent exit 141. Whether the race is lost depends on
+# how much the producer still had to write — ghost (2300+ tags) lost it every
+# time under zsh while the smaller charts happened to pass. Buffer, then slice.
+fetch_latest_version() {
+  local all
+  all=$(fetch_ga_versions)
+  [ -n "$all" ] || return 0
+  printf '%s\n' "${all%%$'\n'*}"
+}
+
+find_latest_available_version() {
+  local max_attempts=15
+  local attempt=0
+  while IFS= read -r v; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -gt "$max_attempts" ]; then
+      echo "    (stopped after $max_attempts attempts)" >&2
+      break
+    fi
+    if verify_image_exists "$v"; then
+      echo "    $v: available" >&2
+      echo "$v"
+      return 0
+    fi
+    echo "    $v: not found" >&2
+  done < <(fetch_ga_versions)
+  return 1
+}
+
+semver_compare() {
+  local a_tuple b_tuple
+  a_tuple=$(echo "$1" | awk -F. '{printf "%d%03d%03d", $1, $2, $3}')
+  b_tuple=$(echo "$2" | awk -F. '{printf "%d%03d%03d", $1, $2, $3}')
+  if [ "$a_tuple" -lt "$b_tuple" ]; then echo -1
+  elif [ "$a_tuple" -gt "$b_tuple" ]; then echo 1
+  else echo 0; fi
+}
+
+# File-based sibling read (no kubectl, no cluster access). Empty output means
+# the sibling's pinned version could not be determined.
+read_sibling_version() {
+  [ -n "$SIBLING_CHART_DIR" ] || return 0
+  local sibling_values="$CHART_DIR/$SIBLING_CHART_DIR/values.yaml"
+  local sibling_chart="$CHART_DIR/$SIBLING_CHART_DIR/Chart.yaml"
+  local sibling_ver=""
+  if [ -n "$VERSION_KEY" ] && [ -f "$sibling_values" ]; then
+    sibling_ver=$(read_yaml_value "$sibling_values" "$VERSION_KEY")
+  fi
+  if [ -z "$sibling_ver" ] && [ -f "$sibling_chart" ]; then
+    sibling_ver=$(grep '^appVersion:' "$sibling_chart" | awk '{print $2}' | tr -d '"')
+  fi
+  printf '%s' "$sibling_ver"
+}
+
+# Highest GA release that does not exceed the sibling's pinned version.
+#
+# Without this, "latest is above the sibling" meant giving up entirely, and the
+# chart stayed wherever it was — Kibana sat two minors behind Elasticsearch for
+# weeks because its latest (9.5.1) was one patch above ES (9.5.0), even though
+# 9.5.0 itself was released, published, and legal to run. Matching the sibling
+# exactly is nearly always possible; only tracking *latest* is not.
+#
+# Mirrors find_latest_available_version: the feed is already sorted newest
+# first, so the first release at or below the ceiling wins.
+find_latest_sibling_capped_version() {
+  local ceiling="$1"
+  local max_attempts=15
+  local attempt=0
+  local v
+  while IFS= read -r v; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -gt "$max_attempts" ]; then
+      echo "    (stopped after $max_attempts attempts)" >&2
+      break
+    fi
+    if [ "$(semver_compare "$v" "$ceiling")" != "1" ]; then
+      echo "    $v: at or below $SIBLING_CHART_LABEL $ceiling" >&2
+      printf '%s\n' "$v"
+      return 0
+    fi
+    echo "    $v: above $SIBLING_CHART_LABEL $ceiling" >&2
+  done < <(fetch_ga_versions)
+  return 1
+}
+
+# Verify that a container image tag exists in the registry.
+verify_image_exists() {
+  local tag="$1${TAG_SUFFIX}"
+  if [ -z "$CONTAINER_IMAGE" ] || [ -z "$1" ]; then
+    return 0
+  fi
+  local registry="${CONTAINER_IMAGE%%/*}"
+  local repo="${CONTAINER_IMAGE#*/}"
+  local manifest_url="https://${registry}/v2/${repo}/manifests/${tag}"
+  # Docker Hub uses registry-1.docker.io as the actual registry host.
+  if [ "$registry" = "docker.io" ]; then
+    manifest_url="https://registry-1.docker.io/v2/${repo}/manifests/${tag}"
+  fi
+  local auth_header
+  auth_header=$(curl -sSL -I "$manifest_url" 2>/dev/null \
+    | grep -i '^www-authenticate:' | head -1) || true
+  local http_code
+  if [ -n "$auth_header" ]; then
+    local realm service scope
+    realm=$(echo "$auth_header" | sed -n 's/.*realm="\([^"]*\)".*/\1/p')
+    service=$(echo "$auth_header" | sed -n 's/.*service="\([^"]*\)".*/\1/p')
+    scope=$(echo "$auth_header" | sed -n 's/.*scope="\([^"]*\)".*/\1/p')
+    if [ -n "$realm" ]; then
+      local token_url="${realm}?service=${service}&scope=${scope}"
+      local token
+      token=$(curl -sSL "$token_url" 2>/dev/null \
+        | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null) || true
+      if [ -n "$token" ]; then
+        http_code=$(curl -sSL -o /dev/null -w '%{http_code}' \
+          -H "Authorization: Bearer $token" \
+          -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+          -H "Accept: application/vnd.oci.image.manifest.v1+json" \
+          "$manifest_url" 2>/dev/null) || true
+        [ "$http_code" = "200" ] && return 0
+        return 1
+      fi
+    fi
+  fi
+  http_code=$(curl -sSL -o /dev/null -w '%{http_code}' \
+    -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+    "$manifest_url" 2>/dev/null) || true
+  [ "$http_code" = "200" ]
+}
+
+# -----------------------------------------------
+# Argument parsing
+# -----------------------------------------------
+DRY_RUN=false
+JSON_OUTPUT=false
+TARGET_VERSION=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)          usage ;;
+    --list-backups)     list_backups; exit 0 ;;
+    --rollback)         do_rollback; exit 0 ;;
+    --cleanup-backups)  cleanup_backups; exit 0 ;;
+    --dry-run)          DRY_RUN=true; shift ;;
+    --json)             JSON_OUTPUT=true; shift ;;
+    -y|--yes)           shift ;;   # already applied by the pre-scan above
+    --version)
+      TARGET_VERSION="${2:-}"
+      [ -z "$TARGET_VERSION" ] && { echo "ERROR: --version requires a version number"; exit 1; }
+      shift 2 ;;
+    *) echo "Unknown option: $1"; echo ""; usage ;;
+  esac
+done
+
+if $JSON_OUTPUT && ! $DRY_RUN; then
+  echo "ERROR: --json requires --dry-run" >&2
+  exit 1
+fi
+
+# JSON state — populated at each natural exit point so the EXIT trap can emit
+# a structured one-line record on stdout. Schema: helm-charts.upgrade.dryrun.v1.
+# Defaults reflect "unexpected exit" so any code path that exits without
+# updating these surfaces as status=error.
+JSON_STATUS="error"
+JSON_LATEST=""
+JSON_UPSTREAM_LATEST=""
+JSON_SIBLING_NAME=""
+JSON_SIBLING_VERSION=""
+JSON_ERROR="unexpected exit before JSON status was set"
+
+emit_json() {
+  $JSON_OUTPUT || return 0
+  python3 - \
+    "$(basename "$CHART_DIR")" \
+    "$JSON_STATUS" \
+    "${CURRENT_VERSION:-}" \
+    "$JSON_LATEST" \
+    "$JSON_UPSTREAM_LATEST" \
+    "$JSON_SIBLING_NAME" \
+    "$JSON_SIBLING_VERSION" \
+    "$JSON_ERROR" \
+    <<'PYEOF' >&3 || true
+import json, sys
+chart, status, current, latest, upstream, sib_name, sib_ver, err = sys.argv[1:9]
+def _major(v):
+    if not v or "." not in v:
+        return None
+    return v.split(".", 1)[0]
+major_bump = bool(
+    status == "drift" and current and latest
+    and _major(current) != _major(latest)
+)
+sibling = None
+if status == "blocked" and sib_name:
+    sibling = {"name": sib_name, "version": sib_ver or None}
+doc = {
+    "schema": "helm-charts.upgrade.dryrun.v1",
+    "chart": chart,
+    "status": status,
+    "current": current or None,
+    "latest": latest or None,
+    "upstream_latest": upstream or None,
+    "major_bump": major_bump,
+    "sibling": sibling,
+    "error": err or None,
+}
+print(json.dumps(doc))
+PYEOF
+}
+
+if $JSON_OUTPUT; then
+  exec 3>&1
+  exec 1>&2
+  trap emit_json EXIT
+fi
+
+# -----------------------------------------------
+# Main
+# -----------------------------------------------
+echo "================================================"
+echo " $SCRIPT_NAME"
+$DRY_RUN && echo " Mode: DRY-RUN (no files will be changed)"
+[ -n "$TARGET_VERSION" ] && echo " Target: $TARGET_VERSION"
+[ -n "$MAJOR_PIN" ] && echo " Major pin: $MAJOR_PIN.x"
+echo "================================================"
+
+# Step 1: read current version
+echo ""
+if [ -n "$VALUES_FILE" ]; then
+  echo "[Step 1/N] Reading current version from $VALUES_FILE..."
+  if [ ! -f "$CHART_DIR/$VALUES_FILE" ]; then
+    JSON_ERROR="values file not found: $VALUES_FILE"
+    echo "  ERROR: values file not found: $CHART_DIR/$VALUES_FILE"
+    exit 1
+  fi
+  CURRENT_VERSION=$(read_yaml_value "$CHART_DIR/$VALUES_FILE" "$VERSION_KEY")
+  if [ -z "$CURRENT_VERSION" ]; then
+    JSON_ERROR="could not read '$VERSION_KEY' from $VALUES_FILE"
+    echo "  ERROR: could not read '$VERSION_KEY' from $VALUES_FILE"
+    exit 1
+  fi
+  echo "  Current $COMPONENT_LABEL version: $CURRENT_VERSION"
+else
+  echo "[Step 1/N] Reading current appVersion from Chart.yaml..."
+  CURRENT_VERSION=$(grep '^appVersion:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
+  if [ -z "$CURRENT_VERSION" ]; then
+    JSON_ERROR="could not read appVersion from Chart.yaml"
+    echo "  ERROR: could not read appVersion"
+    exit 1
+  fi
+  echo "  Current appVersion: $CURRENT_VERSION"
+fi
+
+CURRENT_APP_VERSION=""
+if [ -f "$CHART_DIR/Chart.yaml" ]; then
+  CURRENT_APP_VERSION=$(grep '^appVersion:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
+  echo "  Chart.yaml appVersion:       $CURRENT_APP_VERSION"
+fi
+
+# Step 2: fetch latest upstream
+echo ""
+echo "[Step 2/N] Checking latest upstream version (source: $VERSION_SOURCE)..."
+if [ -n "$TARGET_VERSION" ]; then
+  LATEST_VERSION="$TARGET_VERSION"
+  echo "  Using explicit target: $TARGET_VERSION"
+else
+  LATEST_VERSION=$(fetch_latest_version)   # MAJOR_PIN is exported above
+  if [ -z "$LATEST_VERSION" ]; then
+    JSON_ERROR="failed to fetch latest version from $VERSION_SOURCE"
+    echo "  ERROR: failed to fetch latest version"
+    exit 1
+  fi
+  echo "  Latest available:      $LATEST_VERSION"
+fi
+
+if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ] && { [ -z "$CURRENT_APP_VERSION" ] || [ "$CURRENT_APP_VERSION" = "$LATEST_VERSION" ]; }; then
+  JSON_STATUS="uptodate"
+  JSON_LATEST="$LATEST_VERSION"
+  JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+  JSON_ERROR=""
+  echo ""
+  echo "  Already up to date! Nothing to do."
+  exit 0
+fi
+
+echo ""
+echo "  Bump: $CURRENT_VERSION -> $LATEST_VERSION"
+echo "  Changelog: $CHANGELOG_URL"
+
+# Step 3: optional sibling check
+if [ -n "$SIBLING_CHART_DIR" ]; then
+  echo ""
+  echo "[Step 3/N] Sibling version check ($SIBLING_CHART_LABEL)..."
+  SIBLING_VERSION=$(read_sibling_version)
+  [ -n "$SIBLING_VERSION" ] && echo "  Sibling $SIBLING_CHART_LABEL version: $SIBLING_VERSION"
+  if [ -z "$SIBLING_VERSION" ]; then
+    echo "  WARN: could not determine sibling ($SIBLING_CHART_LABEL) version. Skipping check."
+  elif [ "$(semver_compare "$LATEST_VERSION" "$SIBLING_VERSION")" = "1" ]; then
+    echo ""
+    echo "  $LATEST_VERSION is HIGHER than $SIBLING_CHART_LABEL $SIBLING_VERSION."
+    JSON_SIBLING_NAME="$SIBLING_CHART_LABEL"
+    JSON_SIBLING_VERSION="$SIBLING_VERSION"
+    # An explicit --version is an instruction, not a suggestion — never
+    # substitute a different one behind the caller's back.
+    if [ -n "$TARGET_VERSION" ]; then
+      JSON_STATUS="blocked"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
+      echo "  Refusing an explicitly requested version. Bump $SIBLING_CHART_LABEL first:"
+      echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $LATEST_VERSION"
+      exit 1
+    fi
+    echo "  Searching for the newest GA release at or below it..."
+    CAPPED_VERSION=$(find_latest_sibling_capped_version "$SIBLING_VERSION") || true
+    if [ -z "$CAPPED_VERSION" ]; then
+      JSON_STATUS="blocked"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
+      echo "  ERROR: no GA release at or below $SIBLING_CHART_LABEL $SIBLING_VERSION."
+      echo "  Bump $SIBLING_CHART_LABEL first:"
+      echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $LATEST_VERSION"
+      exit 1
+    fi
+    # A cap must never move the chart backwards. If the sibling is pinned below
+    # where this chart already sits, the sibling is the thing that is wrong —
+    # downgrading to "obey" it would be a silent rollback of a released version.
+    if [ "$(semver_compare "$CAPPED_VERSION" "$CURRENT_VERSION")" != "1" ]; then
+      JSON_STATUS="blocked"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
+      if [ "$CAPPED_VERSION" = "$CURRENT_VERSION" ]; then
+        echo "  Already level with $SIBLING_CHART_LABEL at $CURRENT_VERSION — nothing to bump."
+      else
+        echo "  ERROR: $SIBLING_CHART_LABEL $SIBLING_VERSION is BEHIND this chart's $CURRENT_VERSION."
+        echo "  Refusing to downgrade to $CAPPED_VERSION. Bump $SIBLING_CHART_LABEL instead."
+      fi
+      echo "  Reaching $LATEST_VERSION needs $SIBLING_CHART_LABEL to move first:"
+      echo "    cd $SIBLING_CHART_DIR && ./upgrade.sh --version $LATEST_VERSION"
+      exit 1
+    fi
+    # Sibling-capped fallback succeeded. Preserve the upstream feed value
+    # separately from the actual bump target, same as the image fallback does.
+    JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+    LATEST_VERSION="$CAPPED_VERSION"
+    echo "  Capping at $SIBLING_CHART_LABEL: bumping to $LATEST_VERSION instead."
+  else
+    echo "  OK ($LATEST_VERSION <= $SIBLING_VERSION)."
+  fi
+fi
+
+# Step 4: verify image if configured
+echo ""
+echo "[Step 4/N] Verifying container image..."
+if [ -n "$CONTAINER_IMAGE" ]; then
+  echo "  Checking: $CONTAINER_IMAGE:${LATEST_VERSION}${TAG_SUFFIX}"
+  if verify_image_exists "$LATEST_VERSION"; then
+    echo "  Image verified OK."
+  else
+    echo ""
+    echo "  WARNING: Container image not found in registry."
+    if [ -n "$TARGET_VERSION" ]; then
+      echo "  Refusing to bump. Retry once the image is published or choose another version."
+      exit 1
+    fi
+    echo "  Searching for the newest GA version with a published image..."
+    AVAILABLE_VERSION=$(find_latest_available_version) || true
+    if [ -z "$AVAILABLE_VERSION" ]; then
+      JSON_STATUS="no-image"
+      JSON_LATEST=""
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR="no GA version with a published image found"
+      echo "  ERROR: no GA version with a published image found within search limit."
+      exit 1
+    fi
+    if [ "$AVAILABLE_VERSION" = "$CURRENT_VERSION" ]; then
+      JSON_STATUS="no-image"
+      JSON_LATEST="$CURRENT_VERSION"
+      JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+      JSON_ERROR=""
+      echo "  Newest available matches current. Nothing to bump."
+      exit 0
+    fi
+    echo "  Latest available (with published image): $AVAILABLE_VERSION"
+    # Image-fallback succeeded: record the original upstream value before
+    # rewriting LATEST_VERSION, so JSON output preserves the upstream feed
+    # value separately from the actual bump target.
+    JSON_UPSTREAM_LATEST="$LATEST_VERSION"
+    if $DRY_RUN; then
+      LATEST_VERSION="$AVAILABLE_VERSION"
+    else
+      prompt_confirm "  Use $AVAILABLE_VERSION instead of $LATEST_VERSION? [y/N]: " \
+        || { echo "Aborted."; exit 1; }
+      LATEST_VERSION="$AVAILABLE_VERSION"
+    fi
+  fi
+else
+  echo "  Skipped (CONTAINER_IMAGE not configured)."
+fi
+
+# Step 5: major bump warning
+CURRENT_MAJOR="${CURRENT_VERSION%%.*}"
+LATEST_MAJOR="${LATEST_VERSION%%.*}"
+if [ -n "$CURRENT_MAJOR" ] && [ -n "$LATEST_MAJOR" ] && [ "$CURRENT_MAJOR" != "$LATEST_MAJOR" ]; then
+  echo ""
+  echo "  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo "  !! MAJOR VERSION BUMP: $CURRENT_MAJOR.x -> $LATEST_MAJOR.x"
+  echo "  !! Review breaking changes: $CHANGELOG_URL"
+  echo "  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  if ! $DRY_RUN; then
+    prompt_confirm "  Continue with major version bump? [y/N]: " \
+      || { echo "Aborted."; exit 1; }
+  fi
+fi
+
+# Step 6: dry-run or apply
+echo ""
+if $DRY_RUN; then
+  JSON_STATUS="drift"
+  JSON_LATEST="$LATEST_VERSION"
+  JSON_UPSTREAM_LATEST="${JSON_UPSTREAM_LATEST:-$LATEST_VERSION}"
+  JSON_ERROR=""
+  echo "[Step 6/N] DRY-RUN complete. No files were changed."
+  echo "  To apply: $(basename "$0")${TARGET_VERSION:+ --version $TARGET_VERSION}"
+  exit 0
+fi
+
+echo "[Step 6/N] Applying bump..."
+mkdir -p "$BACKUP_DIR/$TIMESTAMP"
+cp "$CHART_DIR/Chart.yaml" "$BACKUP_DIR/$TIMESTAMP/Chart.yaml"
+if [ -n "$VALUES_FILE" ] && [ -f "$CHART_DIR/$VALUES_FILE" ]; then
+  cp "$CHART_DIR/$VALUES_FILE" "$BACKUP_DIR/$TIMESTAMP/$(basename "$VALUES_FILE")"
+fi
+echo "  Backed up to: backup/$TIMESTAMP/"
+ls "$BACKUP_DIR/$TIMESTAMP/" | while read -r f; do echo "    - $f"; done
+
+if [ -n "$VALUES_FILE" ]; then
+  update_yaml_value "$CHART_DIR/$VALUES_FILE" "$VERSION_KEY" "$LATEST_VERSION"
+  echo "  Updated $VALUES_FILE ($VERSION_KEY: $CURRENT_VERSION -> $LATEST_VERSION)"
+fi
+
+update_yaml_value "$CHART_DIR/Chart.yaml" "appVersion" "$LATEST_VERSION"
+echo "  Updated Chart.yaml (appVersion: ${CURRENT_APP_VERSION:-unset} -> $LATEST_VERSION)"
+
+if [ "$MIRROR_CHART_VERSION" = "true" ]; then
+  CURRENT_CHART_VERSION=$(grep '^version:' "$CHART_DIR/Chart.yaml" | awk '{print $2}' | tr -d '"')
+  if [ "$CURRENT_CHART_VERSION" != "$LATEST_VERSION" ]; then
+    update_yaml_value "$CHART_DIR/Chart.yaml" "version" "$LATEST_VERSION"
+    echo "  Updated Chart.yaml (version: ${CURRENT_CHART_VERSION:-unset} -> $LATEST_VERSION) [mirrored]"
+  fi
+fi
+
+update_artifacthub_changes "$CHART_DIR/Chart.yaml" "$CURRENT_APP_VERSION" "$LATEST_VERSION"
+
+auto_prune_backups
+
+echo ""
+echo "================================================"
+echo " Bump complete! ($CURRENT_VERSION -> $LATEST_VERSION)"
+echo ""
+echo " Changelog: $CHANGELOG_URL"
+echo ""
+echo " Next steps:"
+echo "   1. git diff (review Chart.yaml${VALUES_FILE:+, $VALUES_FILE})"
+echo "   2. make bump CHART=$(basename "$CHART_DIR") LEVEL=patch   # bump chart SemVer"
+echo "   3. make ci CHART=$(basename "$CHART_DIR")"
+echo "   4. git add $(basename "$CHART_DIR") && git commit"
+echo ""
+echo " To rollback:"
+echo "   $(basename "$0") --rollback"
+echo "================================================"
+# === END CANONICAL BODY ===

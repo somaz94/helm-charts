@@ -200,7 +200,7 @@ imagePullSecret:
   dockerconfigjson: <base64 ~/.docker/config.json>
 image:
   repository: harbor.example.com/library/mysql
-  tag: "8.0.43"
+  tag: "8.0.46"
 ```
 
 Generate the `dockerconfigjson` value:
@@ -239,7 +239,7 @@ The chart-managed Secret is **additive** to `imagePullSecrets[]` — set both fo
 | Key | Default | Description |
 |---|---|---|
 | `image.repository` | `mysql` | container image repository |
-| `image.tag` | `""` (= `Chart.AppVersion`, currently `8.0.43`) | tag override |
+| `image.tag` | `""` (= `Chart.AppVersion`, e.g. `8.0.46`) | tag override |
 | `image.pullPolicy` | `IfNotPresent` | |
 | `imagePullSecrets[]` | `[]` | bring-your-own pull Secrets, additive |
 | `imagePullSecret.create` | `false` | render a `dockerconfigjson` Secret |
@@ -334,6 +334,37 @@ Those checksums hash only the ConfigMap `data` and the Secret `stringData`, neve
 | `kubernetesExtra` | `{}` | each value rendered as an additional manifest in this release |
 | `serviceAccount.{create,name,annotations,imagePullSecrets,automountServiceAccountToken}` | `create=false` | scope-pinned SA |
 | `networkPolicy.{enabled,policyTypes,ingress,egress,podSelector}` | `enabled=false` | native `networking.k8s.io/v1` shape |
+
+<br/>
+
+## Maintaining this chart
+
+### Bumping the MySQL version
+
+```bash
+cd charts/mysql
+./upgrade.sh --dry-run           # preview
+./upgrade.sh                     # bump to the latest 8.0 patch
+./upgrade.sh --version 8.0.46    # pin to a specific version
+./upgrade.sh --rollback          # restore files from backup/
+```
+
+`upgrade.sh` updates `Chart.yaml` `appVersion` only — the image tag is derived
+from `.Chart.AppVersion`, so `values.yaml` is left untouched. It does NOT bump
+the chart's own SemVer or touch any cluster.
+
+The version search is pinned to the **8.0 line** (`MAJOR_PIN="8.0"`). The pin is
+a string prefix, so `"8"` would also match the 8.4 LTS line and walk the chart
+off this series; moving to 8.4 or 9.x is a deliberate major decision, not
+something the bump script should reach on its own.
+
+After reviewing the diff:
+
+```bash
+make bump CHART=mysql LEVEL=patch
+make lint CHART=mysql
+make template CHART=mysql
+```
 
 <br/>
 
