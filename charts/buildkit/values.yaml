@@ -67,7 +67,7 @@ configMap:
 # ---------------------------------------------------------------------------
 image:
   repository: moby/buildkit
-  tag: ""                         # empty → defaults to .Chart.AppVersion (v0.29.0).
+  tag: ""                         # empty → defaults to .Chart.AppVersion (e.g. "v0.33.0").
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
