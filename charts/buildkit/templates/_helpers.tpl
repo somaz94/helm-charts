@@ -105,8 +105,6 @@ otherwise auto-render a minimal config wiring the registry CA path.
 {{- if not .Values.registry.caBundle.host -}}
 {{- fail "buildkit: registry.caBundle.host is required when registry.caBundle.enabled is true and buildkitdConfig is empty (chart auto-renders a minimal config that needs the host)." -}}
 {{- end -}}
-debug = false
-
 [registry."{{ .Values.registry.caBundle.host }}"]
   ca = ["{{ .Values.registry.caBundle.caPath }}"]
 {{- end -}}

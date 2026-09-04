@@ -31,4 +31,6 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: "Bump appVersion from v0.29.0 to v0.33.0 (moby/buildkit). No chart-visible breaking change; note that the auto-rendered minimal buildkitd.toml still emits the debug key, which upstream deprecated in v0.30.0 in favour of a log level option."
+      description: "Bump appVersion from v0.29.0 to v0.33.0 (moby/buildkit)."
+    - kind: removed
+      description: "Drop the no-op debug key from the auto-rendered minimal buildkitd.toml. It only ever restated buildkitd's own default, and upstream removed the top-level debug key from the buildkitd.toml reference in v0.30.0 in favour of a [log] level option. The rendered config now carries just the registry CA wiring it exists for."

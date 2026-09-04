@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.1.4] - 2026-09-04
 
 ### Changed
-- Bump appVersion from v0.29.0 to v0.33.0 (moby/buildkit). No chart-visible breaking change; note that the auto-rendered minimal buildkitd.toml still emits the debug key, which upstream deprecated in v0.30.0 in favour of a log level option.
+- Bump appVersion from v0.29.0 to v0.33.0 (moby/buildkit).
+
+### Removed
+- Drop the no-op debug key from the auto-rendered minimal buildkitd.toml. It only ever restated buildkitd's own default, and upstream removed the top-level debug key from the buildkitd.toml reference in v0.30.0 in favour of a [log] level option. The rendered config now carries just the registry CA wiring it exists for.
 
 ## [v0.1.3] - 2026-07-13
 

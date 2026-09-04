@@ -108,7 +108,8 @@ registry:
     host: harbor.example.com     # only used by auto-render; ignored when buildkitdConfig is set
 
 buildkitdConfig: |
-  debug = false
+  [log]
+    level = "info"                # error | warn | info | debug | trace
 
   [worker.oci]
     max-parallelism = 4
