@@ -2903,6 +2903,44 @@ entries:
       artifacthub.io/category: networking
       artifacthub.io/changes: |
         - kind: added
+          description: "Support clientSettingsPolicies[].body.bufferSize (NGF 2.7.0+) to set client_body_buffer_size, above which a request body spills to a temporary file."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: NGINX Gateway Fabric
+          url: https://github.com/nginx/nginx-gateway-fabric
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-09-04T02:00:22.300480207Z"
+    description: Custom resources (Gateway, NginxProxy, ReferenceGrant, ClientSettingsPolicy,
+      ServiceMonitor / PodMonitor) for NGINX Gateway Fabric, deployed alongside the
+      upstream NGF controller chart.
+    digest: 31b6aa317ac7dd291dad240b083a29ff4cfa1bf2149e0d5af35752c5ca5512aa
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - nginx
+    - nginx-gateway-fabric
+    - ngf
+    - gateway-api
+    - kubernetes
+    - networking
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: nginx-gateway-cr
+    sources:
+    - https://github.com/somaz94/helm-charts
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/nginx-gateway-cr-0.5.0/nginx-gateway-cr-0.5.0.tgz
+    version: 0.5.0
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: added
           description: "Add clientSettingsPolicies[] rendering ClientSettingsPolicy resources, attachable to a Gateway, HTTPRoute or GRPCRoute and covering spec.body and spec.keepAlive."
         - kind: added
           description: "Support keepAlive.minTimeout (NGF 2.6.0+, nginx 1.27.4+) to hold idle keep-alive connections open across an nginx reload."
@@ -3988,4 +4026,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-09-03T09:24:45.553570983Z"
+generated: "2026-09-04T02:00:22.300634976Z"
