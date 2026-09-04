@@ -5,6 +5,11 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.5.0] - 2026-09-04
+
+### Added
+- Support clientSettingsPolicies[].body.bufferSize (NGF 2.7.0+) to set client_body_buffer_size, above which a request body spills to a temporary file.
+
 ## [v0.4.0] - 2026-09-03
 
 ### Added

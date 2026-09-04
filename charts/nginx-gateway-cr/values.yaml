@@ -162,16 +162,21 @@ referenceGrants: []
 #                  name  (required)
 #                  kind  (optional) Gateway | HTTPRoute | GRPCRoute. Default Gateway.
 #                  group (optional) Default gateway.networking.k8s.io.
-#   body         (optional) spec.body — maxSize, timeout.
+#   body         (optional) spec.body — maxSize, bufferSize, timeout.
 #   keepAlive    (optional) spec.keepAlive — requests, time, minTimeout, timeout.
 #
 # Duration and size fields are STRINGS in the CRD ("21s", "10m"). Quote any
 # value a YAML parser would otherwise read as a number.
 #
-# NOTE: keepAlive.minTimeout requires NGF >= 2.6.0 (nginx >= 1.27.4). The
-# values schema rejects unknown keys, so a new upstream field needs a schema
-# entry here before it can be set — that is deliberate: a silently dropped
-# typo would render an accepted policy that configures nothing.
+# NOTE: two fields need a newer NGF than the rest — keepAlive.minTimeout
+# requires NGF >= 2.6.0 (nginx >= 1.27.4), and body.bufferSize requires
+# NGF >= 2.7.0. Against an older controller the apiserver does NOT reject the
+# policy: the CRD is structural, so it prunes the field it does not know and
+# accepts the rest. The policy reports Accepted and the setting is simply gone.
+# The values schema rejects unknown keys, so a new upstream field needs a schema
+# entry here before it can be set — that is deliberate: a silently dropped typo
+# would render an accepted policy that configures nothing, which is the same
+# failure this note describes.
 clientSettingsPolicies: []
 # Example:
 #   clientSettingsPolicies:
@@ -194,6 +199,7 @@ clientSettingsPolicies: []
 #         name: uploads
 #       body:
 #         maxSize: 500m
+#         bufferSize: 128k
 #         timeout: 120s
 
 # ---------------------------------------------------------------------------

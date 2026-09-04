@@ -36,7 +36,7 @@ The upstream chart installs the controller and CRDs, but does **not** create the
 
 ```bash
 helm install ngf-cr oci://ghcr.io/somaz94/charts/nginx-gateway-cr \
-  --version 0.4.0 \
+  --version 0.5.0 \
   --namespace nginx-gateway \
   -f my-values.yaml
 ```
@@ -262,6 +262,7 @@ Used when a Gateway entry does not set `listeners` directly.
 | `targetRef.kind` | string | no | `Gateway` (default), `HTTPRoute`, or `GRPCRoute`. |
 | `targetRef.group` | string | no | Defaults to `gateway.networking.k8s.io`. |
 | `body.maxSize` | string | no | `client_max_body_size`. `"0"` disables the check. |
+| `body.bufferSize` | string | no | `client_body_buffer_size`. A body larger than this is spilled to a temporary file. **Requires NGF >= 2.7.0**. |
 | `body.timeout` | string | no | `client_body_timeout`. |
 | `keepAlive.requests` | int | no | `keepalive_requests`. |
 | `keepAlive.time` | string | no | `keepalive_time`. |

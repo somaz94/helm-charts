@@ -38,6 +38,7 @@ clientSettingsPolicies:
       name: ngf-route
     body:
       maxSize: 10m
+      bufferSize: 16k
       timeout: 60s
 serviceMonitor:
   namespace: monitoring
