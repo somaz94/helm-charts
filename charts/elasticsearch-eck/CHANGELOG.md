@@ -5,6 +5,11 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.2] - 2026-09-16
+
+### Changed
+- The single-node example now uses auto_expand_replicas 0-1 instead of pinning number_of_replicas to 0, so a replica is restored automatically when a second node joins
+
 ## [v0.3.1] - 2026-09-16
 
 ### Changed

@@ -2,7 +2,7 @@ apiVersion: v2
 name: elasticsearch-eck
 description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
 type: application
-version: 0.3.1
+version: 0.3.2
 appVersion: "9.5.3"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -33,4 +33,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: "Document that stackConfigPolicy requires an ECK Enterprise licence; on a Basic licence the CR renders but the operator applies nothing"
+      description: "The single-node example now uses auto_expand_replicas 0-1 instead of pinning number_of_replicas to 0, so a replica is restored automatically when a second node joins"

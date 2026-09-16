@@ -356,7 +356,7 @@ Declarative Elasticsearch/Kibana **configuration**, applied through the Elastics
 | `kibana` | `{}` | Passthrough for `spec.kibana`. |
 | `secureSettings` | `[]` | Secret sources for the policy itself. |
 
-On a **single-node** cluster a replica can never be allocated, so the Elasticsearch default of `1` leaves every new index yellow forever — which blocks ECK rolling upgrades through the `require_started_replica` predicate. Pin new indices to zero replicas:
+On a **single-node** cluster a replica can never be allocated, so the Elasticsearch default of `1` leaves every new index yellow forever — which blocks ECK rolling upgrades through the `require_started_replica` predicate. Let Elasticsearch size the replica count to the node count instead, the same way the built-in system indices do:
 
 ```yaml
 stackConfigPolicy:
@@ -370,8 +370,10 @@ stackConfigPolicy:
           template:
             settings:
               index:
-                number_of_replicas: 0
+                auto_expand_replicas: "0-1"
 ```
+
+> `auto_expand_replicas: "0-1"` is preferred over pinning `number_of_replicas: 0`: it yields zero replicas on one node and restores a replica automatically once a second node joins, so nothing has to be undone when the cluster grows.
 
 > Keep the priority below `100`. Elasticsearch refuses a template whose patterns overlap another at the same priority, and the built-in `logs-*-*` / `metrics-*-*` / `synthetics-*-*` templates sit there. Forcing a higher value would let this template outrank them for an index such as `logs-app-1`, breaking its mappings and ILM settings.
 

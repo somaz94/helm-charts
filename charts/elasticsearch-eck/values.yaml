@@ -513,9 +513,10 @@ serviceMonitor:
 #
 # A common use: on a SINGLE-NODE cluster a replica can never be allocated, so the
 # Elasticsearch default of 1 leaves every new index yellow forever — which blocks
-# ECK rolling upgrades through the require_started_replica predicate. Pin new
-# indices to zero replicas with a low-priority template (stay below the built-in
-# logs-*-*/metrics-*-* templates at 100, or they lose to this one on overlap):
+# ECK rolling upgrades through the require_started_replica predicate. Let
+# Elasticsearch size the replica count to the node count, through a low-priority
+# template (stay below the built-in logs-*-*/metrics-*-* templates at 100, or they
+# lose to this one on overlap):
 #
 #   stackConfigPolicy:
 #     enabled: true
@@ -528,7 +529,11 @@ serviceMonitor:
 #             template:
 #               settings:
 #                 index:
-#                   number_of_replicas: 0
+#                   auto_expand_replicas: "0-1"
+#
+# auto_expand_replicas is preferred over pinning number_of_replicas: 0 -- it gives
+# zero replicas on one node and restores a replica by itself once a second node
+# joins, so nothing has to be undone when the cluster grows.
 stackConfigPolicy:
   enabled: false
   # Policy name; defaults to the chart fullname when empty.
