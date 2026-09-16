@@ -257,7 +257,8 @@ The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`
 | `monitoring` | `{}` | Stack Monitoring config. |
 | `updateStrategy` | `{}` | ECK changeBudget for rolling updates. |
 | `specExtra` | `{}` | **Escape hatch**: extra fields merged into `spec`. |
-| `sysctlInitContainer.enabled` | `true` | Privileged init container setting `vm.max_map_count=262144`. |
+| `sysctlInitContainer.enabled` | `true` | Privileged init container that raises node sysctls before Elasticsearch starts. |
+| `sysctlInitContainer.sysctls` | `{vm.max_map_count: 1048576}` | Map of sysctl name to desired value, applied as a **floor** — raised only when the node is below it, never lowered. Node-level, not persisted across a reboot. |
 
 <br/>
 

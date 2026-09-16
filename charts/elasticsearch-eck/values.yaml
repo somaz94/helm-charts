@@ -232,10 +232,26 @@ nodeSets:
     # `config`, `podTemplate`, `volumeClaimTemplates`).
     nodeSetExtra: {}
 
-# Enables the privileged init container that sets vm.max_map_count=262144.
+# Privileged init container that raises node sysctls before Elasticsearch starts.
 # Required on most kernels for production ES. Safe default = on.
+#
+# `sysctls` is a key/value map; each entry becomes one `apply <key> <value>` call.
+# These are NODE-level settings -- fs/vm sysctls are not namespaced, so a Pod's
+# securityContext.sysctls cannot set them, and the value is NOT persisted across
+# a reboot.
+#
+# The container applies a FLOOR, not an assignment: a node already above the
+# desired value is left alone. This matters because a plain `sysctl -w` would
+# regress a pre-tuned node, and the lowered value outlives the pod -- every other
+# workload later scheduled there inherits it.
+#
+# vm.max_map_count defaults to Elastic's documented requirement. Leave this
+# enabled even where mmap is off (node.store.allow_mmap: false): disabling it
+# does not restore a node some earlier release already lowered.
 sysctlInitContainer:
   enabled: true
+  sysctls:
+    vm.max_map_count: 1048576
 
 # ---------------------------------------------------------------------------
 # PodDisruptionBudget

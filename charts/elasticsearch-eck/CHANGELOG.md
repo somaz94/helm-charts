@@ -5,6 +5,17 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.0] - 2026-09-16
+
+### Added
+- sysctlInitContainer.sysctls map so the init container can manage any node sysctl, not only vm.max_map_count
+
+### Changed
+- Raise the default vm.max_map_count from 262144 to 1048576, matching Elastic's current documented requirement
+
+### Fixed
+- The sysctl init container no longer lowers a node that is already tuned above the desired value; it now applies a floor and only raises, since the write is node-level and outlives the pod
+
 ## [v0.1.16] - 2026-09-07
 
 ### Changed

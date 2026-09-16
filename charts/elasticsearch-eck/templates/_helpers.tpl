@@ -59,3 +59,29 @@ when `caCertificateRef.kind: ConfigMap` with empty `name`).
 {{- define "elasticsearch-eck.caConfigMapName" -}}
 {{ printf "%s-ca" (include "elasticsearch-eck.fullname" .) }}
 {{- end -}}
+
+{{/*
+Shell function used by the privileged sysctl init container.
+
+`apply <key> <want>` raises a sysctl to <want> only when the node currently sits
+BELOW it -- a floor, never an assignment. `sysctl -w` on its own overwrites
+unconditionally, which silently regresses a node that was already tuned higher,
+and because the write is node-level and outlives the pod, every other workload
+scheduled there inherits the lowered value.
+
+Falls back to a plain write when either side is not a plain integer, so
+multi-field sysctls (e.g. net.ipv4.tcp_rmem "4096 87380 6291456") still work.
+*/}}
+{{- define "elasticsearch-eck.sysctlApplyFn" -}}
+apply() {
+  key=$1; want=$2
+  cur=$(sysctl -n "$key" 2>/dev/null) || cur=""
+  case "$want" in *[!0-9]*) sysctl -w "$key=$want"; return;; esac
+  case "$cur" in ''|*[!0-9]*) sysctl -w "$key=$want"; return;; esac
+  if [ "$cur" -lt "$want" ]; then
+    sysctl -w "$key=$want"
+  else
+    echo "$key: node already at $cur (>= $want), leaving as is"
+  fi
+}
+{{- end -}}

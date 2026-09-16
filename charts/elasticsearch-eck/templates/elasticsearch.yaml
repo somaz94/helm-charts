@@ -96,7 +96,25 @@ spec:
         {{- /* initContainers: built-in sysctl + user-supplied */}}
         {{- $initContainers := list }}
         {{- if $.Values.sysctlInitContainer.enabled }}
-        {{- $sysctl := dict "name" "sysctl" "securityContext" (dict "privileged" true "runAsUser" (int 0)) "command" (list "sh" "-c" "sysctl -w vm.max_map_count=262144") }}
+        {{- $sysctlLines := list }}
+        {{- range $key, $val := $.Values.sysctlInitContainer.sysctls }}
+        {{- /* YAML integers reach templates as float64, and %v would render 1048576 as
+               1.048576e+06 -- a value sysctl(8) rejects. Format those as plain integers;
+               leave strings alone so multi-field sysctls (net.ipv4.tcp_rmem "4096 87380
+               6291456") survive. Quote the assignment so the shell keeps them one word. */}}
+        {{- $out := $val }}
+        {{- if kindIs "float64" $val }}{{- $out = printf "%.0f" $val }}{{- end }}
+        {{- $sysctlLines = append $sysctlLines (printf "apply %s '%v'" $key $out) }}
+        {{- end }}
+        {{- if not $sysctlLines }}
+        {{- fail "sysctlInitContainer.enabled is true but sysctlInitContainer.sysctls is empty -- set at least one sysctl, or disable the init container" }}
+        {{- end }}
+        {{- /* Floor semantics, not assignment: `sysctl -w` overwrites unconditionally, so a
+               node already tuned above the desired value would be REGRESSED by this container
+               -- and the lowered value outlives the pod, affecting every workload on that node.
+               Only raise. Same rationale as kubespray's `sysctl_minimum_values`. */}}
+        {{- $script := printf "%s\n%s" (include "elasticsearch-eck.sysctlApplyFn" .) (join "\n" $sysctlLines) }}
+        {{- $sysctl := dict "name" "sysctl" "securityContext" (dict "privileged" true "runAsUser" (int 0)) "command" (list "sh" "-c" $script) }}
         {{- $initContainers = append $initContainers $sysctl }}
         {{- end }}
         {{- range $ic := $ns.initContainers }}

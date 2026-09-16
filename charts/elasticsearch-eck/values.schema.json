@@ -95,7 +95,13 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean" }
+        "enabled": { "type": "boolean" },
+        "sysctls": {
+          "type": "object",
+          "description": "Map of sysctl name to desired value. Applied as a floor -- raised only when the node is below it, never lowered. Node-level; not persisted across a reboot.",
+          "minProperties": 1,
+          "additionalProperties": { "type": ["integer", "string"] }
+        }
       }
     },
 
