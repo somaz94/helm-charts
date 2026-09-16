@@ -26,7 +26,8 @@
         "backendTLSPolicy":     { "$ref": "#/$defs/metadataBlock" },
         "serviceMonitor":       { "$ref": "#/$defs/metadataBlock" },
         "networkPolicy":        { "$ref": "#/$defs/metadataBlock" },
-        "referenceGrant":       { "$ref": "#/$defs/metadataBlock" }
+        "referenceGrant":       { "$ref": "#/$defs/metadataBlock" },
+        "stackConfigPolicy":    { "$ref": "#/$defs/metadataBlock" }
       }
     },
     "name":    { "type": "string" },
@@ -38,6 +39,9 @@
     "transport":       { "type": "object", "additionalProperties": true },
     "secureSettings":  { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
     "auth":            { "type": "object", "additionalProperties": true },
+    "volumeClaimDeletePolicy": { "type": "string", "enum": ["", "DeleteOnScaledownOnly", "DeleteOnScaledownAndClusterDeletion"] },
+    "revisionHistoryLimit":    { "type": ["integer", "string"] },
+    "remoteClusterServer":     { "type": "object", "additionalProperties": true },
     "remoteClusters":  { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
     "monitoring":      { "type": "object", "additionalProperties": true },
     "updateStrategy":  { "type": "object", "additionalProperties": true },
@@ -52,6 +56,7 @@
         "required": ["name", "count"],
         "properties": {
           "name":  { "type": "string", "minLength": 1, "maxLength": 23 },
+          "zoneAwareness": { "type": "object", "additionalProperties": true },
           "count": { "type": "integer", "minimum": 1 },
           "roles": { "type": "array", "items": { "type": "string" } },
           "config": { "type": "object", "additionalProperties": true },
@@ -249,6 +254,19 @@
         "scrapeTimeout": { "type": "string" },
         "selector":      { "type": "object", "additionalProperties": true },
         "endpoints":     { "type": "array",  "items": { "type": "object", "additionalProperties": true } }
+      }
+    },
+
+    "stackConfigPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":          { "type": "boolean" },
+        "name":             { "type": "string" },
+        "resourceSelector": { "type": "object", "additionalProperties": true },
+        "elasticsearch":    { "type": "object", "additionalProperties": true },
+        "kibana":           { "type": "object", "additionalProperties": true },
+        "secureSettings":   { "type": "array",  "items": { "type": "object", "additionalProperties": true } }
       }
     }
   },

@@ -16,6 +16,7 @@ The chart renders the ECK `Elasticsearch` Custom Resource plus a handful of opti
 | `HTTPRoute` | `gateway.networking.k8s.io/v1` | Optional. Gateway API route for external access. |
 | `BackendTLSPolicy` + CA `ConfigMap` | `gateway.networking.k8s.io/v1`, `v1` | Optional. Verifies ECK self-signed HTTPS cert from the Gateway. Chart auto-copies `ca.crt` from ECK's `*-es-http-certs-public` Secret into a `<fullname>-ca` ConfigMap via `helm lookup` (only portable approach — see Known limitations). |
 | `ServiceMonitor` | `monitoring.coreos.com/v1` | Optional. Prometheus scrape config for `/_prometheus/metrics`. |
+| `StackConfigPolicy` | `stackconfigpolicy.k8s.elastic.co/v1alpha1` | Optional. Declarative stack *configuration* — index templates, cluster settings, ILM/SLM policies, ingest pipelines, security roles — applied and reconciled by the operator. |
 
 <br/>
 
@@ -253,6 +254,9 @@ The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`
 | `transport` | `{}` | Passthrough to `spec.transport`. |
 | `secureSettings` | `[]` | ECK secureSettings array (keystore sources). |
 | `auth` | `{}` | ECK `spec.auth` (roles, fileRealm). |
+| `volumeClaimDeletePolicy` | `""` | `DeleteOnScaledownOnly` keeps the data PVCs when the Elasticsearch resource is deleted; the ECK default (`DeleteOnScaledownAndClusterDeletion`) removes them. Empty leaves ECK's default. |
+| `revisionHistoryLimit` | `""` | StatefulSet revisions retained for rollback. Empty leaves ECK's default. |
+| `remoteClusterServer` | `{}` | Enable the remote cluster server when this cluster is accessed via API key auth for CCR/CCS. |
 | `remoteClusters` | `[]` | CCR/CCS connections. |
 | `monitoring` | `{}` | Stack Monitoring config. |
 | `updateStrategy` | `{}` | ECK changeBudget for rolling updates. |
@@ -269,6 +273,7 @@ The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`
 | `name` | _required_ | nodeSet name (used in StatefulSet name). |
 | `count` | _required_ | Number of pods in the StatefulSet. |
 | `roles` | _(all roles)_ | `node.roles` setting. |
+| `zoneAwareness` | `{}` | Topology-aware scheduling plus shard allocation awareness, so replicas land in a different zone from their primary. Only meaningful when nodes span zones. |
 | `config` | `{node.store.allow_mmap: false}` | Free-form `elasticsearch.yml` content (merged with `node.roles`). |
 | `resources` | `100m/2Gi → 1000m/2Gi` | Container resources for the `elasticsearch` container. |
 | `storage.storageClass` | `""` | **PVC StorageClass — provide your own.** Empty → cluster default SC (only works if one is marked default). See Prerequisites for common SC names per environment. |
@@ -329,6 +334,40 @@ Standard Gateway API HTTPRoute fields; see the values.yaml for the full shape. `
 | `interval` / `scrapeTimeout` | `30s` / `10s` | Scrape cadence. |
 | `selector` | _(ES cluster-name matcher)_ | Override if using a custom exporter. |
 | `endpoints` | `[]` | Empty → minimal HTTPS scrape of `/_prometheus/metrics` on port 9200 using `elastic` basic-auth. |
+
+<br/>
+
+### `stackConfigPolicy`
+
+Declarative Elasticsearch/Kibana **configuration**, applied through the Elasticsearch API by the operator and continuously reconciled — a manual API change is reverted. This is a different concern from the Elasticsearch CR, which owns cluster **topology**; ECK splits the two across separate CRDs, which is why index settings appear nowhere else in these values.
+
+| Key | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Render a StackConfigPolicy. Requires the ECK operator's `StackConfigPolicy` CRD. |
+| `name` | `""` | Defaults to the chart fullname. |
+| `resourceSelector` | _(this chart's cluster)_ | Which Elasticsearch/Kibana resources the policy targets. An empty selector in the rendered CR would match **every** resource in scope, so the chart always emits one. |
+| `elasticsearch` | `{}` | Passthrough for `spec.elasticsearch`: `clusterSettings`, `config`, `indexTemplates`, `indexLifecyclePolicies`, `ingestPipelines`, `secretMounts`, `secureSettings`, `securityRoles`, `securityRoleMappings`, `snapshotRepositories`, `snapshotLifecyclePolicies`. |
+| `kibana` | `{}` | Passthrough for `spec.kibana`. |
+| `secureSettings` | `[]` | Secret sources for the policy itself. |
+
+On a **single-node** cluster a replica can never be allocated, so the Elasticsearch default of `1` leaves every new index yellow forever — which blocks ECK rolling upgrades through the `require_started_replica` predicate. Pin new indices to zero replicas:
+
+```yaml
+stackConfigPolicy:
+  enabled: true
+  elasticsearch:
+    indexTemplates:
+      composableIndexTemplates:
+        single-node-replicas:
+          index_patterns: ["app-*"]
+          priority: 60
+          template:
+            settings:
+              index:
+                number_of_replicas: 0
+```
+
+> Keep the priority below `100`. Elasticsearch refuses a template whose patterns overlap another at the same priority, and the built-in `logs-*-*` / `metrics-*-*` / `synthetics-*-*` templates sit there. Forcing a higher value would let this template outrank them for an index such as `logs-app-1`, breaking its mappings and ILM settings.
 
 <br/>
 

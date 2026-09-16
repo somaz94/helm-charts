@@ -5,6 +5,13 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.0] - 2026-09-16
+
+### Added
+- Optional StackConfigPolicy resource for declarative index templates, cluster settings, ILM/SLM policies, ingest pipelines and security roles; the resourceSelector defaults to this chart's own cluster so it never matches everything
+- volumeClaimDeletePolicy, so the data PVCs can be kept when the Elasticsearch resource is deleted instead of being removed with it
+- revisionHistoryLimit and remoteClusterServer as named values, plus nodeSets[].zoneAwareness for topology-aware scheduling and shard allocation awareness
+
 ## [v0.2.0] - 2026-09-16
 
 ### Added

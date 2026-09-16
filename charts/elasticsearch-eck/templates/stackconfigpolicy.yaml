@@ -1,0 +1,41 @@
+{{- if .Values.stackConfigPolicy.enabled -}}
+apiVersion: stackconfigpolicy.k8s.elastic.co/v1alpha1
+kind: StackConfigPolicy
+metadata:
+  name: {{ .Values.stackConfigPolicy.name | default (include "elasticsearch-eck.fullname" .) }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "elasticsearch-eck.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.stackConfigPolicy.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "elasticsearch-eck.annotations" (dict "top" . "extra" .Values.resourceMetadata.stackConfigPolicy.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  {{- /* An EMPTY resourceSelector matches every Elasticsearch in scope, so never
+         render one. Default to this chart's own cluster; an explicit value wins. */}}
+  {{- if .Values.stackConfigPolicy.resourceSelector }}
+  resourceSelector:
+    {{- toYaml .Values.stackConfigPolicy.resourceSelector | nindent 4 }}
+  {{- else }}
+  resourceSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "elasticsearch-eck.fullname" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  {{- end }}
+  {{- with .Values.stackConfigPolicy.elasticsearch }}
+  elasticsearch:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.stackConfigPolicy.kibana }}
+  kibana:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.stackConfigPolicy.secureSettings }}
+  secureSettings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

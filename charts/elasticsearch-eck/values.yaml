@@ -54,6 +54,9 @@ resourceMetadata:
   referenceGrant:
     labels: {}
     annotations: {}
+  stackConfigPolicy:
+    labels: {}
+    annotations: {}
 
 # ---------------------------------------------------------------------------
 # Elasticsearch Custom Resource — top-level spec fields
@@ -128,6 +131,25 @@ auth: {}
 #   fileRealm:
 #     - secretName: custom-users
 
+# spec.volumeClaimDeletePolicy: what happens to the data PVCs.
+#   DeleteOnScaledownAndClusterDeletion  ECK default -- deleting the Elasticsearch
+#                                        resource also deletes the PVCs, and the data.
+#   DeleteOnScaledownOnly                PVCs survive deletion of the Elasticsearch
+#                                        resource; only scale-down reclaims them.
+# Worth setting explicitly under GitOps, where an accidental prune of the CR would
+# otherwise take the data with it. Empty leaves the ECK default in place.
+volumeClaimDeletePolicy: ""
+
+# spec.revisionHistoryLimit: revisions retained in the underlying StatefulSets for
+# rollback. Empty leaves the ECK default.
+revisionHistoryLimit: ""
+
+# spec.remoteClusterServer: enable the remote cluster server. Required when THIS
+# cluster is the one being accessed via API key authentication for CCR/CCS.
+remoteClusterServer: {}
+# remoteClusterServer:
+#   enabled: true
+
 # spec.remoteClusters: CCR/CCS connections.
 remoteClusters: []
 
@@ -176,6 +198,12 @@ nodeSets:
       - ml
       - remote_cluster_client
       - transform
+    # nodeSets[].zoneAwareness: topology-aware scheduling plus Elasticsearch shard
+    # allocation awareness, so replicas land in a different zone from their primary.
+    # Only meaningful on a cluster whose nodes span zones. Empty leaves it off.
+    zoneAwareness: {}
+    # zoneAwareness:
+    #   enabled: true
     # elasticsearch.yml config. Free-form; merged with node.roles above.
     config:
       # NFS + hugepages: disable mmap (use niofs). Safe default; remove for
@@ -461,3 +489,54 @@ serviceMonitor:
   # Full endpoints[] shape. Leave empty to let the template render a minimal
   # endpoint hitting /_prometheus/metrics on port 9200.
   endpoints: []
+
+# ---------------------------------------------------------------------------
+# StackConfigPolicy (ECK)
+# ---------------------------------------------------------------------------
+# Declarative Elasticsearch/Kibana *configuration* — index templates, cluster
+# settings, ILM/SLM policies, ingest pipelines, security roles. The ECK operator
+# applies these through the Elasticsearch API and keeps reconciling them, so a
+# manual API change is reverted.
+#
+# This is a different concern from the Elasticsearch CR, which owns cluster
+# TOPOLOGY. ECK splits the two across separate CRDs, which is why index settings
+# do not appear anywhere else in these values.
+#
+# Requires the ECK operator (StackConfigPolicy CRD) and an operator licence tier
+# that enables it. Disabled by default.
+#
+# A common use: on a SINGLE-NODE cluster a replica can never be allocated, so the
+# Elasticsearch default of 1 leaves every new index yellow forever — which blocks
+# ECK rolling upgrades through the require_started_replica predicate. Pin new
+# indices to zero replicas with a low-priority template (stay below the built-in
+# logs-*-*/metrics-*-* templates at 100, or they lose to this one on overlap):
+#
+#   stackConfigPolicy:
+#     enabled: true
+#     elasticsearch:
+#       indexTemplates:
+#         composableIndexTemplates:
+#           single-node-replicas:
+#             index_patterns: ["app-*"]
+#             priority: 60
+#             template:
+#               settings:
+#                 index:
+#                   number_of_replicas: 0
+stackConfigPolicy:
+  enabled: false
+  # Policy name; defaults to the chart fullname when empty.
+  name: ""
+  # Which Elasticsearch/Kibana resources the policy applies to.
+  # Defaults to THIS chart's cluster. Beware: an empty selector in the rendered
+  # CR would match every resource in scope, so the template always emits one.
+  resourceSelector: {}
+  # Passthrough — provide the shape ECK expects under spec.elasticsearch.
+  # Keys: clusterSettings, config, indexTemplates, indexLifecyclePolicies,
+  #       ingestPipelines, secretMounts, secureSettings, securityRoles,
+  #       securityRoleMappings, snapshotRepositories, snapshotLifecyclePolicies
+  elasticsearch: {}
+  # Passthrough for spec.kibana (config, secureSettings).
+  kibana: {}
+  # spec.secureSettings — Secret sources for the policy itself.
+  secureSettings: []

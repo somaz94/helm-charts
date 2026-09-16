@@ -41,6 +41,18 @@ spec:
   auth:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- with .Values.volumeClaimDeletePolicy }}
+  volumeClaimDeletePolicy: {{ . }}
+  {{- end }}
+  {{- /* Numbers reach templates as float64 from values.yaml but int64 from --set,
+         so test for "not empty" rather than a specific numeric kind. */}}
+  {{- if ne (toString .Values.revisionHistoryLimit) "" }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | int }}
+  {{- end }}
+  {{- with .Values.remoteClusterServer }}
+  remoteClusterServer:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- with .Values.remoteClusters }}
   remoteClusters:
     {{- toYaml . | nindent 4 }}
@@ -69,6 +81,10 @@ spec:
     {{- range $idx, $ns := .Values.nodeSets }}
     - name: {{ $ns.name }}
       count: {{ $ns.count }}
+      {{- with $ns.zoneAwareness }}
+      zoneAwareness:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- /* elasticsearch.yml — merge node.roles into config */}}
       {{- $cfg := deepCopy (default (dict) $ns.config) }}
       {{- if $ns.roles }}

@@ -2,7 +2,7 @@ apiVersion: v2
 name: elasticsearch-eck
 description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes) with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults to a single-node cluster; HA via nodeSets.
 type: application
-version: 0.2.0
+version: 0.3.0
 appVersion: "9.5.3"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -32,9 +32,9 @@ annotations:
       url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "The sysctl init container no longer lowers a node that is already tuned above the desired value; it now applies a floor and only raises, since the write is node-level and outlives the pod"
     - kind: added
-      description: "sysctlInitContainer.sysctls map so the init container can manage any node sysctl, not only vm.max_map_count"
-    - kind: changed
-      description: "Raise the default vm.max_map_count from 262144 to 1048576, matching Elastic's current documented requirement"
+      description: "Optional StackConfigPolicy resource for declarative index templates, cluster settings, ILM/SLM policies, ingest pipelines and security roles; the resourceSelector defaults to this chart's own cluster so it never matches everything"
+    - kind: added
+      description: "volumeClaimDeletePolicy, so the data PVCs can be kept when the Elasticsearch resource is deleted instead of being removed with it"
+    - kind: added
+      description: "revisionHistoryLimit and remoteClusterServer as named values, plus nodeSets[].zoneAwareness for topology-aware scheduling and shard allocation awareness"
