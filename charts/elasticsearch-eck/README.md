@@ -341,9 +341,15 @@ Standard Gateway API HTTPRoute fields; see the values.yaml for the full shape. `
 
 Declarative Elasticsearch/Kibana **configuration**, applied through the Elasticsearch API by the operator and continuously reconciled — a manual API change is reverted. This is a different concern from the Elasticsearch CR, which owns cluster **topology**; ECK splits the two across separate CRDs, which is why index settings appear nowhere else in these values.
 
+> ⚠️ **Enterprise licence required.** Elastic's documentation states "This requires a valid Enterprise license or Enterprise trial license". On a Basic licence the operator emits `StackConfigPolicy is an enterprise feature. Enterprise features are disabled` and nothing is applied — the CR renders, but has no effect. Check before enabling:
+>
+> ```bash
+> kubectl -n elastic-system get configmap elastic-licensing -o jsonpath='{.data.eck_license_level}'
+> ```
+
 | Key | Default | Description |
 |---|---|---|
-| `enabled` | `false` | Render a StackConfigPolicy. Requires the ECK operator's `StackConfigPolicy` CRD. |
+| `enabled` | `false` | Render a StackConfigPolicy. **Requires an ECK Enterprise licence** — see the note below. |
 | `name` | `""` | Defaults to the chart fullname. |
 | `resourceSelector` | _(this chart's cluster)_ | Which Elasticsearch/Kibana resources the policy targets. An empty selector in the rendered CR would match **every** resource in scope, so the chart always emits one. |
 | `elasticsearch` | `{}` | Passthrough for `spec.elasticsearch`: `clusterSettings`, `config`, `indexTemplates`, `indexLifecyclePolicies`, `ingestPipelines`, `secretMounts`, `secureSettings`, `securityRoles`, `securityRoleMappings`, `snapshotRepositories`, `snapshotLifecyclePolicies`. |
