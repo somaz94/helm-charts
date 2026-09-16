@@ -498,6 +498,48 @@ entries:
   - annotations:
       artifacthub.io/category: monitoring-logging
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Document that stackConfigPolicy requires an ECK Enterprise licence; on a Basic licence the CR renders but the operator applies nothing"
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: ECK Documentation
+          url: https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
+        - name: Elasticsearch Release Notes
+          url: https://www.elastic.co/guide/en/elasticsearch/reference/current/release-notes.html
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 9.5.3
+    created: "2026-09-16T03:30:41.606104727Z"
+    description: Elasticsearch Custom Resource for ECK (Elastic Cloud on Kubernetes)
+      with HTTPRoute, BackendTLSPolicy, PDB and ServiceMonitor wrappers. Defaults
+      to a single-node cluster; HA via nodeSets.
+    digest: 539c4ec11f6e742cab9d43e74cdf9c4495cfcbc7f7d7a21d53b45f51144e2375
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - elasticsearch
+    - elastic
+    - eck
+    - elastic-cloud-on-kubernetes
+    - observability
+    - logging
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: elasticsearch-eck
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/elastic/cloud-on-k8s
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/elasticsearch-eck-0.3.1/elasticsearch-eck-0.3.1.tgz
+    version: 0.3.1
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/changes: |
         - kind: added
           description: "Optional StackConfigPolicy resource for declarative index templates, cluster settings, ILM/SLM policies, ingest pipelines and security roles; the resourceSelector defaults to this chart's own cluster so it never matches everything"
         - kind: added
@@ -4381,4 +4423,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-09-16T03:25:37.144805305Z"
+generated: "2026-09-16T03:30:41.606257884Z"
