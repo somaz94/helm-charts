@@ -29,7 +29,6 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- /* hostname */}}
   {{- $h := .Values.keycloak.hostname }}
   {{- if or $h.hostname $h.admin (hasKey $h "strict") (hasKey $h "backchannelDynamic") }}
   hostname:
@@ -47,7 +46,6 @@ spec:
     {{- end }}
   {{- end }}
 
-  {{- /* http */}}
   {{- $http := .Values.keycloak.http }}
   http:
     {{- if hasKey $http "httpEnabled" }}
@@ -71,13 +69,11 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
 
-  {{- /* proxy */}}
   {{- with .Values.keycloak.proxy.headers }}
   proxy:
     headers: {{ . | quote }}
   {{- end }}
 
-  {{- /* db */}}
   {{- $db := .Values.keycloak.db }}
   {{- $dbSecret := include "keycloak-cr.dbSecretName" . }}
   db:
@@ -115,7 +111,6 @@ spec:
     poolMaxSize: {{ $db.poolMaxSize }}
     {{- end }}
 
-  {{- /* bootstrapAdmin */}}
   {{- $userSec := include "keycloak-cr.adminUserSecretName" . }}
   {{- $svcSec := .Values.keycloak.bootstrapAdmin.serviceSecret }}
   {{- if or $userSec $svcSec }}
@@ -130,19 +125,16 @@ spec:
     {{- end }}
   {{- end }}
 
-  {{- /* resources */}}
   {{- with .Values.keycloak.resources }}
   resources:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- /* scheduling */}}
   {{- with .Values.keycloak.scheduling }}
   scheduling:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- /* features */}}
   {{- $f := .Values.keycloak.features }}
   {{- if or $f.enabled $f.disabled }}
   features:
@@ -156,7 +148,6 @@ spec:
     {{- end }}
   {{- end }}
 
-  {{- /* ingress */}}
   {{- $ing := .Values.keycloak.ingress }}
   ingress:
     enabled: {{ $ing.enabled }}
@@ -172,13 +163,11 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
 
-  {{- /* networkPolicy */}}
   {{- if .Values.keycloak.networkPolicy.enabled }}
   networkPolicy:
     enabled: true
   {{- end }}
 
-  {{- /* tracing */}}
   {{- $tr := .Values.keycloak.tracing }}
   {{- if $tr.enabled }}
   tracing:
@@ -197,31 +186,27 @@ spec:
     {{- end }}
   {{- end }}
 
-  {{- /* transaction */}}
   {{- if ne (toString .Values.keycloak.transaction.xaEnabled) "<nil>" }}
   transaction:
     xaEnabled: {{ .Values.keycloak.transaction.xaEnabled }}
   {{- end }}
 
-  {{- /* truststores */}}
   {{- with .Values.keycloak.truststores }}
   truststores:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- /* additionalOptions */}}
   {{- with .Values.keycloak.additionalOptions }}
   additionalOptions:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- /* env */}}
   {{- with .Values.keycloak.env }}
   env:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- /* Final escape hatch — merged into spec at the top level */}}
+  {{- /* Escape hatch: appended to spec, not merged — only for fields the chart does not set (overlap = duplicate key). */}}
   {{- with .Values.keycloak.specExtra }}
   {{- toYaml . | nindent 2 }}
   {{- end }}

@@ -77,13 +77,8 @@ spec:
                     OUT="$BACKUP_DIR/mysql-all-${DATE}.sql"
                   fi
 
-                  # Nothing below may leave a file behind unless it is verified complete.
-                  # The redirects create $OUT before mysqldump has written a byte, so a dump
-                  # that fails outright — refused connection, bad credentials, unknown
-                  # database — leaves an empty file while `set -e` exits before anything can
-                  # clean it up. An empty .sql sitting in the backup directory reads as a
-                  # real dump to anyone listing it. The trap owns cleanup for every failure
-                  # path and is disarmed only once the dump has passed verification.
+                  # The redirect creates $OUT before mysqldump writes, and set -e exits before
+                  # cleanup; the trap deletes it on any failure so an empty .sql never passes as a dump.
                   trap 'rm -f "$OUT"' EXIT
 
                   if [ -n "$TARGET_DB" ]; then
@@ -98,22 +93,14 @@ spec:
                       --all-databases > "$OUT"
                   fi
 
-                  # Verify at write time. `set -e` aborts on a mysqldump that exits
-                  # non-zero, but one cut short by a full disk, a dropped connection or an
-                  # OOM exits zero and leaves a plausible-looking .sql file — and on an
-                  # --all-databases dump that file is large enough that size alone tells you
-                  # nothing. mysqldump writes a "Dump completed" comment as its last line,
-                  # so its absence means the file is truncated however large it looks.
-                  # Catching that here instead of at restore time is the whole point of
-                  # having a backup.
+                  # A dump cut short (full disk, dropped connection, OOM) still exits 0; the trailing
+                  # "Dump completed" line is the only proof it finished, whatever the file size.
                   if ! tail -n 5 "$OUT" | grep -q 'Dump completed'; then
                     echo "[$(date)] ERROR: $(basename "$OUT") is truncated — the dump-completed marker is missing"
                     exit 1
                   fi
 
-                  # Verified complete, so it must survive every later exit path. Disarming
-                  # here rather than at the end of the script is deliberate: retention and
-                  # the listing below must never be able to delete the dump just taken.
+                  # Disarm here, not at the end, so retention/listing can never delete the dump just taken.
                   trap - EXIT
                   echo "[$(date)] DB backup: $(basename "$OUT") ($(du -h "$OUT" | cut -f1)) — verified"
 

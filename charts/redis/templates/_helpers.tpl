@@ -1,7 +1,6 @@
 {{/*
-Chart name used to derive resource names and as the label value.
-Defaults to the Helm release name; overridable via .Values.fullnameOverride
-or .Values.nameOverride.
+Resource name: <release>-<chart>, or just <release> when it already contains the
+chart name. fullnameOverride / nameOverride take precedence.
 */}}
 {{- define "redis.fullname" -}}
 {{- if .Values.fullnameOverride -}}

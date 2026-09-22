@@ -17,7 +17,7 @@
 *.tmproj
 .vscode/
 
-# CI values — only used by local `make template`/`make validate`.
+# CI fixtures (ct lint, make template/validate in CI and locally); not shipped in the package.
 ci/
 
 # upgrade.sh bookkeeping — chart-maintainer tooling, not shipped in tarballs.

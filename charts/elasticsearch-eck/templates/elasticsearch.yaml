@@ -99,7 +99,6 @@ spec:
         {{- $pt := deepCopy (default (dict) $ns.podTemplateExtra) }}
         {{- $ptSpec := default (dict) (get $pt "spec") }}
 
-        {{- /* Top-level pod scheduling */}}
         {{- if $ns.nodeSelector }}{{- $_ := set $ptSpec "nodeSelector" $ns.nodeSelector }}{{- end }}
         {{- if $ns.tolerations }}{{- $_ := set $ptSpec "tolerations" $ns.tolerations }}{{- end }}
         {{- if $ns.affinity }}{{- $_ := set $ptSpec "affinity" $ns.affinity }}{{- end }}
@@ -109,7 +108,6 @@ spec:
         {{- if $ns.podSecurityContext }}{{- $_ := set $ptSpec "securityContext" $ns.podSecurityContext }}{{- end }}
         {{- if $ns.volumes }}{{- $_ := set $ptSpec "volumes" $ns.volumes }}{{- end }}
 
-        {{- /* initContainers: built-in sysctl + user-supplied */}}
         {{- $initContainers := list }}
         {{- if $.Values.sysctlInitContainer.enabled }}
         {{- $sysctlLines := list }}
@@ -125,10 +123,7 @@ spec:
         {{- if not $sysctlLines }}
         {{- fail "sysctlInitContainer.enabled is true but sysctlInitContainer.sysctls is empty -- set at least one sysctl, or disable the init container" }}
         {{- end }}
-        {{- /* Floor semantics, not assignment: `sysctl -w` overwrites unconditionally, so a
-               node already tuned above the desired value would be REGRESSED by this container
-               -- and the lowered value outlives the pod, affecting every workload on that node.
-               Only raise. Same rationale as kubespray's `sysctl_minimum_values`. */}}
+        {{- /* Floor, not assignment: see sysctlApplyFn in _helpers.tpl. */}}
         {{- $script := printf "%s\n%s" (include "elasticsearch-eck.sysctlApplyFn" .) (join "\n" $sysctlLines) }}
         {{- $sysctl := dict "name" "sysctl" "securityContext" (dict "privileged" true "runAsUser" (int 0)) "command" (list "sh" "-c" $script) }}
         {{- $initContainers = append $initContainers $sysctl }}
@@ -138,7 +133,6 @@ spec:
         {{- end }}
         {{- if $initContainers }}{{- $_ := set $ptSpec "initContainers" $initContainers }}{{- end }}
 
-        {{- /* Main elasticsearch container: build from explicit fields + containerExtra */}}
         {{- $mainContainer := deepCopy (default (dict) $ns.containerExtra) }}
         {{- $_ := set $mainContainer "name" "elasticsearch" }}
         {{- if $ns.resources }}{{- $_ := set $mainContainer "resources" $ns.resources }}{{- end }}
@@ -151,7 +145,6 @@ spec:
         {{- if $ns.lifecycle }}{{- $_ := set $mainContainer "lifecycle" $ns.lifecycle }}{{- end }}
         {{- if $ns.securityContext }}{{- $_ := set $mainContainer "securityContext" $ns.securityContext }}{{- end }}
 
-        {{- /* containers: main + sidecars */}}
         {{- $containers := list $mainContainer }}
         {{- range $sc := $ns.sidecars }}
         {{- $containers = append $containers $sc }}
@@ -160,8 +153,6 @@ spec:
 
         {{- $_ := set $pt "spec" $ptSpec }}
         {{- toYaml $pt | nindent 8 }}
-
-      {{- /* volumeClaimTemplates: default `elasticsearch-data` + any user-supplied extras */}}
       volumeClaimTemplates:
         {{- $defaultVCT := dict "metadata" (dict "name" "elasticsearch-data") "spec" (dict
               "accessModes" (default (list "ReadWriteOnce") (get (default (dict) $ns.storage) "accessModes"))
@@ -174,13 +165,13 @@ spec:
         - {{- toYaml $vct | nindent 10 }}
         {{- end }}
 
-      {{- /* Escape hatch at nodeSet level */}}
+      {{- /* nodeSetExtra: appended, not merged (overlap = duplicate key). */}}
       {{- with $ns.nodeSetExtra }}
       {{- toYaml . | nindent 6 }}
       {{- end }}
     {{- end }}
 
-  {{- /* Final escape hatch — merged into spec */}}
+  {{- /* Escape hatch: appended to spec, not merged — only for fields the chart does not set (overlap = duplicate key). */}}
   {{- with .Values.specExtra }}
   {{- toYaml . | nindent 2 }}
   {{- end }}

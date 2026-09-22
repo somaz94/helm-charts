@@ -1,25 +1,5 @@
-{{- /*
-BackendTLSPolicy for Kibana — verifies Kibana's ECK self-signed HTTPS cert
-from a Gateway HTTPRoute. Source of the CA bundle is selected by
-`caCertificateRef`:
-
-1. kind: ConfigMap, name: ""  (DEFAULT)
-     Chart auto-renders `<fullname>-ca` ConfigMap by copying `ca.crt` out of
-     the ECK-managed Secret `<fullname>-kb-http-certs-public` via `helm lookup`.
-     On first install the Secret does not exist yet → the whole template
-     renders as a no-op. Re-run `helm upgrade` once Kibana is Ready. This is
-     the only path portable across all Gateway API implementations.
-
-2. kind: ConfigMap, name: "<custom>"
-     Consumer-managed ConfigMap (e.g. reflected from another namespace, or
-     provisioned by External Secrets). Chart does NOT render the ConfigMap.
-
-3. kind: Secret, name: "" or "<custom>"  (ADVANCED)
-     BTP references the Secret directly. Support is implementation-specific
-     AND type-constrained: NGINX Gateway Fabric rejects `type: Opaque` — the
-     ECK `*-kb-http-certs-public` Secret is Opaque and WILL be rejected with
-     `InvalidCACertificateRef`. Use only with a curated tls-type Secret.
-*/ -}}
+{{- /* caCertificateRef modes (auto ConfigMap via lookup, custom ConfigMap, Secret) and
+       the NGF Opaque-Secret rejection are documented in values.yaml (backendTLSPolicy). */ -}}
 {{- if and .Values.httproute.enabled .Values.backendTLSPolicy.enabled }}
 {{- $secretName := printf "%s-kb-http-certs-public" (include "kibana-eck.fullname" .) }}
 {{- $defaultCmName := printf "%s-ca" (include "kibana-eck.fullname" .) }}
