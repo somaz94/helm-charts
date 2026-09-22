@@ -38,7 +38,7 @@ nodeClassDefaults:
         volumeType: gp3
         encrypted: true
         deleteOnTermination: true
-  # Extra tags merged onto every node (the discovery tag is always added).
+  # Default tags for every node; an entry's own `tags` replaces this map (the discovery tag is always added).
   tags: {}
 
 nodePoolDefaults:
@@ -75,14 +75,16 @@ nodePoolDefaults:
 # Schema per entry:
 #   name (required), role, amiFamily, amiAlias, amiSelectorTerms,
 #   subnetSelectorTerms, securityGroupSelectorTerms (default: discovery tag),
-#   metadataOptions, blockDeviceMappings, tags, userData, detailedMonitoring, kubelet
+#   metadataOptions, blockDeviceMappings, tags, userData, detailedMonitoring, kubelet,
+#   labels, annotations
 # ---------------------------------------------------------------------------
 nodeClasses: []
 
 # ---------------------------------------------------------------------------
 # NodePools — what Karpenter may provision. Schema per entry:
 #   name (required), nodeClassRef (default: name), nodeClassGroup, nodeClassKind,
-#   labels, annotations, taints, startupTaints, requirements (raw list, required),
+#   labels / podAnnotations (→ spec.template.metadata, i.e. the nodes), annotations,
+#   taints, startupTaints, requirements (raw list, required),
 #   limits, disruption, terminationGracePeriod, weight
 # ---------------------------------------------------------------------------
 nodePools: []

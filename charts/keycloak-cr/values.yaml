@@ -19,8 +19,7 @@
 commonLabels: {}
 commonAnnotations: {}
 
-# Per-resource label/annotation overrides. Keys: keycloak, realmImport,
-# httproute, ingress, dbSecret, adminSecret.
+# Per-resource label/annotation overrides.
 resourceMetadata:
   keycloak:
     labels: {}
@@ -61,7 +60,7 @@ keycloak:
   # Pull secrets attached to the Keycloak server Pods (NOT the operator).
   imagePullSecrets: []           # e.g. [{ name: my-registry }]
 
-  # Hostname configuration. Required for proxy=edge to avoid admin redirect loops.
+  # Hostname configuration. Required behind a TLS-terminating gateway to avoid admin redirect loops.
   # Example: hostname.hostname=auth.example.com when fronting Keycloak with TLS.
   hostname:
     hostname: ""                 # FQDN clients use to reach Keycloak
@@ -70,8 +69,7 @@ keycloak:
     backchannelDynamic: false    # Hostname v2 — set true for split private network access
 
   # HTTP / HTTPS listener config. The operator-rendered Service exposes the
-  # ports below. With proxy=edge you typically want only HTTP enabled and let
-  # the gateway terminate TLS.
+  # ports below. Behind a TLS-terminating gateway you typically enable only HTTP.
   http:
     httpEnabled: true            # Enable plaintext HTTP listener (recommended behind a TLS gateway)
     httpPort: 8080
@@ -80,9 +78,7 @@ keycloak:
     annotations: {}              # Service-level annotations
     labels: {}                   # Service-level labels
 
-  # Reverse-proxy mode. `edge` = TLS terminated at the gateway. `reencrypt`
-  # = TLS terminated at the gateway and re-encrypted to Keycloak. `passthrough`
-  # = TLS terminated at Keycloak. Empty = operator default (none).
+  # Proxy headers Keycloak trusts when behind a gateway. Empty = operator default (none).
   proxy:
     headers: ""                  # "" | "xforwarded" | "forwarded"
 
@@ -95,8 +91,6 @@ keycloak:
     port: 5432
     database: keycloak
     schema: ""                   # Optional schema name
-    # Secret holding the DB credentials. The chart can render this Secret for
-    # you via the `.Values.dbSecret` block below; otherwise set existingSecret.
     existingSecret: ""           # Used as the source for both username + password
     usernameSecretKey: username  # Key in existingSecret (or chart-rendered Secret)
     passwordSecretKey: password  # Key in existingSecret (or chart-rendered Secret)
@@ -129,7 +123,7 @@ keycloak:
     # affinity: {}
     # priorityClassName: ""
 
-  # Enable/disable Keycloak server features (comma-separated lists).
+  # Enable/disable Keycloak server features.
   # Leave empty to use the operator's defaults.
   features:
     enabled: []                  # e.g. [ "preview", "token-exchange" ]
@@ -181,9 +175,8 @@ keycloak:
   # for Keycloak config flags; this is for arbitrary env (e.g. JAVA_OPTS_APPEND).
   env: []
 
-  # Escape hatch. Arbitrary YAML merged into spec at the top level for fields
-  # this chart does not surface. Use sparingly.
-  specExtra: {}                  # merged into spec (top level) of the Keycloak CR
+  # Escape hatch: appended to spec (not merged) for fields this chart does not surface.
+  specExtra: {}                  # appended to the Keycloak CR spec
 
 # ---------------------------------------------------------------------------
 # KeycloakRealmImport CR (k8s.keycloak.org/v2beta1)
@@ -212,7 +205,7 @@ realmImport:
   # Compute resources for the import Job (not for Keycloak itself).
   resources: {}
 
-  # Escape hatch. Arbitrary YAML merged into spec at the top level.
+  # Escape hatch: appended to spec (not merged) for fields this chart does not surface.
   specExtra: {}
 
 # ---------------------------------------------------------------------------

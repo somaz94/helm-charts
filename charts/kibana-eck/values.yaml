@@ -77,15 +77,13 @@ replicas: 1
 #   - elasticsearch.ssl.certificateAuthorities
 elasticsearchRef:
   name: elasticsearch
-  # namespace: ""      # cross-namespace requires a ReferenceGrant (not shipped)
+  # namespace: ""      # cross-namespace ES; subject to ECK association RBAC
   # serviceName: ""    # override the ES Service target
 
 # Link to an Enterprise Search CR (optional).
 enterpriseSearchRef: {}
 
 # spec.http: TLS and Service customization for Kibana's HTTP endpoint.
-# NOTE: ECK's default is self-signed TLS on :5601. Disable the self-signed
-# cert when routing via an ingress that terminates TLS and forwards plain HTTP.
 http:
   tls:
     # By default the ECK self-signed cert is DISABLED so the pod serves plain
@@ -102,8 +100,8 @@ http:
   #   spec:
   #     type: ClusterIP
 
-# spec.config: free-form kibana.yml content. Merged with session-cookie defaults
-# below when HTTP mode is active (tls disabled).
+# spec.config: free-form kibana.yml. With TLS disabled the chart adds
+# xpack.security.secureCookies: false and sameSiteCookies: Lax unless set here.
 config: {}
 # config:
 #   server.publicBaseUrl: https://kibana.example.com
@@ -161,9 +159,9 @@ container:
   securityContext: {}
 
 # Escape hatches.
-# specExtra        : merged into Kibana CR spec.
-# podTemplateExtra : merged into spec.podTemplate (on top of the above blocks).
-# containerExtra   : merged into the kibana container (on top of `container.*`).
+# specExtra        : appended to the Kibana CR spec (not merged; don't repeat chart-set keys).
+# podTemplateExtra : base for spec.podTemplate; chart-set fields win on overlap.
+# containerExtra   : base for the kibana container; `container.*` fields win on overlap.
 specExtra: {}
 podTemplateExtra: {}
 containerExtra: {}
@@ -233,10 +231,9 @@ ingress:
   # tls:
   #   - hosts: [kibana.example.com]
   #     secretName: kibana-tls
-  # Optional extra paths; default is "/" → <name>-kb-http:5601.
   path: /
   pathType: Prefix
-  # Override backend service name/port (defaults to <fullname>-kb-http:5601).
+  # NOTE: backend.* and extraPaths are not wired yet — the template always routes to <fullname>-kb-http:5601.
   backend:
     serviceName: ""
     servicePort: 5601
@@ -277,9 +274,8 @@ backendTLSPolicy:
 # ---------------------------------------------------------------------------
 # ServiceMonitor (Prometheus Operator)
 # ---------------------------------------------------------------------------
-# Scrape Kibana's `/api/status` JSON endpoint (requires an exporter/sidecar)
-# or its native Prometheus endpoint on 8.x+. Defaults to a simple endpoint
-# shape; override via `endpoints` for custom exporters.
+# Default endpoint targets `/api/status`, which returns JSON (not Prometheus format);
+# set `endpoints` for a real exporter such as a kibana-prometheus-exporter sidecar.
 serviceMonitor:
   enabled: false
   namespace: ""

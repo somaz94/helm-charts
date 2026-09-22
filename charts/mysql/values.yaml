@@ -12,9 +12,9 @@
 # `fullnameOverride` + `existingClaim` + `existingSecret` for in-place adoption).
 # For HA prefer an external managed DB (RDS / CloudSQL / Vitess) — out of scope.
 #
-# Extensibility: every resource has a `specExtra` / `podTemplateExtra` escape
-# hatch for fields not surfaced in this file. `kubernetesExtra` lets you render
-# arbitrary additional manifests with the same release.
+# Extensibility: the Deployment (specExtra / podTemplateExtra) and backup CronJob
+# (backup.specExtra / backup.jobTemplateExtra) take escape hatches; `kubernetesExtra`
+# renders arbitrary additional manifests with the same release.
 
 # ---------------------------------------------------------------------------
 # Resource metadata
@@ -58,7 +58,7 @@ resourceMetadata:
 # ---------------------------------------------------------------------------
 # Naming
 # ---------------------------------------------------------------------------
-# Release name used to derive resource names. Defaults to Helm release name.
+# Replaces the chart name in derived resource names (<release>-<nameOverride>).
 nameOverride: ""
 
 # Override the base name for the Deployment / Service / default PVC / default
@@ -128,7 +128,7 @@ persistence:
 # Authentication
 # ---------------------------------------------------------------------------
 # When `existingSecret` is empty, the chart renders a Secret containing the
-# four MYSQL_* keys (or whatever keys are configured under `secretKeys` below).
+# three MYSQL_* keys (or whatever keys are configured under `secretKeys` below).
 # When `existingSecret` is set, no Secret is rendered and the Deployment reads
 # from the named Secret using the keys configured under `secretKeys`.
 auth:
@@ -205,14 +205,12 @@ priorityClassName: ""
 podSecurityContext: {}
 securityContext: {}
 
-# Probe defaults — `mysqladmin ping` against root with the rendered password.
-# Disabled by default to avoid bootstrapping issues on first install (root
-# password not yet applied during initdb). Enable after the first successful
-# install.
+# Off by default: the root password is not applied yet during first-install initdb.
+# Enable after the first install, e.g. an exec probe running `mysqladmin ping`.
 livenessProbe: {}
 readinessProbe: {}
 
-# Arbitrary fields merged into the Deployment spec / PodTemplate.
+# Appended (not merged) to the Deployment spec / PodTemplate spec — only for fields not surfaced above.
 specExtra: {}
 podTemplateExtra: {}
 

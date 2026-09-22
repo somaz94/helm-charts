@@ -45,7 +45,7 @@ commonAnnotations: {}
 #   labels/annotations (optional) Extra metadata on this StorageClass.
 #   parametersExtra    (optional) Arbitrary extra key/values merged into parameters.
 storageClasses: []
-# Example — an EBS gp3 (default) + a gp2 + an EFS class, gp2 kept off:
+# Example — an EBS gp3 + a gp2 + an EFS class, gp2 kept off:
 #   storageClasses:
 #     - enabled: true
 #       name: ebs-sc

@@ -13,7 +13,7 @@
 # Notes:
 #   - Default `securityContext.privileged: true`. BuildKit needs cgroup mount
 #     for the OCI worker; rootful is the simplest path. A rootless toggle is
-#     intentionally left for a future release — see Chart.yaml changes.
+#     intentionally left for a future release — see CHANGELOG.md.
 #   - No backup CronJob — the cache PVC is rebuildable, not authoritative
 #     state. Resize / re-create freely.
 #   - Default Service is ClusterIP. Expose externally via `service.type:
@@ -131,8 +131,7 @@ persistence:
 #     supply inline (or via `--set-file`).
 #
 # `host` is the hostname BuildKit should associate the CA with — typically
-# the registry FQDN (e.g. `harbor.example.com`). It's used both when
-# auto-rendering buildkitd.toml and to label the rendered Secret.
+# the registry FQDN (e.g. `harbor.example.com`). Used when auto-rendering buildkitd.toml.
 registry:
   caBundle:
     enabled: false
@@ -142,14 +141,11 @@ registry:
     ca: ""
     caPath: /etc/buildkit/certs/ca.crt
 
-    # When true (and `enabled` is true), an init container concatenates the
-    # base image's system CA bundle with the supplied registry CA, writes the
-    # result to an emptyDir volume, and the main container points
-    # `SSL_CERT_FILE` at it. This makes BuildKit trust the registry CA at
-    # endpoints that bypass the `[registry.<host>].ca` config — most notably
-    # the OAuth token endpoint (`/service/token`), which uses the OS trust
-    # store rather than buildkitd.toml. Required for self-signed registries
-    # with token-based auth (typical Harbor setup).
+    # When true (and `enabled` is true), an init container merges the base image's
+    # system CA bundle with the registry CA into an emptyDir; the result is exposed via
+    # SSL_CERT_FILE and overlaid at `systemTrustStorePath`. Required for self-signed
+    # registries with token auth (typical Harbor): the OAuth token call (`/service/token`)
+    # ignores buildkitd.toml and reads only the system trust store.
     #
     # When false, the chart still mounts the CA at `caPath` for buildkitd's
     # registry config — registry endpoints work, but the OAuth token call
@@ -176,7 +172,6 @@ registry:
     # only reads the system trust store, never `SSL_CERT_FILE`. Leave empty
     # to skip the overlay (only the directory mount + SSL_CERT_FILE env
     # remain — sufficient for clients that honour the env var).
-    # Defaults to alpine's convention; set "" to disable.
     systemTrustStorePath: /etc/ssl/certs/ca-certificates.crt
 
 # ---------------------------------------------------------------------------
@@ -193,9 +188,8 @@ buildkitdConfig: ""
 # ---------------------------------------------------------------------------
 # Buildkitd listener (--addr)
 # ---------------------------------------------------------------------------
-# Default unix socket is fine for `docker buildx --driver kubernetes` (which
-# uses `kubectl exec` under the hood) but the remote driver expects a TCP
-# listener. Enable `tcp.enabled: true` to add a TCP listener on `tcp.port`.
+# The unix socket serves `docker buildx --driver kubernetes` (kubectl exec); the remote
+# driver needs the TCP listener on `tcp.port`, which is on by default.
 listener:
   unixSocket: /run/buildkit/buildkitd.sock
   tcp:

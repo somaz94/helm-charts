@@ -10,8 +10,8 @@
 #   - `mysql.auth.*`                   -> when mysql.enabled is true (default)
 #     or `externalDatabase.*`         -> when mysql.enabled is false
 #
-# Extensibility: every resource has a `specExtra` / `podTemplateExtra`
-# escape hatch for fields not surfaced in this file.
+# Extensibility: the Ghost/MySQL Deployments and backup CronJob take specExtra /
+# podTemplateExtra (backup: jobTemplateExtra); kubernetesExtra adds whole manifests.
 
 # ---------------------------------------------------------------------------
 # Resource metadata
@@ -184,7 +184,7 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 5
 
-# Arbitrary fields merged into the Deployment spec / PodTemplate.
+# Appended (not merged) to the Deployment spec / PodTemplate spec — only for fields not surfaced above.
 specExtra: {}
 podTemplateExtra: {}
 
@@ -452,9 +452,8 @@ networkPolicy:
 # ---------------------------------------------------------------------------
 # ServiceMonitor (Prometheus Operator)
 # ---------------------------------------------------------------------------
-# Scrapes the bundled MySQL (requires a mysqld_exporter sidecar — out of
-# scope for this chart) or an external exporter Service you provide. Disabled
-# by default.
+# No bundled target exports metrics (Ghost has no /metrics; MySQL needs a mysqld_exporter,
+# not shipped). Set selector + endpoints for your exporter. Disabled by default.
 serviceMonitor:
   enabled: false
   namespace: ""              # defaults to Release.Namespace

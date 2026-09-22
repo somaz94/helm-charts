@@ -12,8 +12,8 @@ commonAnnotations: {}
 # ---------------------------------------------------------------------------
 # ACME server presets (helper constants)
 # ---------------------------------------------------------------------------
-# Use these in clusterIssuers[].server / issuers[].server to avoid memorizing URLs.
-# Override only if you point at a non-Let's Encrypt ACME endpoint.
+# Reference constants only — no template reads them; copy the URL into
+# clusterIssuers[].server / issuers[].server.
 acmeServers:
   letsencryptProd: https://acme-v02.api.letsencrypt.org/directory
   letsencryptStaging: https://acme-staging-v02.api.letsencrypt.org/directory

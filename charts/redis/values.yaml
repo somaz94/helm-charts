@@ -66,10 +66,9 @@ configMap:
 image:
   repository: redis
   tag: ""                         # empty → defaults to .Chart.AppVersion.
-                                  # NOTE: Redis 7.5+ is licensed under RSALv2 / SSPL (not OSI-approved).
-                                  # Pin to `7.4-alpine` if you need to stay on the last BSD-licensed
-                                  # Redis. The chart itself is Apache-2.0 — license applies to the
-                                  # image you choose to deploy.
+                                  # NOTE: Redis 7.4+ is RSALv2/SSPLv1; 8.0+ adds AGPLv3 (OSI-approved) as an option.
+                                  # Pin `7.2-alpine` for the last BSD-licensed release. The chart itself is
+                                  # Apache-2.0 — the license that applies is the image you deploy.
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -128,10 +127,8 @@ auth:
 # no ConfigMap rendered) — matches the typical raw-YAML layout that just sets
 # the image and lets Redis use its built-in defaults.
 #
-# When `auth.enabled` is true, the chart appends `requirepass <password>` to
-# the rendered config (or starts the container with `--requirepass` when no
-# customConfig is provided). The password value is sourced from the Secret
-# at runtime via env var, never written to the rendered ConfigMap.
+# When `auth.enabled` is true, the container gets `--requirepass $(REDIS_PASSWORD)` as an
+# arg (with or without customConfig); the password never lands in the rendered ConfigMap.
 customConfig: ""
 
 # ---------------------------------------------------------------------------

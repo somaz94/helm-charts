@@ -71,11 +71,10 @@ proxy:
   ipFamily: ""                  # ipv4 | ipv6 | dual
 
   # --- Escape hatches ---
-  # Arbitrary YAML merged into the rendered NginxProxy spec for fields this
-  # chart does not surface explicitly. Use sparingly and avoid redefining
-  # fields the chart already manages.
-  kubernetesExtra: {}           # merged into spec.kubernetes
-  specExtra: {}                 # merged into spec (top level)
+  # Appended (not merged) to the rendered NginxProxy spec for fields this chart does not
+  # surface; don't redefine fields the chart already manages (they would be duplicated).
+  kubernetesExtra: {}           # appended to spec.kubernetes
+  specExtra: {}                 # appended to spec (top level)
 
 # ---------------------------------------------------------------------------
 # Gateways
@@ -246,8 +245,7 @@ serviceMonitor:
 # Alternative to ServiceMonitor — selects Pods directly by label and scrapes
 # their named container ports without requiring a Service to expose them.
 #
-# Recommended for the NGF controller because NGF 2.x exposes `/metrics:9113`
-# only on the Pod, not on the controller Service.
+# Recommended for the NGF controller (see the ServiceMonitor NOTE above).
 podMonitor:
   namespace: monitoring
   releaseLabel: kube-prometheus-stack

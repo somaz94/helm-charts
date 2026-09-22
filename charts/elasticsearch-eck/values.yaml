@@ -95,9 +95,8 @@ serviceAccountName: ""
 # Structured passthrough — provide the shape ECK expects.
 http:
   tls:
-    # ECK self-signed cert by default. Disable if terminating TLS upstream
-    # (HTTPRoute+BackendTLSPolicy, service mesh, etc.) or supplying your own
-    # cert via http.tls.certificate.secretName.
+    # ECK self-signed cert by default (BackendTLSPolicy verifies it). Disable only when
+    # a mesh terminates TLS, or supply your own via http.tls.certificate.secretName.
     selfSignedCertificate: {}
     # certificate:
     #   secretName: elasticsearch-tls
@@ -174,16 +173,15 @@ updateStrategy: {}
 #     maxSurge: 1
 #     maxUnavailable: 1
 
-# Escape hatch: arbitrary fields merged into spec at render time.
-# Use for fields not explicitly surfaced above.
+# Escape hatch: appended to spec, not merged — only for fields not surfaced above
+# (a key the chart already sets would be duplicated).
 specExtra: {}
 
 # ---------------------------------------------------------------------------
 # Node sets — array of one or more StatefulSets
 # ---------------------------------------------------------------------------
-# Default is a single all-roles node set (matches the mgmt dev/staging
-# topology). For HA, split into dedicated master + data node sets; see
-# README "Production HA" example.
+# Default is a single all-roles node set for dev/staging. For HA, split into
+# dedicated master + data node sets; see README "Production HA" example.
 nodeSets:
   - name: default
     count: 1
@@ -252,12 +250,12 @@ nodeSets:
     securityContext: {}
     # serviceAccountName override per node set (rare).
     serviceAccountName: ""
-    # Extra container-level fields merged into the elasticsearch container.
+    # Base for the elasticsearch container; the fields above win on overlap.
     containerExtra: {}
-    # Extra fields merged into spec.podTemplate.
+    # Base for spec.podTemplate; chart-set fields win on overlap.
     podTemplateExtra: {}
-    # Extra fields merged into the nodeSet spec (sibling of `name`, `count`,
-    # `config`, `podTemplate`, `volumeClaimTemplates`).
+    # Appended to the nodeSet (not merged) — only for keys the chart does not set
+    # (`name`, `count`, `config`, `podTemplate`, `volumeClaimTemplates` are chart-set).
     nodeSetExtra: {}
 
 # Privileged init container that raises node sysctls before Elasticsearch starts.
@@ -294,9 +292,8 @@ sysctlInitContainer:
 podDisruptionBudget:
   native: false
   external: false
-  # Applies to both native and external modes.
+  # Both modes: minAvailable wins when set, otherwise maxUnavailable.
   maxUnavailable: 1
-  # external-only:
   minAvailable: null
   # Additional labels/annotations already covered by resourceMetadata.podDisruptionBudget.
 
@@ -473,9 +470,9 @@ networkPolicy:
 # ---------------------------------------------------------------------------
 # ServiceMonitor (Prometheus Operator)
 # ---------------------------------------------------------------------------
-# Prometheus scrape config for the ECK-managed Elasticsearch Service.
-# Requires a sidecar exporter (e.g. elasticsearch_exporter) or ES 8.x+
-# Prometheus endpoint. Disabled by default.
+# Prometheus scrape config for the ECK-managed Elasticsearch Service. The default
+# endpoint scrapes /_prometheus/metrics (needs the prometheus-exporter plugin); for a
+# sidecar exporter (e.g. elasticsearch_exporter) set selector + endpoints. Disabled by default.
 serviceMonitor:
   enabled: false
   # namespace defaults to Release.Namespace when empty.
