@@ -67,8 +67,8 @@ jobs:
 
       - name: Run check-version
         env:
-          # gh CLI reads GH_TOKEN first, falling back to GITHUB_TOKEN.
-          # We pass only GH_TOKEN since the script's only token consumer is gh.
+          # gh reads GH_TOKEN; upgrade.sh's GitHub API calls read GITHUB_TOKEN, which is
+          # not passed here, so they run unauthenticated (60 req/h per IP).
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e

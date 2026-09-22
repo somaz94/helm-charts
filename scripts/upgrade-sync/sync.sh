@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 # Propagate the canonical upgrade.sh body from templates/ to each chart's
-# upgrade.sh. Inspired by (but not code-shared with) the
-# `# upgrade-template: <name>` convention in
-# `somaz94/kuberntes-infra/scripts/upgrade-sync/`. See README.md for the
-# differences between the two systems.
+# upgrade.sh. See README.md for how this differs from the consumer-side tool.
 #
 # Each chart's upgrade.sh declares its template on the second line:
-#   #!/bin/bash
+#   #!/usr/bin/env bash
 #   # upgrade-template: chart-appversion
 #   ...
 #   # === BEGIN CANONICAL BODY ===
@@ -15,17 +12,6 @@
 #
 # This script only touches the region between BEGIN/END markers. The
 # per-chart Configuration block above BEGIN is left untouched.
-#
-# Usage:
-#   sync.sh --check         report charts that drift from their template (exit 1 on drift)
-#   sync.sh --apply [--force]
-#                           overwrite canonical-body regions to match templates;
-#                           refuses to run when the working tree is dirty
-#                           (use --force to override at your own risk)
-#   sync.sh --list          list every managed chart and its template
-#   sync.sh --status        list every chart, including charts that are
-#                           unmanaged (no header) or whose declared template
-#                           does not exist on disk
 
 set -euo pipefail
 
@@ -41,10 +27,7 @@ END_MARKER="# === END CANONICAL BODY ==="
 . "$SCRIPT_DIR/../lib/common.sh"
 init_tmp_cleanup
 
-# Refuse `--apply` when the working tree contains uncommitted changes that
-# touch files this script will rewrite (charts/*/upgrade.sh). `--force`
-# overrides; intended only for `make sync-apply` invocations following a
-# clean checkout in CI.
+# Refuse --apply over uncommitted charts/*/upgrade.sh edits; --force skips the guard.
 ensure_clean_tree() {
   local force="$1"
   [ "$force" = "1" ] && return 0

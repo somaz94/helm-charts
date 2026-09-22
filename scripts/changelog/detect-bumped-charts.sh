@@ -1,29 +1,8 @@
 #!/usr/bin/env bash
-# detect-bumped-charts.sh — list charts that need a CHANGELOG.md sync.
-#
-# Reads the diff between two git refs and prints the names of charts whose
-# Chart.yaml `version:` line changed without a matching CHANGELOG.md change
-# in the same diff. One chart name per line on stdout.
-#
-# Usage:
-#   detect-bumped-charts.sh <ref-a> <ref-b>
-#
-# Both refs must be resolvable in the current repo (commit SHAs, branch
-# refs, tags, etc.). The diff is computed as `git diff <ref-a>...<ref-b>`
-# (three-dot — symmetric merge-base diff, same form used by
-# .github/workflows/lint.yml's changelog-check job).
-#
-# Special-case: an all-zeros SHA or empty <ref-a> is treated as "initial
-# branch push" and the script exits 0 without output (nothing to detect
-# against).
-#
-# This script is shared between:
-#   - .github/workflows/changelog-auto.yml (PR flow — auto-commit sync)
-#   - .github/workflows/release.yml        (push-to-main flow — fallback)
-#
-# .github/workflows/lint.yml's changelog-check intentionally keeps its own
-# inline awk copy of this logic as an independent safeguard, so do NOT
-# replace it with a call to this script.
+# Print charts whose Chart.yaml `version:` changed in <ref-a>...<ref-b> (three-dot) with
+# no matching CHANGELOG.md change. Empty/all-zeros <ref-a> (first push) prints nothing.
+# Shared by changelog-auto.yml and release.yml. lint.yml's changelog-check keeps its own
+# inline awk copy on purpose as an independent safeguard — do NOT replace it with this.
 
 set -euo pipefail
 
@@ -49,8 +28,6 @@ changed_charts=$(git diff "${REF_A}...${REF_B}" -- 'charts/*/Chart.yaml' \
 
 [ -z "$changed_charts" ] && exit 0
 
-# All paths touched by the diff — we use this to check whether each chart's
-# CHANGELOG.md was also updated.
 diff_files=$(git diff --name-only "${REF_A}...${REF_B}")
 
 while IFS= read -r c; do

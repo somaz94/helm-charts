@@ -276,12 +276,8 @@ update_yaml_value() {
   mv "$tmp" "$file"
 }
 
-# Reset the Chart.yaml artifacthub.io/changes literal block to a single
-# `Bump appVersion ...` entry, replacing whatever was there. RESET semantics:
-# the annotation only describes the changes for the release currently being
-# cut, never an ever-growing accumulation of past entries. Manual entries
-# added by humans during PR review are preserved across the same release
-# cycle but are wiped out at the next bump (when this function runs).
+# Replace the artifacthub.io/changes block with a single `Bump appVersion` entry: it
+# describes only the release being cut. Hand-added entries survive until the next bump.
 update_artifacthub_changes() {
   local file="$1"
   local from="$2"
@@ -337,7 +333,6 @@ print(ga[0] if ga else '')
 "
 }
 
-# Verify that the operator container image tag exists in the registry.
 verify_image_exists() {
   local tag="$1"
   [ -z "$tag" ] && return 1
@@ -416,9 +411,6 @@ PYEOF
   rm -f "$tmp"
 }
 
-# -----------------------------------------------
-# Argument parsing
-# -----------------------------------------------
 DRY_RUN=false
 JSON_OUTPUT=false
 TARGET_VERSION=""
@@ -501,16 +493,12 @@ if $JSON_OUTPUT; then
   trap emit_json EXIT
 fi
 
-# -----------------------------------------------
-# Main
-# -----------------------------------------------
 echo "================================================"
 echo " $SCRIPT_NAME"
 $DRY_RUN && echo " Mode: DRY-RUN (no files will be changed)"
 [ -n "$TARGET_VERSION" ] && echo " Target: $TARGET_VERSION"
 echo "================================================"
 
-# Step 1: read current versions
 echo ""
 echo "[Step 1/5] Reading current version..."
 CURRENT_VERSION=$(grep '^version:' "$CHART_DIR/values.yaml" | awk '{print $2}' | tr -d '"')
@@ -523,7 +511,6 @@ CURRENT_APP_VERSION=$(grep '^appVersion:' "$CHART_DIR/Chart.yaml" | awk '{print 
 echo "  values.yaml version:    $CURRENT_VERSION"
 echo "  Chart.yaml appVersion:  $CURRENT_APP_VERSION"
 
-# Step 2: latest release
 echo ""
 echo "[Step 2/5] Checking latest upstream release ($GITHUB_REPO)..."
 if [ -n "$TARGET_VERSION" ]; then
@@ -549,7 +536,6 @@ if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ] && [ "$CURRENT_APP_VERSION" = "$LA
   exit 0
 fi
 
-# Step 3: verify image exists
 echo ""
 echo "[Step 3/5] Verifying operator image..."
 echo "  Checking: ${CONTAINER_IMAGE}:${LATEST_VERSION}"
@@ -582,7 +568,6 @@ if [ -n "$CURRENT_MAJOR" ] && [ -n "$LATEST_MAJOR" ] && [ "$CURRENT_MAJOR" != "$
   fi
 fi
 
-# Step 4: dry-run or apply
 if $DRY_RUN; then
   JSON_STATUS="drift"
   JSON_LATEST="$LATEST_VERSION"
@@ -600,7 +585,6 @@ if $DRY_RUN; then
   exit 0
 fi
 
-# Step 4: backup & apply
 echo ""
 echo "[Step 4/5] Applying bump..."
 mkdir -p "$BACKUP_DIR/$TIMESTAMP"

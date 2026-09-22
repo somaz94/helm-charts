@@ -1,27 +1,8 @@
 #!/usr/bin/env bash
-# common.sh — shared helpers for repo maintenance scripts.
-#
-# Sourced (NOT executed) by scripts under scripts/. Works under both bash
-# (>= 4) and zsh (>= 5). Idempotent — guarded against double-sourcing so a
-# script that already sources this file can be called from another script
-# that also sources it without redefining anything.
-#
-# Provides:
-#   - log / info / warn / die  — stderr logging with consistent prefixes
-#   - mktemp_tracked            — mktemp variant that auto-cleans on EXIT
-#   - init_tmp_cleanup          — install the EXIT trap (call once per script)
-#   - require_command           — abort with a hint when a CLI is missing
-#   - require_yq_v4             — yq presence + version 4.x guard
-#
-# Does NOT call `set -euo pipefail` — that is each caller's choice and the
-# desired strictness varies per script.
-# Does NOT install a trap unconditionally — callers that want tmp-file
-# cleanup must opt in via `init_tmp_cleanup`.
-#
-# Sourcing example (callers):
-#   _SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
-#   SCRIPT_DIR="$(cd "$(dirname "$_SCRIPT_PATH")" && pwd)"
-#   . "$SCRIPT_DIR/../lib/common.sh"   # path relative to the caller
+# Shared helpers for scripts/ — sourced, never executed; bash 3.2+ and zsh 5+;
+# safe to double-source. Sets no shell options and installs no trap unless the
+# caller runs init_tmp_cleanup. Callers source it relative to their own path:
+#   . "$SCRIPT_DIR/../lib/common.sh"
 
 [ "${HELM_CHARTS_LIB_COMMON_LOADED:-}" = "1" ] && return 0
 HELM_CHARTS_LIB_COMMON_LOADED=1

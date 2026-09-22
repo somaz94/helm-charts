@@ -261,12 +261,8 @@ update_yaml_value() {
   mv "$tmp" "$file"
 }
 
-# Reset the Chart.yaml artifacthub.io/changes literal block to a single
-# `Bump appVersion ...` entry, replacing whatever was there. RESET semantics:
-# the annotation only describes the changes for the release currently being
-# cut, never an ever-growing accumulation of past entries. Manual entries
-# added by humans during PR review are preserved across the same release
-# cycle but are wiped out at the next bump (when this function runs).
+# Replace the artifacthub.io/changes block with a single `Bump appVersion` entry: it
+# describes only the release being cut. Hand-added entries survive until the next bump.
 update_artifacthub_changes() {
   local file="$1"
   local from="$2"
@@ -467,16 +463,9 @@ read_sibling_version() {
   printf '%s' "$sibling_ver"
 }
 
-# Highest GA release that does not exceed the sibling's pinned version.
-#
-# Without this, "latest is above the sibling" meant giving up entirely, and the
-# chart stayed wherever it was — Kibana sat two minors behind Elasticsearch for
-# weeks because its latest (9.5.1) was one patch above ES (9.5.0), even though
-# 9.5.0 itself was released, published, and legal to run. Matching the sibling
-# exactly is nearly always possible; only tracking *latest* is not.
-#
-# Mirrors find_latest_available_version: the feed is already sorted newest
-# first, so the first release at or below the ceiling wins.
+# Newest GA at or below the sibling's pinned version. Without it, latest > sibling meant
+# no bump at all (Kibana sat two minors behind ES over a one-patch gap).
+# Feed is newest-first, so the first match wins.
 find_latest_sibling_capped_version() {
   local ceiling="$1"
   local max_attempts=15
@@ -498,7 +487,6 @@ find_latest_sibling_capped_version() {
   return 1
 }
 
-# Verify that a container image tag exists in the registry.
 verify_image_exists() {
   local tag="${TAG_PREFIX:-}$1${TAG_SUFFIX}"
   if [ -z "$CONTAINER_IMAGE" ] || [ -z "$1" ]; then
@@ -542,9 +530,6 @@ verify_image_exists() {
   [ "$http_code" = "200" ]
 }
 
-# -----------------------------------------------
-# Argument parsing
-# -----------------------------------------------
 DRY_RUN=false
 JSON_OUTPUT=false
 TARGET_VERSION=""
@@ -627,9 +612,6 @@ if $JSON_OUTPUT; then
   trap emit_json EXIT
 fi
 
-# -----------------------------------------------
-# Main
-# -----------------------------------------------
 echo "================================================"
 echo " $SCRIPT_NAME"
 $DRY_RUN && echo " Mode: DRY-RUN (no files will be changed)"
@@ -637,7 +619,6 @@ $DRY_RUN && echo " Mode: DRY-RUN (no files will be changed)"
 [ -n "$MAJOR_PIN" ] && echo " Major pin: $MAJOR_PIN.x"
 echo "================================================"
 
-# Step 1: read current version
 echo ""
 if [ -n "$VALUES_FILE" ]; then
   echo "[Step 1/N] Reading current version from $VALUES_FILE..."
@@ -672,7 +653,6 @@ if [ -f "$CHART_DIR/Chart.yaml" ]; then
   CURRENT_APP_VERSION="${CURRENT_APP_VERSION#${TAG_PREFIX:-}}"
 fi
 
-# Step 2: fetch latest upstream
 echo ""
 echo "[Step 2/N] Checking latest upstream version (source: $VERSION_SOURCE)..."
 if [ -n "$TARGET_VERSION" ]; then
@@ -702,7 +682,6 @@ echo ""
 echo "  Bump: $CURRENT_VERSION -> $LATEST_VERSION"
 echo "  Changelog: $CHANGELOG_URL"
 
-# Step 3: optional sibling check
 if [ -n "$SIBLING_CHART_DIR" ]; then
   echo ""
   echo "[Step 3/N] Sibling version check ($SIBLING_CHART_LABEL)..."
@@ -766,7 +745,6 @@ if [ -n "$SIBLING_CHART_DIR" ]; then
   fi
 fi
 
-# Step 4: verify image if configured
 echo ""
 echo "[Step 4/N] Verifying container image..."
 if [ -n "$CONTAINER_IMAGE" ]; then
@@ -815,7 +793,7 @@ else
   echo "  Skipped (CONTAINER_IMAGE not configured)."
 fi
 
-# Step 5: major bump warning
+# Major bump warning
 CURRENT_MAJOR="${CURRENT_VERSION%%.*}"
 LATEST_MAJOR="${LATEST_VERSION%%.*}"
 if [ -n "$CURRENT_MAJOR" ] && [ -n "$LATEST_MAJOR" ] && [ "$CURRENT_MAJOR" != "$LATEST_MAJOR" ]; then
@@ -830,7 +808,6 @@ if [ -n "$CURRENT_MAJOR" ] && [ -n "$LATEST_MAJOR" ] && [ "$CURRENT_MAJOR" != "$
   fi
 fi
 
-# Step 6: dry-run or apply
 echo ""
 if $DRY_RUN; then
   JSON_STATUS="drift"

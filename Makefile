@@ -1,8 +1,4 @@
-# helm-charts — repo-level automation
-#
-# Convenience targets for local development, validation, and release prep.
-# All chart-targeting targets accept CHART=<name> to limit to one chart.
-# Without CHART, targets run against every chart under charts/.
+# Repo automation. Chart targets take CHART=<name>; without it they cover every chart.
 
 CHARTS_DIR ?= charts
 CHART      ?=
@@ -13,11 +9,9 @@ LEVEL      ?= patch
 # Populate with scripts/validate/vendor-crd-schema.sh.
 SCHEMAS_DIR ?= schemas
 
-# chart-testing knobs. CT_REMOTE/CT_TARGET_BRANCH mirror ct's own defaults and
-# exist so a fork or a differently-named remote can run `make ct-lint` unchanged.
-# `ALL=1 make ct-lint` switches from ct's changed-charts detection to every
-# chart — worth knowing that the default scope lints NOTHING on a clean tree,
-# unlike lint/template/validate which always cover all charts.
+# chart-testing knobs, mirroring ct's defaults so a fork / other remote works unchanged.
+# ct's default scope is changed charts only — it lints NOTHING on a clean tree, unlike
+# lint/template/validate. `ALL=1 make ct-lint` covers every chart.
 CT_REMOTE        ?= origin
 CT_TARGET_BRANCH ?= main
 
@@ -30,34 +24,20 @@ KUBECONFORM_CACHE ?= .kubeconform-cache
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-# Auto-discover all charts under charts/
 ALL_CHARTS := $(shell find $(CHARTS_DIR) -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null | sort)
 
-# When CHART is set, target only that chart; otherwise target all charts
 ifeq ($(CHART),)
 TARGET_CHARTS := $(ALL_CHARTS)
 else
 TARGET_CHARTS := $(CHART)
 endif
 
-# Shared helm-template invocation used by `template` and `validate`. Collects
-# each charts/<c>/ci/*.yaml as its OWN render, concatenating the manifests to
-# stdout. Expanded inside a `for c in $(TARGET_CHARTS); do ... done` loop, so
-# $$c is the current chart.
-#
-# One render per fixture — not one render with every fixture merged as `-f`
-# flags. Merging cannot express a scenario that contradicts another: keycloak-cr
-# rejects `httproute.enabled` and `ingress.enabled` together on purpose, so a
-# merged render can only ever exercise one of the two routing paths. Separate
-# renders also match `ct lint`, which treats each ci/*-values.yaml as its own
-# case; before this the two disagreed once a chart had a second fixture.
-#
-# A chart with no ci/ fixture still renders once, on pure defaults.
-#
-# The whole body is brace-grouped so callers can pipe it (`$(HELM_TEMPLATE_CMD)
-# | kubeconform`). Without the braces `|` binds tighter than `||` and the pipe
-# would attach only to the trailing fallback render, silently sending the loop's
-# output to stdout instead of down the pipe.
+# Shared by `template` and `validate`: one helm template per charts/<c>/ci/*.yaml
+# (pure defaults when there is none), matching ct lint. Not one render with merged
+# -f flags: keycloak-cr's routing fixtures contradict each other on purpose.
+# Expanded inside `for c in $(TARGET_CHARTS)`, so $$c is the chart.
+# Brace-grouped so `$(HELM_TEMPLATE_CMD) | kubeconform` pipes the whole loop —
+# without braces `|` binds tighter than `||` and pipes only the fallback render.
 HELM_TEMPLATE_CMD = { rendered=0; \
 	for f in $(CHARTS_DIR)/$$c/ci/*.yaml; do \
 		[ -f "$$f" ] || continue; \
@@ -251,14 +231,10 @@ version-apply: ## For each drifted chart: bump + ci + branch + commit + push + o
 
 ##@ Shell scripts
 
-# Discovered once at make startup. SYNTAX_TARGETS covers every maintainer
-# script plus the per-chart upgrade.sh files that get propagated from the
-# templates — `bash -n` and `zsh -n` are run against all of them.
-# SHELLCHECK_TARGETS is narrower: per-chart upgrade.sh is the sync output of
-# scripts/upgrade-sync/templates/, so shellchecking both is redundant. We
-# only run shellcheck against the source-of-truth under scripts/, and only
-# at --severity=error (info/warning are advisory and shown but do not fail).
-# STRICT=1 turns "shellcheck not installed" into a hard failure (e.g. CI).
+# SYNTAX_TARGETS (bash -n + zsh -n) adds the per-chart upgrade.sh copies;
+# SHELLCHECK_TARGETS skips them since they are sync output of
+# scripts/upgrade-sync/templates/. Fails at --severity=error; warnings print as
+# advisory, info is not shown. STRICT=1 makes a missing shellcheck fatal (e.g. CI).
 SYNTAX_TARGETS     := $(shell find scripts -type f -name '*.sh' 2>/dev/null | sort) $(wildcard $(CHARTS_DIR)/*/upgrade.sh)
 SHELLCHECK_TARGETS := $(shell find scripts -type f -name '*.sh' 2>/dev/null | sort)
 

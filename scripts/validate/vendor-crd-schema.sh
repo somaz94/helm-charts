@@ -1,21 +1,14 @@
 #!/usr/bin/env bash
 # vendor-crd-schema.sh — convert an upstream CRD into a kubeconform JSON schema.
 #
-# `make validate` resolves CR schemas from the datree CRDs-catalog. That catalog
-# lags upstream, so a chart can emit a perfectly valid CR whose schema is simply
-# absent — kubeconform then reports it as `statusSkipped` and, with
-# `-ignore-missing-schemas`, the run still exits 0. The CR ships unvalidated.
-#
-# This script closes that hole for one kind at a time: it reads a CRD (the
-# `config/crd/bases/<group>_<plural>.yaml` file upstream projects publish),
-# extracts each version's `spec.versions[].schema.openAPIV3Schema` verbatim, and
-# writes it to the repo-local schema tree that `make validate` searches first:
+# The datree CRDs-catalog lags upstream, so a valid CR can have no schema and be
+# silently skipped (see check-skips.sh). This closes that hole one kind at a time:
+# it extracts each version's `spec.versions[].schema.openAPIV3Schema` from a CRD
+# verbatim and writes it to the tree `make validate` searches first:
 #
 #   schemas/<group>/<kind-lowercased>_<version>.json
 #
-# That layout and content shape match the datree catalog exactly, so a vendored
-# schema is a drop-in stand-in until upstream catalog coverage catches up (and
-# can be contributed there as-is).
+# Same layout as the datree catalog: a drop-in until the catalog catches up.
 #
 # Usage:
 #   scripts/validate/vendor-crd-schema.sh <crd-url-or-path> [<schemas-dir>]

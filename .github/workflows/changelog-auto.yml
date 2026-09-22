@@ -23,13 +23,9 @@ jobs:
     name: Generate and commit CHANGELOG.md updates
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Skip:
-    #   - the bot's own follow-up sync push (loop guard).
-    #   - fork PRs — head repo is not writable from the workflow's
-    #     GITHUB_TOKEN, and `secrets.PAT_TOKEN` is sanitized away on fork
-    #     PRs. Fork contributors fall through to lint.yml's
-    #     `changelog-check` job, whose error message already instructs
-    #     them to run `make changelog CHART=<name>` and push.
+    # Skip the bot's own sync push (loop guard) and fork PRs (head repo not writable,
+    # PAT_TOKEN withheld). Forks fall back to lint.yml's changelog-check, whose error
+    # already tells them to run `make changelog CHART=<name>`.
     if: |
       github.actor != 'github-actions[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -58,10 +54,8 @@ jobs:
           set -euo pipefail
           base="origin/${BASE_REF}"
           git fetch origin "${BASE_REF}" --depth=0 >/dev/null 2>&1 || git fetch origin "${BASE_REF}"
-          # detect-bumped-charts.sh prints one chart name per line. The same
-          # script is reused by .github/workflows/release.yml (push-to-main
-          # safeguard). lint.yml's changelog-check intentionally keeps its
-          # own inline copy as an independent guard.
+          # One chart per line. Shared with release.yml; lint.yml's changelog-check keeps
+          # its own inline copy on purpose as an independent guard.
           missing_list=$(bash scripts/changelog/detect-bumped-charts.sh "${base}" "HEAD")
           if [ -z "$missing_list" ]; then
             echo "No charts need CHANGELOG.md sync."
@@ -83,7 +77,7 @@ jobs:
         run: |
           set -euo pipefail
           # yq v4 (mikefarah/yq) is preinstalled on ubuntu-latest runners.
-          # sync-changelog.sh's require_yq aborts loudly if that ever changes.
+          # sync-changelog.sh's require_yq_v4 aborts loudly if that ever changes.
           for c in $CHARTS; do
             echo "==> syncing charts/$c"
             bash scripts/changelog/sync-changelog.sh "charts/$c"
@@ -103,9 +97,7 @@ jobs:
           fi
           git add 'charts/*/CHANGELOG.md'
           git commit -m "chore(changelog): sync from Chart.yaml"
-          # Race-tolerant push: rebase on top of any concurrent author
-          # commits, then push. If the rebase or push still fails, fail
-          # loud and let the author re-trigger.
+          # Rebase over concurrent author pushes; fail loud if that still conflicts.
           git fetch origin "${PR_HEAD_BRANCH}"
           git rebase "origin/${PR_HEAD_BRANCH}"
           git push origin "HEAD:${PR_HEAD_BRANCH}"

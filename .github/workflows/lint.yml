@@ -5,26 +5,17 @@ on:
     paths:
       - 'charts/**'
       - '.github/workflows/lint.yml'
-  # release.yml publishes on push to main, and maintainer changes land by
-  # pushing straight there — so without this, a chart could be packaged and
-  # released without kubeconform ever seeing it. Only kubeconform-check runs
-  # here (the other two jobs need a PR diff, see their `if` below); it takes the
-  # same full-sweep path as the weekly run, ~20s, because a push has no
-  # changed-chart base ref that ct-style detection could use.
+  # release.yml publishes on push to main, where maintainer changes land directly, so
+  # kubeconform must see those pushes too. Only kubeconform-check runs (the other jobs
+  # need a PR diff), as a full sweep: a push has no base ref for changed-chart detection.
   push:
     branches: [main]
     paths:
       - 'charts/**'
       - '.github/workflows/lint.yml'
-  # Schema validation is scoped to changed charts on PRs, so a chart is only ever
-  # re-validated when someone edits it. That leaves a blind spot no PR can catch:
-  # kubeconform resolves schemas from a remote store, so a chart can start
-  # failing validation with zero repo changes (an upstream schema moves, the CRD
-  # catalog reshuffles, a vendored schema in schemas/ goes stale against it).
-  # The weekly run re-validates every chart so that drift surfaces on its own
-  # instead of ambushing whoever next touches an untouched chart; the manual
-  # trigger gives the same coverage on demand for one chart or all of them.
-  # Only kubeconform-check runs on these events — see the per-job `if` below.
+  # PRs re-validate only edited charts, but remote schemas can drift with zero repo
+  # changes; the weekly run re-validates every chart so that surfaces on its own, and
+  # dispatch does the same on demand. Only kubeconform-check runs on these events.
   schedule:
     - cron: '0 6 * * 1'   # Mondays 06:00 UTC
   workflow_dispatch:
@@ -62,25 +53,14 @@ jobs:
           charts_dir: charts
           base_ref: ${{ github.event.repository.default_branch }}
           helm_version: v3.16.4
-          # Version bumps are maintainer-driven via `make bump` for template /
-          # schema changes only (see CLAUDE.md "Versioning"). ct's change
-          # detection flags any file under charts/<name>/ — including the
-          # packaging-excluded upgrade.sh — so enforcing a version increment
-          # here would demand no-op bumps for tooling-only edits. The
-          # changelog-check job below still enforces CHANGELOG updates whenever
-          # a Chart.yaml version line actually changes.
+          # Off: bumps are maintainer-driven (`make bump`), and ct would demand one for
+          # tooling-only edits such as upgrade.sh. changelog-check below still guards
+          # real Chart.yaml version changes.
           ct_check_version_increment: 'false'
-          # The action's standalone helm template + kubeconform steps render
-          # each changed chart with empty values (they do not honor
-          # charts/<chart>/ci/*.yaml in changed-charts mode), so charts that
-          # fail-fast on missing required input (ghost, unity-mcp-server) trip
-          # them. ct lint (run by the action's "Helm lint" step in
-          # changed-charts mode) already does helm install --dry-run against
-          # each ci/*.yaml via chart-testing's standard convention, so the
-          # rendering check is preserved. Schema validation against the
-          # rendered manifests is handled by the kubeconform-check job below,
-          # which runs `make validate` per changed chart (honors
-          # charts/<chart>/ci/*.yaml).
+          # Off: in changed-charts mode the action renders with empty values (ignores
+          # ci/*.yaml), which fails charts with required input (ghost, unity-mcp-server).
+          # ct lint in the "Helm lint" step renders each ci/*.yaml, and kubeconform-check
+          # below runs `make validate`.
           run_template: 'false'
           run_kubeconform: 'false'
 
@@ -160,10 +140,8 @@ jobs:
           REQUESTED: ${{ inputs.charts }}
         run: |
           set -euo pipefail
-          # schedule / workflow_dispatch have no diff to compute. An explicit
-          # chart list wins; otherwise sweep every chart. Emitting the resolved
-          # names (rather than a magic "all" sentinel) keeps one downstream code
-          # path and puts the exact set in the log.
+          # No diff on schedule/dispatch: an explicit list wins, else every chart. Emit real
+          # names (no "all" sentinel) so there is one downstream path and the log shows the set.
           if [ "$EVENT_NAME" != "pull_request" ]; then
             if [ -n "${REQUESTED:-}" ]; then
               for c in $REQUESTED; do
@@ -210,9 +188,7 @@ jobs:
           CHANGED: ${{ steps.changed.outputs.list }}
         run: |
           set -euo pipefail
-          # `make validate` already runs helm template (with charts/<chart>/ci/*.yaml
-          # if present) and pipes into kubeconform with the standard schema
-          # locations + CRD catalog. Same code path as local `make ci`.
+          # Same code path as local `make validate` (one render per ci/*.yaml → kubeconform).
           for c in $CHANGED; do
             echo "==> validating $c"
             make validate CHART="$c"

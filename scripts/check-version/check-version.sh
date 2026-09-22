@@ -1,24 +1,8 @@
 #!/usr/bin/env bash
-# Discover upstream version drift across every chart's upgrade.sh and
-# (optionally) bump, validate, and open a PR per chart.
-#
-# Modes:
-#   --check   report drift only (default; safe, no file/branch/PR changes)
-#   --apply   for each drifted chart, run upgrade.sh + make bump + make ci,
-#             create a branch + commit + push + open a PR
-#
-# By design, this script treats each chart's upgrade.sh as a black box and
-# only relies on the standard CLI contract documented in
-# scripts/upgrade-sync/templates/chart-appversion.sh:
-#   --dry-run, --dry-run --json, --version <X.Y.Z>, --rollback, --list-backups
-#
-# Drift detection consumes the `--dry-run --json` record (schema:
-# helm-charts.upgrade.dryrun.v1). See the "Dry-run JSON contract" section of
-# scripts/check-version/README.md for the schema.
-#
-# Major version bumps are skipped by default (drift-only report) because
-# they typically require manual review of breaking changes. Use
-# --include-major to opt in.
+# Detect upstream drift across charts/*/upgrade.sh; with --apply, bump, validate and open
+# one PR per chart. upgrade.sh is a black box: only its CLI and the `--dry-run --json`
+# record (helm-charts.upgrade.dryrun.v1, see README "Dry-run JSON contract") are relied on.
+# Major bumps are skipped unless --include-major (they need breaking-change review).
 set -euo pipefail
 
 # zsh compat: a zero-match glob is fatal under zsh's default NOMATCH. No-op in
@@ -83,9 +67,6 @@ Examples:
 EOF
 }
 
-# -----------------------------------------------
-# Argument parsing
-# -----------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check)          MODE="check"; shift ;;
@@ -107,10 +88,6 @@ while [[ $# -gt 0 ]]; do
     *)                log "Unknown option: $1"; usage >&2; exit 1 ;;
   esac
 done
-
-# -----------------------------------------------
-# Helpers
-# -----------------------------------------------
 
 # Check whether $1 is in the remaining args (passed by value).
 # Avoids `local -n` nameref so it works in both bash and zsh.
@@ -145,7 +122,6 @@ discover_charts() {
   printf '%s\n' "${kept[@]}"
 }
 
-# Read top-level appVersion from a chart's Chart.yaml.
 read_app_version() {
   local chart="$1"
   awk '/^appVersion:/ { gsub(/["\047]/, "", $2); print $2; exit }' "$CHARTS_DIR/$chart/Chart.yaml"
@@ -199,7 +175,6 @@ print("\x01".join(fields))
 '
 }
 
-# Working tree must be clean before --apply touches anything.
 ensure_clean_tree() {
   if [ -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null)" ]; then
     log "ERROR: working tree is dirty. Commit or stash before running --apply."
@@ -215,15 +190,10 @@ restore_chart() {
   git -C "$REPO_ROOT" clean -fd "charts/$chart" 2>/dev/null || true
 }
 
-# Switch back to BASE_BRANCH (used between charts in --apply mode).
 checkout_base() {
   git -C "$REPO_ROOT" checkout "$BASE_BRANCH" >/dev/null 2>&1 \
     || die "failed to checkout $BASE_BRANCH"
 }
-
-# -----------------------------------------------
-# Per-chart processing
-# -----------------------------------------------
 
 # Globals populated per chart for reporting.
 declare -a RESULTS=()  # one entry per processed chart, tab-separated:
@@ -240,25 +210,15 @@ record_result() {
 #   blocked <current> <upstream-latest> <sibling-name>
 #   no-image <current> <upstream-latest>
 #   error <message>
-#
-# The output line format (legacy, consumed by process_chart) is preserved
-# verbatim across the JSON migration. The semantic mapping is:
-#   JSON status=uptodate          -> uptodate
-#   JSON status=drift             -> drift current latest
-#   JSON status=blocked           -> blocked current upstream_latest sibling.name
-#   JSON status=no-image          -> no-image current upstream_latest
-#   JSON status=error             -> error <upgrade.sh's error message>
+# Line format predates the JSON record; kept verbatim for process_chart.
 detect_drift() {
   local chart="$1"
   # NOTE: avoid `status` as a local — zsh treats $status as a read-only alias
   # for $? and assigning to it errors out under zsh.
   local raw json_record drift_status current latest upstream major sibling err
 
-  # Capture the JSON line on stdout regardless of exit code — upgrade.sh
-  # exits non-zero on `blocked` / `no-image-exhausted`, but the EXIT trap
-  # has already emitted the JSON record. `|| true` shields us from
-  # `set -euo pipefail` so the pipe-failure exit doesn't blow away the
-  # captured payload.
+  # upgrade.sh exits non-zero on blocked/no-image after its EXIT trap printed the JSON;
+  # `|| true` keeps set -e from discarding the captured record.
   raw=$(cd "$CHARTS_DIR/$chart" && bash ./upgrade.sh --dry-run --json 2>/dev/null || true)
   if [ -z "$raw" ]; then
     echo "error empty stdout from upgrade.sh --dry-run --json"
@@ -303,7 +263,6 @@ extract_changelog_top_section() {
   awk '/^## \[/ { n++; if (n > 1) exit } n == 1 { print }' "$changelog_path"
 }
 
-# Build a PR body for an auto-bump.
 build_pr_body() {
   local chart="$1" current="$2" latest="$3" chart_ver_before="$4" chart_ver_after="$5"
   local changelog_section changelog_block=""
@@ -413,7 +372,6 @@ process_chart() {
     return 0
   fi
 
-  # MODE=apply
   if [ "$major" = "yes" ] && ! $INCLUDE_MAJOR; then
     echo "  SKIP: major bump (use --include-major to opt in)"
     record_result "$chart" "$current" "$latest" "$major" "drift-major" "skipped (major)"
@@ -447,12 +405,9 @@ apply_chart_bump() {
     return 0
   fi
 
-  # --version pins the target so the image-fallback prompt never comes up, and
-  # --yes covers the prompts it cannot pre-empt (the major-bump confirmation
-  # fires after the version is already resolved). This runs unattended from
-  # check-versions.yml, where an unanswered prompt is an EOF and `set -e` kills
-  # the script with nothing but "upgrade.sh failed" to go on. The decision to
-  # allow a major bump is still gated upstream, by --include-major.
+  # --version pins the target (no image-fallback prompt); --yes answers the major-bump
+  # confirmation. Unattended in CI, an unanswered prompt is a silent set -e exit.
+  # Allowing a major bump is still gated by --include-major.
   echo "  Running upgrade.sh --version $latest --yes..."
   if ! (cd "$CHARTS_DIR/$chart" && bash ./upgrade.sh --version "$latest" --yes); then
     echo "  ERROR: upgrade.sh failed"
@@ -488,11 +443,8 @@ apply_chart_bump() {
     fi
   fi
 
-  # Materialize the per-chart CHANGELOG.md from Chart.yaml's freshly-updated
-  # artifacthub.io/changes annotation. upgrade.sh has already appended a
-  # `Bump appVersion from <old> to <new>` entry, so make changelog is purely
-  # a render step (and is idempotent — it skips if the new version section
-  # already exists, which keeps re-runs safe).
+  # Render the changes entry upgrade.sh just wrote into CHANGELOG.md; idempotent
+  # (skips an existing version section), so re-runs are safe.
   echo "  Running make changelog CHART=$chart..."
   if ! make -C "$REPO_ROOT" changelog CHART="$chart"; then
     echo "  ERROR: make changelog failed"
@@ -569,9 +521,6 @@ gh_repo() {
     | sed -E 's#(git@[^:]+:|https://[^/]+/)([^/]+/[^/.]+)(\.git)?#\2#'
 }
 
-# -----------------------------------------------
-# Reporting
-# -----------------------------------------------
 print_text_summary() {
   local total=0 uptodate=0 drift=0 drift_major=0 prs=0 local_only=0 errors=0 skipped=0 blocked=0 no_image=0
   echo ""
@@ -619,9 +568,6 @@ print_github_summary() {
   } >> "$out_file"
 }
 
-# -----------------------------------------------
-# Main
-# -----------------------------------------------
 echo "================================================"
 echo " Helm Charts Auto-Version Check"
 echo " Mode: $MODE  |  Repo: $REPO_ROOT"
@@ -632,7 +578,6 @@ $NO_PR && echo " --no-pr: stopping after local commit"
 $NO_CI && echo " --no-ci: skipping make ci"
 echo "================================================"
 
-# Discover and validate charts list.
 # Use a portable while-read loop instead of `mapfile` (bash 4+ only) so the
 # script works under zsh and bash 3.2.
 CHARTS=()
@@ -659,7 +604,6 @@ if [ "$MODE" = "apply" ]; then
   fi
 fi
 
-# Process each chart sequentially.
 total="${#CHARTS[@]}"
 i=0
 for chart in "${CHARTS[@]}"; do
@@ -667,7 +611,6 @@ for chart in "${CHARTS[@]}"; do
   process_chart "$chart" "$i" "$total"
 done
 
-# Output summary in the requested format.
 case "$OUTPUT" in
   text)   print_text_summary ;;
   github) print_text_summary; print_github_summary ;;

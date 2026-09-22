@@ -1,17 +1,11 @@
 #!/usr/bin/env bash
 # check-skips.sh — turn kubeconform's silent skips into a hard failure.
 #
-# `make validate` runs kubeconform with -ignore-missing-schemas so that a chart
-# emitting a CR whose schema is not published does not break the whole run. The
-# cost is that such a resource is reported `statusSkipped` and the exit code
-# stays 0 — the CR ships unvalidated and the summary still reads green. As the
-# collection's `-cr` charts grow, every new CR kind missing from the datree
-# catalog would join that blind spot invisibly.
-#
-# This script reads kubeconform's `-output json -verbose` payload on stdin,
-# prints the per-chart summary that `-summary` used to print, and fails when a
-# resource is invalid OR skipped without a matching declaration in
-# scripts/validate/allowed-skips.txt.
+# `make validate` runs kubeconform with -ignore-missing-schemas, so a CR with no
+# published schema is reported `statusSkipped` with exit 0 — shipped unvalidated,
+# summary still green. This reads the `-output json -verbose` payload on stdin,
+# prints the per-chart summary, and fails on any resource that is invalid OR
+# skipped without a declaration in scripts/validate/allowed-skips.txt.
 #
 # Usage:
 #   <kubeconform ... -output json -verbose> | check-skips.sh <chart> [<allowlist>]

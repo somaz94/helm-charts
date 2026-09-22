@@ -6,11 +6,6 @@
 # prepends a `## [vX.Y.Z] - YYYY-MM-DD` block to charts/<name>/CHANGELOG.md.
 #
 # Idempotent: skips when a section for the same version already exists.
-#
-# Usage:
-#   sync-changelog.sh [--dry-run] <chart-dir>     # single chart
-#   sync-changelog.sh [--dry-run] --all           # every chart under charts/
-#   sync-changelog.sh --help
 
 set -euo pipefail
 
@@ -61,8 +56,6 @@ Behavior:
 Requires: yq v4 (mikefarah/yq).
 EOF
 }
-
-# log/info/warn/die provided by lib/common.sh.
 
 # Map a Chart.yaml `kind:` value to a Keep a Changelog section header.
 section_for_kind() {
@@ -181,7 +174,6 @@ process_chart() {
     fi
 }
 
-# CLI parsing.
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run) DRY_RUN=1; shift ;;
