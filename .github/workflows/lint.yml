@@ -8,10 +8,15 @@ on:
   # release.yml publishes on push to main, where maintainer changes land directly, so
   # kubeconform must see those pushes too. Only kubeconform-check runs (the other jobs
   # need a PR diff), as a full sweep: a push has no base ref for changed-chart detection.
+  # schemas/, scripts/validate/ and the Makefile feed `make validate` too; PR runs skip
+  # them because PR detection only picks up charts/<name>/ changes.
   push:
     branches: [main]
     paths:
       - 'charts/**'
+      - 'schemas/**'
+      - 'scripts/validate/**'
+      - 'Makefile'
       - '.github/workflows/lint.yml'
   # PRs re-validate only edited charts, but remote schemas can drift with zero repo
   # changes; the weekly run re-validates every chart so that surfaces on its own, and
