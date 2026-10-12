@@ -2,8 +2,8 @@ apiVersion: v2
 name: buildkit
 description: Standalone BuildKit StatefulSet — moby/buildkit pod (rootful, privileged) with optional CA-bundle Secret + optional buildkitd.toml ConfigMap, cache PVC via volumeClaimTemplates, ClusterIP Service on TCP 1234. Suits dev/staging container builds where ephemeral buildx builders fail to verify a self-signed registry's OAuth token endpoint — bake the registry CA into the BuildKit pod's trust store so multi-arch buildx (kubernetes/remote driver) succeeds. NetworkPolicy, ServiceAccount, kubernetesExtra escape hatch.
 type: application
-version: 0.1.4
-appVersion: "v0.33.0"
+version: 0.1.5
+appVersion: "v0.34.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
   - buildkit
@@ -31,6 +31,4 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: "Bump appVersion from v0.29.0 to v0.33.0 (moby/buildkit)."
-    - kind: removed
-      description: "Drop the no-op debug key from the auto-rendered minimal buildkitd.toml. It only ever restated buildkitd's own default, and upstream removed the top-level debug key from the buildkitd.toml reference in v0.30.0 in favour of a [log] level option. The rendered config now carries just the registry CA wiring it exists for."
+      description: Bump appVersion from v0.33.0 to v0.34.0
