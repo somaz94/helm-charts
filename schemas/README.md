@@ -45,8 +45,10 @@ catalog coverage catches up, and can be contributed upstream as-is.
 |---|---|---|
 | `gateway.nginx.org/proxysettingspolicy_v1alpha1.json` | `ProxySettingsPolicy` (NGINX Gateway Fabric) | [`config/crd/bases/gateway.nginx.org_proxysettingspolicies.yaml`](https://github.com/nginx/nginx-gateway-fabric/blob/main/config/crd/bases/gateway.nginx.org_proxysettingspolicies.yaml) |
 | `gateway.nginx.org/clientsettingspolicy_v1alpha1.json` | `ClientSettingsPolicy` (NGINX Gateway Fabric) | [`config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml` @ v2.7.0](https://github.com/nginx/nginx-gateway-fabric/blob/v2.7.0/config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml) |
+| `external-secrets.io/secretstore_v1.json` | `SecretStore` (External Secrets Operator) | [`config/crds/bases/external-secrets.io_secretstores.yaml` @ v2.12.0](https://github.com/external-secrets/external-secrets/blob/v2.12.0/config/crds/bases/external-secrets.io_secretstores.yaml) |
+| `external-secrets.io/clustersecretstore_v1.json` | `ClusterSecretStore` (External Secrets Operator) | [`config/crds/bases/external-secrets.io_clustersecretstores.yaml` @ v2.12.0](https://github.com/external-secrets/external-secrets/blob/v2.12.0/config/crds/bases/external-secrets.io_clustersecretstores.yaml) |
 
-There are two reasons to vendor, and the table above has one of each.
+There are three reasons to vendor, and the table above has an example of each.
 
 `ProxySettingsPolicy` is ABSENT from the datree catalog, which carries its
 siblings (`observabilitypolicy`, `upstreamsettingspolicy`, `snippetsfilter`,
@@ -65,7 +67,7 @@ JSON and cannot record the tag itself — the table above is where that tag live
 The per-field minimum NGF version belongs in that chart's README values table,
 not here: this file records where the schema came from, not who can use it.
 
-Only the tag-pinned row needs this. `ProxySettingsPolicy` is vendored because the
+Only the tag-pinned rows need this. `ProxySettingsPolicy` is vendored because the
 catalog has NO entry for it, so nothing is being overridden and the file has no
 field set to keep aligned with a chart — a `main` link is fine there.
 
@@ -76,6 +78,17 @@ sets
 that sets it. This is the failure mode the second paragraph of "Why this exists"
 describes — a published entry that is wrong rather than missing — and it fails
 loudly (`invalid`), not as a silent skip.
+
+`SecretStore` and `ClusterSecretStore` ARE in the catalog, but MALFORMED since
+its 2026-10-08 refresh to ESO v2.12.0. ESO's `crd` provider has a field literally
+named `properties` (`whitelist.rules[].properties`), and the catalog's converter
+injected `"additionalProperties": false` into that field map as if it were a
+property. kubeconform cannot compile the result, moves on to the next location,
+and reports the kind as having no schema — so the gate fails with an undeclared
+skip while the file sits right there. Only the `v1` files are kept; the chart
+renders no `v1beta1`. Drop both once the catalog entry compiles again:
+`make validate CHART=external-secrets-cr` with them moved aside and an empty
+`KUBECONFORM_CACHE` is the check.
 
 Before re-pinning either schema, list its emitters — every chart that renders the
 kind validates against this one file, so a re-pin driven by a single chart can
