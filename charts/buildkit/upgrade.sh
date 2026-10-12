@@ -325,6 +325,9 @@ for v in ga:
       local repo="${VERSION_SOURCE_ARG}"
       [ -z "$repo" ] && return 0
       local base="https://hub.docker.com/v2/repositories/${repo}/tags/?page_size=100"
+      # Server-side substring filter: without it a newer major's tags fill the
+      # 5-page window and the pinned line returns nothing (ghost 5.x, 2026-10-12).
+      [ -n "$MAJOR_PIN" ] && base="${base}&name=${MAJOR_PIN}."
       local url="$base"
       local page=1
       local all_tags=""
