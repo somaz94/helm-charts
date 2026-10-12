@@ -4134,6 +4134,50 @@ entries:
       artifacthub.io/category: ai-machine-learning
       artifacthub.io/changes: |
         - kind: changed
+          description: Bump appVersion from 10.2.0 to 10.3.0
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 10.3.0
+    created: "2026-10-12T05:44:26.138387368Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: c954383819eb261020aa6bb59550ce90fcb3ad2e1a2a3a834f1d233ebc42c8ce
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.12/unity-mcp-server-0.1.12.tgz
+    version: 0.1.12
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
+        - kind: changed
           description: Bump appVersion from 10.1.2 to 10.2.0
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
@@ -4598,4 +4642,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-09-28T05:29:19.371815402Z"
+generated: "2026-10-12T05:44:26.138637766Z"
