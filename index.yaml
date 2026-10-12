@@ -52,6 +52,50 @@ entries:
       artifacthub.io/category: integration-delivery
       artifacthub.io/changes: |
         - kind: changed
+          description: Bump appVersion from v0.33.0 to v0.34.0
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: BuildKit upstream
+          url: https://github.com/moby/buildkit
+        - name: Buildx kubernetes driver
+          url: https://docs.docker.com/build/builders/drivers/kubernetes/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: v0.34.0
+    created: "2026-10-12T05:45:01.920938156Z"
+    description: Standalone BuildKit StatefulSet — moby/buildkit pod (rootful, privileged)
+      with optional CA-bundle Secret + optional buildkitd.toml ConfigMap, cache PVC
+      via volumeClaimTemplates, ClusterIP Service on TCP 1234. Suits dev/staging container
+      builds where ephemeral buildx builders fail to verify a self-signed registry's
+      OAuth token endpoint — bake the registry CA into the BuildKit pod's trust store
+      so multi-arch buildx (kubernetes/remote driver) succeeds. NetworkPolicy, ServiceAccount,
+      kubernetesExtra escape hatch.
+    digest: ea3b9a8dd411cd7e198c6e1e672258bf76a05dd87a8c0bcc7d3f272157193059
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - buildkit
+    - buildx
+    - oci-build
+    - cicd
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: buildkit
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/moby/buildkit
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/buildkit-0.1.5/buildkit-0.1.5.tgz
+    version: 0.1.5
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: changed
           description: "Bump appVersion from v0.29.0 to v0.33.0 (moby/buildkit)."
         - kind: removed
           description: "Drop the no-op debug key from the auto-rendered minimal buildkitd.toml. It only ever restated buildkitd's own default, and upstream removed the top-level debug key from the buildkitd.toml reference in v0.30.0 in favour of a [log] level option. The rendered config now carries just the registry CA wiring it exists for."
@@ -4642,4 +4686,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-10-12T05:44:26.138637766Z"
+generated: "2026-10-12T05:45:01.921097767Z"
