@@ -221,7 +221,7 @@ What it does on a successful bump:
 2. Backs up `Chart.yaml`, `values.yaml`, and the CRD templates to `backup/<timestamp>/`.
 3. Re-fetches the four upstream CRDs (`keycloaks`, `keycloakrealmimports`, `keycloakoidcclients`, `keycloaksamlclients` `.k8s.keycloak.org-v1.yml`) from the upstream tag, re-injects the chart's `{{- if .Values.crds.install }}` gate and labels/annotations block.
 4. Rewrites `Chart.yaml` `appVersion` and `values.yaml` `version`.
-5. Appends a `kind: changed` entry to `artifacthub.io/changes`.
+5. Resets `artifacthub.io/changes` to a single `kind: changed` entry (the block describes only the release being cut).
 
 What it does **not** do:
 - Touch the cluster (no `kubectl`, `helm`, `helmfile`).
