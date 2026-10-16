@@ -88,6 +88,7 @@ annotations:
 - 다섯 annotation 중 하나라도 누락 → 🔴.
 - `artifacthub.io/license` 가 `Apache-2.0` 가 아니면 → 🔴 (repo 가 Apache-2.0, 라이센스 표기 버그).
 - 이 diff 에서 `Chart.yaml` `version` 이 bump 되었는데 `artifacthub.io/changes` 에 그 bump 를 설명하는 새 엔트리가 없으면 → 🔴 (RESET-model annotation 은 "현재 컷되는 릴리즈" 의 변경만 기술; 비어있으면 빈 changelog 섹션이 만들어진다).
+- 이 diff 에서 `Chart.yaml` `version` 이 bump 되었고 새 엔트리도 있는데, 블록에 이전 릴리즈 엔트리 (base revision 블록에서 그대로 남은 것, 보통 직전 auto-bump 의 `Bump appVersion ...` 줄) 가 아직 남아 있으면 → 🟡 (블록은 릴리즈마다 교체하며 덧붙이지 않는다; `sync-changelog.sh` 는 모든 엔트리를 중복 제거 없이 렌더링하므로 그 줄이 새 `CHANGELOG.md` 섹션에 반복된다). 확인: `git diff <base> -- charts/<chart>/Chart.yaml` 에서 이전 엔트리가 삭제가 아니라 변경 없는 context 로 보인다.
 - `kind:` 값이 허용 6 종 (`added|changed|deprecated|removed|fixed|security`) 외이면 → 🔴 (`scripts/changelog/sync-changelog.sh` 의 Keep-a-Changelog 매핑이 drop 한다).
 - `home:` 또는 `sources[]` 가 `https://github.com/somaz94/helm-charts` (와 upstream) 를 가리키지 않으면 → 🟡.
 
@@ -154,7 +155,7 @@ annotations:
 - **File-only 불변식** — 스크립트는 절대 `kubectl`, `helm`, `helmfile` 을 호출하면 안 된다. 명령으로 사용된 경우 (주석 텍스트 아님) grep. 적중 시 → 🔴.
 - 여섯 가지 플래그 모두 제공: `--dry-run`, `--version <v>`, `--rollback`, `--list-backups`, `--cleanup-backups`, `--yes`. 누락 → 🔴 (canonical-body 계약).
 - 쓰기 전에 `backup/<timestamp>/` 에 백업; `KEEP_BACKUPS` 환경변수 존중 (default 5). backup 단계 누락 → 🔴.
-- 성공적 bump 시 `Chart.yaml` `annotations.artifacthub.io/changes` 에 `- kind: changed` 엔트리 append (canonical body 의 `update_artifacthub_changes()` 사용). `UPDATE_ARTIFACTHUB_CHANGES="false"` 로 비활성 → 문서화된 이유 없으면 🔴.
+- 성공적 bump 시 `Chart.yaml` `annotations.artifacthub.io/changes` 를 `- kind: changed` `Bump appVersion ...` 엔트리 하나로 reset 해서 이전 릴리즈 엔트리를 교체 (canonical body 의 `update_artifacthub_changes()` 사용). `UPDATE_ARTIFACTHUB_CHANGES="false"` 로 비활성 → 문서화된 이유 없으면 🔴.
 - `appVersion` 을 `Chart.yaml` `version` 으로 mirror 하면 **안 된다** (차트 SemVer 는 maintainer 가 `make bump` 으로 관리). `MIRROR_CHART_VERSION="true"` → 명시적 lock-step 정당화 없으면 🔴.
 - Sibling-dependent 차트 (예: `kibana-eck` ≤ `elasticsearch-eck`): sibling 의 `values.yaml` 을 `SIBLING_CHART_DIR` / `SIBLING_CHART_LABEL` 로 직접 읽어야 하며 — 절대 `kubectl` 으로 cluster 조회 금지. 클러스터 조회 → 🔴.
 - Canonical body 영역 `# === BEGIN CANONICAL BODY ===` … `# === END CANONICAL BODY ===` 는 `scripts/upgrade-sync/templates/` 아래 template 과 byte-identical 이어야 한다. 스크립트와 template 을 통째로 읽는 대신 `scripts/upgrade-sync/sync.sh --check` (read-only; 임시 파일에서 비교) 로 확인; `DRIFT:` 라인 → 🔴 (`make sync-check` 실패).

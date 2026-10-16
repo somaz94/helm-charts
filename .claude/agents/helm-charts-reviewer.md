@@ -84,6 +84,7 @@ Rules:
 - Any of the five annotations missing → 🔴.
 - `artifacthub.io/license` ≠ `Apache-2.0` → 🔴 (repo is Apache-2.0; mismatch is a license-statement bug).
 - `Chart.yaml` `version` bumped in this diff but `artifacthub.io/changes` has no new entry covering the bump → 🔴 (the RESET-model annotation describes the release currently being cut; an empty entry produces an empty changelog section).
+- `Chart.yaml` `version` bumped in this diff and the new entry is there, but the block still holds an entry from the previous release (one unchanged from the base revision's block, typically the last auto-bump's `Bump appVersion ...` line) → 🟡 (the block is replaced per release, never appended to; `sync-changelog.sh` renders every entry with no dedup, so that line repeats in the new `CHANGELOG.md` section). Check: `git diff <base> -- charts/<chart>/Chart.yaml` shows the old entry as unchanged context instead of removed.
 - `kind:` value outside the six allowed (`added|changed|deprecated|removed|fixed|security`) → 🔴 (Keep-a-Changelog mapping in `scripts/changelog/sync-changelog.sh` will drop it).
 - `home:` or `sources[]` not pointing at `https://github.com/somaz94/helm-charts` (plus upstream) → 🟡.
 
@@ -150,7 +151,7 @@ When `upgrade.sh` is present, the reviewer must verify:
 - **File-only invariant** — the script must NOT call `kubectl`, `helm`, or `helmfile`. Grep for these as commands (not as comment text). Any hit → 🔴.
 - Ships all six flags: `--dry-run`, `--version <v>`, `--rollback`, `--list-backups`, `--cleanup-backups`, `--yes`. Missing any → 🔴 (canonical-body contract).
 - Backs up to `backup/<timestamp>/` before writing; honors `KEEP_BACKUPS` env (default 5). Missing backup step → 🔴.
-- On successful bump, appends a `- kind: changed` entry to `Chart.yaml` `annotations.artifacthub.io/changes` (via `update_artifacthub_changes()` in the canonical body). Stripped/disabled with `UPDATE_ARTIFACTHUB_CHANGES="false"` → 🔴 unless there is a documented reason.
+- On successful bump, resets `Chart.yaml` `annotations.artifacthub.io/changes` to a single `- kind: changed` `Bump appVersion ...` entry, replacing the previous release's entries (via `update_artifacthub_changes()` in the canonical body). Stripped/disabled with `UPDATE_ARTIFACTHUB_CHANGES="false"` → 🔴 unless there is a documented reason.
 - Must **not** mirror `appVersion` into `Chart.yaml` `version` (chart SemVer stays under maintainer control via `make bump`). `MIRROR_CHART_VERSION="true"` → 🔴 unless the chart documents an explicit lock-step justification.
 - For sibling-dependent charts (e.g. `kibana-eck` ≤ `elasticsearch-eck`): must read the sibling's `values.yaml` directly via `SIBLING_CHART_DIR` / `SIBLING_CHART_LABEL` — never `kubectl`. Sibling check via cluster query → 🔴.
 - Canonical body region `# === BEGIN CANONICAL BODY ===` … `# === END CANONICAL BODY ===` must be byte-identical to the template under `scripts/upgrade-sync/templates/`. Check it with `scripts/upgrade-sync/sync.sh --check` (read-only; compares in temp files) instead of reading the chart script and template whole; a `DRIFT:` line → 🔴 (will fail `make sync-check`).

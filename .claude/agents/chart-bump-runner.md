@@ -21,7 +21,7 @@ Sibling agents — invoke as follow-ups, do not duplicate their work:
 When invoked, drive a **single chart's** version bump end-to-end across two phases:
 
 1. **Phase 1 — Pre-flight (read-only)** — confirm scope, run the determinism + presence checks, surface a numbered file-write plan, and wait for the user to confirm `kind` + `description`. No mutation.
-2. **Phase 2 — Apply (mutating, per-step approval)** — execute `make bump`, append the `artifacthub.io/changes` entry to `Chart.yaml`, run `make changelog`, and produce a final report with a suggested Conventional Commit. Never commits, never pushes, never tags.
+2. **Phase 2 — Apply (mutating, per-step approval)** — execute `make bump`, replace the `artifacthub.io/changes` entries in `Chart.yaml` with this release's, run `make changelog`, and produce a final report with a suggested Conventional Commit. Never commits, never pushes, never tags.
 
 Bucket every finding raised along the way into **🔴 Critical** (must-fix before bumping — blocks Phase 2), **🟡 Warning** (should-fix; non-blocking), **🟢 Suggestion** (optional polish). Cite every finding as `file_path:line_number`.
 
@@ -55,9 +55,9 @@ Pre-check before invoking the Makefile target, so the user sees a useful message
 
 <br/>
 
-## 3. `artifacthub.io/changes` entry — quoted description, valid `kind` 🔴
+## 3. `artifacthub.io/changes` entry — replaced per release, quoted description, valid `kind` 🔴
 
-Every bump MUST append a new entry to the `annotations.artifacthub.io/changes` block in `Chart.yaml` before commit. Format (preserve the surrounding list's indentation — typically 4 spaces for the `- kind` line, 6 for `description`):
+Every bump MUST replace the entries in the `annotations.artifacthub.io/changes` block in `Chart.yaml` with the new release's before commit — never append (RESET model, `CONTRIBUTING.md`). The block describes only the version being released, and `scripts/changelog/sync-changelog.sh` renders every entry in it with no dedup, so an entry left over from the previous release repeats in the new `CHANGELOG.md` section. Format (preserve the surrounding list's indentation — typically 4 spaces for the `- kind` line, 6 for `description`):
 
 ```yaml
     - kind: <kind>
@@ -84,7 +84,7 @@ Pre-flight detection:
 
 - Read `charts/<chart>/upgrade.sh`. If present, this is a third-party wrapper chart. Warn the user **loudly** before doing anything:
 
-  > This chart ships `charts/<chart>/upgrade.sh`. `make bump` bumps the chart's own SemVer (`Chart.yaml version`). If your intent is to track an upstream component release, you almost certainly want `./charts/<chart>/upgrade.sh --version <v>` instead, which bumps `appVersion` (+ `values.yaml.version`) and appends a `- kind: changed` entry automatically. Confirm which one you want before I proceed.
+  > This chart ships `charts/<chart>/upgrade.sh`. `make bump` bumps the chart's own SemVer (`Chart.yaml version`). If your intent is to track an upstream component release, you almost certainly want `./charts/<chart>/upgrade.sh --version <v>` instead, which bumps `appVersion` (+ `values.yaml.version`) and resets the `changes` block to a single `- kind: changed` entry automatically. Confirm which one you want before I proceed.
 
   Both can be correct (a wrapper chart can have a SemVer-only bump for chart-side fixes), so the runner does **not** refuse — it just makes the choice explicit.
 
@@ -158,7 +158,7 @@ Even with `--no-verify`, even when the user types "and push it" — the runner d
    ```
    Phase 2 plan (chart=<chart>, level=<level>, <old> -> <new>):
      1. charts/<chart>/Chart.yaml       (make bump)     version: <old> -> <new>
-     2. charts/<chart>/Chart.yaml       (Edit)          append - kind: <?> entry to annotations.artifacthub.io/changes
+     2. charts/<chart>/Chart.yaml       (Edit)          replace annotations.artifacthub.io/changes entries with - kind: <?>
      3. charts/<chart>/CHANGELOG.md     (make changelog)prepend ## [v<new>] - <today> block
      4. charts/<chart>/README.md        (NO EDIT)       reminder only — user updates if values/behavior changed (line <N>)
    ```
@@ -171,7 +171,7 @@ If DRY_RUN mode, stop here and print:
 DRY RUN — no files modified. To execute, re-invoke without dry-run.
 Commands the user would run manually (equivalent to Phase 2):
   make bump CHART=<chart> LEVEL=<level>
-  # then manually edit charts/<chart>/Chart.yaml to append:
+  # then manually replace the annotations.artifacthub.io/changes entries in charts/<chart>/Chart.yaml with:
   #     - kind: <kind>
   #       description: "<description>"
   make changelog CHART=<chart>
@@ -185,17 +185,20 @@ Execute strictly in this order. Surface each command or edit **before** running 
 
 1. **`make bump CHART=<chart> LEVEL=<level>`** — run from the repo root. Capture stdout (the `NEXT STEPS` block) and show the user the old → new transition the Makefile reports. Diff `charts/<chart>/Chart.yaml` against HEAD to confirm only the `version:` line changed.
 
-2. **`Edit` on `charts/<chart>/Chart.yaml`** — append the new entry under the existing `annotations.artifacthub.io/changes: |` block. Preserve the surrounding indentation (typically 4 spaces for `- kind`, 6 for `description`). Example final shape:
+2. **`Edit` on `charts/<chart>/Chart.yaml`** — replace the existing entries under `annotations.artifacthub.io/changes: |` with the new entry (rule 3). What the block holds now (typically the last auto-bump's `Bump appVersion ...` line) describes `v<old>` and is already in `CHANGELOG.md`'s `## [v<old>]` section, so it goes. The one exception is an entry the user already added by hand for this release (Phase 1 step 4): it is not in the `## [v<old>]` section, and it stays. List what you keep and what you drop in the preview. Preserve the surrounding indentation (typically 4 spaces for `- kind`, 6 for `description`). Example before → after:
 
    ```yaml
+     # before: left by the v<old> release
      artifacthub.io/changes: |
        - kind: changed
          description: "Bump appVersion from 9.4.0 to 9.4.1"
+     # after
+     artifacthub.io/changes: |
        - kind: <new-kind>
          description: "<new description>"
    ```
 
-   The new entry goes at the **end** of the block (chart-releaser reads the whole list per release; ordering within a single release is cosmetic — Keep-a-Changelog sectioning is handled by `sync-changelog.sh`'s `kind` → section mapping). `description` is always double-quoted (rule 3).
+   A release with several changes carries several entries; ordering within the block is cosmetic (`sync-changelog.sh` sections by `kind`). `description` is always double-quoted (rule 3).
 
 3. **`make changelog CHART=<chart>`** — run from the repo root. The script prepends a `## [v<new>] - YYYY-MM-DD` block to `charts/<chart>/CHANGELOG.md` (already idempotent — if the section exists it warns and exits 0, see header comment in `scripts/changelog/sync-changelog.sh`). Show `git diff charts/<chart>/CHANGELOG.md` after.
 
@@ -260,7 +263,7 @@ upgrade.sh present: <yes|no>
 
 ### Phase 2 plan
 1. charts/<chart>/Chart.yaml       (make bump)         version: <old> -> <new>
-2. charts/<chart>/Chart.yaml       (Edit)              append - kind: <?> entry
+2. charts/<chart>/Chart.yaml       (Edit)              replace changes entries with - kind: <?>
 3. charts/<chart>/CHANGELOG.md     (make changelog)    prepend ## [v<new>] - <today> block
 
 ### Awaiting input

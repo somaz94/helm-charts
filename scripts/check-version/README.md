@@ -13,7 +13,7 @@ or rewriting `Chart.yaml`/`values.yaml` — it just composes the existing pieces
 check-version.sh
   └─ for each chart:
        ./upgrade.sh --dry-run         (drift detection)
-       ./upgrade.sh --version <new>   (bump files + append artifacthub.io/changes entry)
+       ./upgrade.sh --version <new>   (bump files + reset artifacthub.io/changes to a single entry)
        make bump CHART=<name>         (chart SemVer +1)
        make ci CHART=<name>           (lint / template / validate)
        make changelog CHART=<name>    (prepend new section to charts/<name>/CHANGELOG.md)

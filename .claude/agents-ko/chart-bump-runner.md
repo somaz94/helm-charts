@@ -25,7 +25,7 @@ tools: Read, Edit, Grep, Glob, Bash
 호출되면 **단일 차트의** 버전 bump 를 두 단계로 end-to-end 주도한다:
 
 1. **Phase 1 — Pre-flight (read-only)** — 범위 확정, 결정성 + 존재성 체크 수행, 번호 매긴 파일-쓰기 plan 표시, 사용자의 `kind` + `description` 확인 대기. mutation 없음.
-2. **Phase 2 — Apply (mutating, per-step approval)** — `make bump` 실행, `Chart.yaml` 에 `artifacthub.io/changes` 엔트리 append, `make changelog` 실행, Conventional Commit 제안과 함께 최종 리포트 산출. commit 도 push 도 tag 도 하지 않는다.
+2. **Phase 2 — Apply (mutating, per-step approval)** — `make bump` 실행, `Chart.yaml` 의 `artifacthub.io/changes` 엔트리를 이번 릴리즈 것으로 교체, `make changelog` 실행, Conventional Commit 제안과 함께 최종 리포트 산출. commit 도 push 도 tag 도 하지 않는다.
 
 진행 중 발견되는 모든 이슈는 **🔴 Critical** (bump 전 반드시 수정 — Phase 2 차단), **🟡 Warning** (수정 권장, 비차단), **🟢 Suggestion** (선택적 다듬기) 중 하나로 분류한다. 모든 발견은 `file_path:line_number` 로 인용한다.
 
@@ -59,9 +59,9 @@ Makefile 타겟 호출 전 pre-check — 사용자가 noisy `exit 1` 대신 유�
 
 <br/>
 
-## 3. `artifacthub.io/changes` 엔트리 — quoted description, 유효한 `kind` 🔴
+## 3. `artifacthub.io/changes` 엔트리 — 릴리즈마다 교체, quoted description, 유효한 `kind` 🔴
 
-모든 bump 는 commit 전에 `Chart.yaml` 의 `annotations.artifacthub.io/changes` 블록에 새 엔트리를 append 해야 한다. 형식 (주변 리스트 들여쓰기 유지 — 보통 `- kind` 라인은 4 spaces, `description` 은 6 spaces):
+모든 bump 는 commit 전에 `Chart.yaml` 의 `annotations.artifacthub.io/changes` 블록 엔트리를 새 릴리즈의 것으로 교체해야 한다 — 뒤에 덧붙이지 않는다 (RESET model, `CONTRIBUTING.md`). 이 블록은 지금 릴리즈하는 버전만 기술하고, `scripts/changelog/sync-changelog.sh` 는 블록의 모든 엔트리를 중복 제거 없이 렌더링하므로, 이전 릴리즈 엔트리가 남아 있으면 새 `CHANGELOG.md` 섹션에 그대로 반복된다. 형식 (주변 리스트 들여쓰기 유지 — 보통 `- kind` 라인은 4 spaces, `description` 은 6 spaces):
 
 ```yaml
     - kind: <kind>
@@ -88,7 +88,7 @@ Pre-flight 감지:
 
 - `charts/<chart>/upgrade.sh` 읽기. 존재하면 third-party wrapper 차트다. 무엇이든 하기 전에 사용자에게 **큰 소리로** 경고:
 
-  > 이 차트는 `charts/<chart>/upgrade.sh` 를 동봉합니다. `make bump` 은 차트 자체의 SemVer (`Chart.yaml version`) 를 bump 합니다. upstream 컴포넌트 릴리즈를 추적하려는 의도라면 거의 확실하게 `./charts/<chart>/upgrade.sh --version <v>` 을 원하실 겁니다 — 이는 `appVersion` (+ `values.yaml.version`) 을 bump 하고 `- kind: changed` 엔트리를 자동 append 합니다. 진행 전에 어느 쪽인지 확인해 주세요.
+  > 이 차트는 `charts/<chart>/upgrade.sh` 를 동봉합니다. `make bump` 은 차트 자체의 SemVer (`Chart.yaml version`) 를 bump 합니다. upstream 컴포넌트 릴리즈를 추적하려는 의도라면 거의 확실하게 `./charts/<chart>/upgrade.sh --version <v>` 을 원하실 겁니다 — 이는 `appVersion` (+ `values.yaml.version`) 을 bump 하고 `changes` 블록을 `- kind: changed` 엔트리 하나로 자동 reset 합니다. 진행 전에 어느 쪽인지 확인해 주세요.
 
   둘 다 정당할 수 있다 (wrapper 차트도 chart-side 수정으로 SemVer-only bump 가 가능하다) — 그래서 runner 는 **거부하지 않는다**. 선택을 명시적으로 만드는 것이 역할.
 
@@ -162,7 +162,7 @@ command -v yq >/dev/null 2>&1 && yq --version | grep -q 'version v4' || echo "mi
    ```
    Phase 2 plan (chart=<chart>, level=<level>, <old> -> <new>):
      1. charts/<chart>/Chart.yaml       (make bump)     version: <old> -> <new>
-     2. charts/<chart>/Chart.yaml       (Edit)          append - kind: <?> entry to annotations.artifacthub.io/changes
+     2. charts/<chart>/Chart.yaml       (Edit)          replace annotations.artifacthub.io/changes entries with - kind: <?>
      3. charts/<chart>/CHANGELOG.md     (make changelog)prepend ## [v<new>] - <today> block
      4. charts/<chart>/README.md        (NO EDIT)       reminder only — user updates if values/behavior changed (line <N>)
    ```
@@ -175,7 +175,7 @@ DRY_RUN 모드면 여기서 중단하고 출력:
 DRY RUN — no files modified. To execute, re-invoke without dry-run.
 Commands the user would run manually (equivalent to Phase 2):
   make bump CHART=<chart> LEVEL=<level>
-  # then manually edit charts/<chart>/Chart.yaml to append:
+  # then manually replace the annotations.artifacthub.io/changes entries in charts/<chart>/Chart.yaml with:
   #     - kind: <kind>
   #       description: "<description>"
   make changelog CHART=<chart>
@@ -189,17 +189,20 @@ Commands the user would run manually (equivalent to Phase 2):
 
 1. **`make bump CHART=<chart> LEVEL=<level>`** — repo 루트에서 실행. stdout 캡처 (`NEXT STEPS` 블록) 하고 Makefile 이 보고하는 old → new 전이를 사용자에게 표시. `charts/<chart>/Chart.yaml` 을 HEAD 와 diff 해서 `version:` 라인만 변경되었는지 확인.
 
-2. **`charts/<chart>/Chart.yaml` 에 대한 `Edit`** — 기존 `annotations.artifacthub.io/changes: |` 블록 아래에 새 엔트리 append. 주변 들여쓰기 유지 (보통 `- kind` 4 spaces, `description` 6 spaces). 최종 모양 예시:
+2. **`charts/<chart>/Chart.yaml` 에 대한 `Edit`** — `annotations.artifacthub.io/changes: |` 아래의 기존 엔트리를 새 엔트리로 교체 (규칙 3). 지금 블록에 있는 엔트리 (보통 직전 auto-bump 가 남긴 `Bump appVersion ...` 줄) 는 `v<old>` 를 설명하며 이미 `CHANGELOG.md` 의 `## [v<old>]` 섹션에 들어가 있으므로 지운다. 예외는 하나다. 사용자가 이번 릴리즈용으로 이미 직접 추가한 엔트리 (Phase 1 4 단계) 는 `## [v<old>]` 섹션에 없으며, 남긴다. 미리보기에서 남기는 것과 지우는 것을 나열한다. 주변 들여쓰기 유지 (보통 `- kind` 4 spaces, `description` 6 spaces). 교체 전 → 후 예시:
 
    ```yaml
+     # before: left by the v<old> release
      artifacthub.io/changes: |
        - kind: changed
          description: "Bump appVersion from 9.4.0 to 9.4.1"
+     # after
+     artifacthub.io/changes: |
        - kind: <new-kind>
          description: "<new description>"
    ```
 
-   새 엔트리는 블록의 **끝** 에 위치 (chart-releaser 는 릴리즈당 전체 리스트를 읽는다 — 단일 릴리즈 내의 순서는 cosmetic; Keep-a-Changelog 섹션화는 `sync-changelog.sh` 의 `kind` → section 매핑이 처리한다). `description` 은 항상 double-quote (규칙 3).
+   변경이 여러 개인 릴리즈는 엔트리도 여러 개다. 블록 안의 순서는 cosmetic 이다 (`sync-changelog.sh` 가 `kind` 별로 섹션을 나눈다). `description` 은 항상 double-quote (규칙 3).
 
 3. **`make changelog CHART=<chart>`** — repo 루트에서 실행. 스크립트가 `charts/<chart>/CHANGELOG.md` 에 `## [v<new>] - YYYY-MM-DD` 블록을 prepend 한다 (이미 idempotent — 동일 버전 섹션이 있으면 경고하고 exit 0, `scripts/changelog/sync-changelog.sh` 헤더 주석 참조). 이후 `git diff charts/<chart>/CHANGELOG.md` 표시.
 
@@ -264,7 +267,7 @@ upgrade.sh present: <yes|no>
 
 ### Phase 2 plan
 1. charts/<chart>/Chart.yaml       (make bump)         version: <old> -> <new>
-2. charts/<chart>/Chart.yaml       (Edit)              append - kind: <?> entry
+2. charts/<chart>/Chart.yaml       (Edit)              replace changes entries with - kind: <?>
 3. charts/<chart>/CHANGELOG.md     (make changelog)    prepend ## [v<new>] - <today> block
 
 ### Awaiting input

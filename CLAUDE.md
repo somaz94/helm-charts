@@ -51,7 +51,7 @@ annotations:
       description: <one-line change summary>
 ```
 
-`artifacthub.io/changes` must gain a new entry every time `Chart.yaml` `version` is bumped.
+Every `Chart.yaml` `version` bump **replaces** the `artifacthub.io/changes` entries with the ones for that release; never append. The block describes only the version being released (RESET model, `CONTRIBUTING.md`): `make changelog` renders every entry in it with no dedup, so an entry left over from the previous release repeats in the new `CHANGELOG.md` section. History lives in `CHANGELOG.md`.
 
 ### values.schema.json conventions
 
@@ -105,7 +105,7 @@ Include a chart-local `upgrade.sh` **only** when the chart wraps a third-party c
 - Do not pipe a still-producing function into `head -1`: the reader exits first, the producer takes SIGPIPE, and `pipefail` + `set -e` turn that into a silent exit 141. Capture the output, then slice it (`${all%%$'\n'*}`).
 - `zsh -n` in `make shell-lint` only parses — it catches none of the three above. They need a real run under both shells.
 - Back up to `backup/<timestamp>/` before writing. Keep `KEEP_BACKUPS` (default 5).
-- Append a `- kind: changed` entry to `annotations.artifacthub.io/changes` on successful bump.
+- Reset `annotations.artifacthub.io/changes` to a single `- kind: changed` `Bump appVersion ...` entry on successful bump (replace, never append).
 - **Not** mirror `appVersion` into `Chart.yaml` `version` — chart SemVer stays under maintainer control via `make bump`.
 
 For sibling-dependent charts (e.g. `kibana-eck` needs Kibana ≤ Elasticsearch), read the sibling's `values.yaml` directly — never query a cluster. When latest exceeds the sibling, cap to the newest GA at or below it rather than refusing to move; never substitute an explicitly requested `--version`, and never downgrade below the chart's current version.
