@@ -19,7 +19,7 @@ After installing this chart, use the [`keycloak-cr`](../keycloak-cr) chart to re
 | `ServiceAccount` (`keycloak-operator`) | `v1` | Operator identity. |
 | `ClusterRole` (×5) | `rbac.authorization.k8s.io/v1` | OpenShift `ingresses` read; `keycloaks`, `keycloakrealmimports`, `keycloakoidcclients`, `keycloaksamlclients` controllers. |
 | `ClusterRoleBinding` | `rbac.authorization.k8s.io/v1` | Binds the operator SA to the OpenShift-ingresses read role cluster-wide. |
-| `Role` + `RoleBinding` (×6) | `rbac.authorization.k8s.io/v1` | Namespace-scoped permissions for managing `StatefulSet`, `Service`, `Secret`, `Job`, `Ingress`, `ServiceMonitor`, the four CR controllers, plus `view` access. |
+| `RoleBinding` (×5) | `rbac.authorization.k8s.io/v1` | Binds the four controller ClusterRoles in the release namespace (`ClusterRoleBinding` instead when `rbac.useClusterBindings: true`), plus `view` access. |
 | `Service` (`keycloak-operator`) | `v1` | Health/metrics endpoint on port 80 → 8080. |
 | `Deployment` (`keycloak-operator`) | `apps/v1` | One operator pod with liveness/readiness/startup probes against `/q/health/*`. |
 
@@ -151,7 +151,7 @@ The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`
 | `version` | string | matches `appVersion` | Pinned upstream version. Drives the default image tag and `RELATED_IMAGE_KEYCLOAK`. Rewritten by `upgrade.sh`. |
 | `commonLabels` | object | `{}` | Labels added to every resource. |
 | `commonAnnotations` | object | `{}` | Annotations added to every resource. |
-| `resourceMetadata.<resource>.{labels,annotations}` | object | `{}` | Per-resource overrides. Resources: `serviceAccount`, `deployment`, `service`, `role`, `clusterRoles`, `roleBinding`, `clusterRoleBindings`. |
+| `resourceMetadata.<resource>.{labels,annotations}` | object | `{}` | Per-resource overrides. Resources: `serviceAccount`, `deployment`, `service`, `clusterRoles`, `roleBinding`, `clusterRoleBindings`. `role` is deprecated and ignored since 0.2.7 (no Role is rendered). |
 
 <br/>
 
@@ -193,7 +193,7 @@ The tables below mirror [`values.yaml`](values.yaml), which is authoritative; [`
 | `service.type`, `.port`, `.targetPort`, `.name`, `.annotations`, `.labels` | — | — | Standard Service knobs. |
 | `serviceAccount.create` | bool | `true` | Render the SA. Disable to wire an externally-managed SA. |
 | `serviceAccount.name` | string | `keycloak-operator` | SA name. The Deployment references this. |
-| `rbac.create` | bool | `true` | Render `ClusterRole` / `ClusterRoleBinding` / `Role` / `RoleBinding`. |
+| `rbac.create` | bool | `true` | Render `ClusterRole` / `ClusterRoleBinding` / `RoleBinding`. |
 | `rbac.subjectNamespace` | string | `""` (= `Release.Namespace`) | Namespace used as the `ClusterRoleBinding` subject's namespace. Override only when SA lives in a different namespace from the chart release. |
 | `rbac.useClusterBindings` | bool | `false` | Bind the per-controller cluster roles (`keycloakcontroller-cluster-role`, `keycloakrealmimportcontroller-cluster-role`, `keycloakoidcclientcontroller-cluster-role`, `keycloaksamlclientcontroller-cluster-role`) via `ClusterRoleBinding` instead of in-namespace `RoleBinding`. **Required** when `watchNamespaces` is anything other than `JOSDK_WATCH_CURRENT` — RoleBindings only grant their bound rules within their own namespace, so the operator cannot list/watch CRs in other namespaces otherwise. |
 | `crds.install` | bool | `true` | Render the four CRDs in `templates/`. Disable when CRDs are managed externally. |
@@ -218,15 +218,18 @@ cd charts/keycloak-operator
 What it does on a successful bump:
 
 1. Verifies `quay.io/keycloak/keycloak-operator:<version>` exists.
-2. Backs up `Chart.yaml`, `values.yaml`, and the CRD templates to `backup/<timestamp>/`.
+2. Backs up `Chart.yaml`, `values.yaml`, the CRD templates and `upstream/kubernetes.yml` to `backup/<timestamp>/`.
 3. Re-fetches the four upstream CRDs (`keycloaks`, `keycloakrealmimports`, `keycloakoidcclients`, `keycloaksamlclients` `.k8s.keycloak.org-v1.yml`) from the upstream tag, re-injects the chart's `{{- if .Values.crds.install }}` gate and labels/annotations block.
-4. Rewrites `Chart.yaml` `appVersion` and `values.yaml` `version`.
-5. Resets `artifacthub.io/changes` to a single `kind: changed` entry (the block describes only the release being cut).
+4. Saves the upstream `kubernetes/kubernetes.yml` from the same tag to `upstream/kubernetes.yml` (not packaged; see `.helmignore`).
+5. Rewrites `Chart.yaml` `appVersion` and `values.yaml` `version`.
+6. Resets `artifacthub.io/changes` to a single `kind: changed` entry (the block describes only the release being cut).
 
 What it does **not** do:
 - Touch the cluster (no `kubectl`, `helm`, `helmfile`).
 - Bump the chart's own SemVer (`Chart.yaml` `version`) — run `make bump CHART=keycloak-operator LEVEL=patch` after reviewing the diff.
-- Refresh `templates/deployment.yaml` / `rbac.yaml` / `service.yaml` — those are chart-managed re-implementations of `kubernetes.yml`. Review the upstream `kubernetes.yml` diff manually after **every** bump, patch releases included (26.7.1 moved RBAC rules between objects), and update the chart templates if upstream changes (e.g. new env var, new RBAC rule).
+- Refresh `templates/deployment.yaml` / `rbac.yaml` / `service.yaml` — those are chart-managed re-implementations of `kubernetes.yml`.
+  - **RBAC is gated**: `make validate` (and therefore CI) fails when any ClusterRole / Role the chart renders differs from `upstream/kubernetes.yml` rule for rule (`scripts/validate/check-upstream-rbac.sh`). Fix `templates/rbac.yaml` until it passes.
+  - **Everything else is manual**: the gate does not compare bindings, the ServiceAccount, the Deployment or the Service. Review the `upstream/kubernetes.yml` diff after every bump, patch releases included, for changes such as a new env var, probe or binding.
 
 <br/>
 

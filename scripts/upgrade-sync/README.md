@@ -112,7 +112,7 @@ VERSION_SOURCE_ARG="library/ghost"
 | Template | Use case | Required CONFIG |
 |---|---|---|
 | `chart-appversion` | Chart maintainers tracking an upstream GA version to bump `Chart.yaml.appVersion` (and optionally `values.yaml.<key>`). | `VERSION_SOURCE` ∈ {`elastic-artifacts`, `docker-hub`, `github-release`}, plus source-specific args (see below). |
-| `helm-charts/external-tracked` | Chart maintainers tracking an upstream GitHub repo that ships **both** a versioned image **and** companion CRD manifests. Refreshes `Chart.yaml.appVersion`, `values.yaml.version`, and `templates/crd-*.yaml`. | `GITHUB_REPO`, `CONTAINER_IMAGE`, `CRD_FILES` (array), plus the helm-template gate vars (`GATE_OPEN`/`GATE_CLOSE`/`LABELS_ANN_BLOCK`). |
+| `helm-charts/external-tracked` | Chart maintainers tracking an upstream GitHub repo that ships **both** a versioned image **and** companion CRD manifests. Refreshes `Chart.yaml.appVersion`, `values.yaml.version`, `templates/crd-*.yaml`, and with `UPSTREAM_MANIFEST` set the `upstream/<file>` snapshot that `make validate` checks RBAC against. | `GITHUB_REPO`, `CONTAINER_IMAGE`, `CRD_FILES` (array), plus the helm-template gate vars (`GATE_OPEN`/`GATE_CLOSE`/`LABELS_ANN_BLOCK`). Optional: `UPSTREAM_MANIFEST`. |
 
 <br/>
 

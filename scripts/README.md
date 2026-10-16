@@ -11,7 +11,7 @@ scripts/
 ├─ upgrade-sync/    # canonical-body propagation for charts/*/upgrade.sh
 ├─ check-version/   # drift detection + auto-bump PR orchestration
 ├─ changelog/       # Chart.yaml annotation -> charts/*/CHANGELOG.md mirror
-├─ validate/        # kubeconform skip gate + CR schema vendoring
+├─ validate/        # kubeconform skip gate + CR schema vendoring + upstream RBAC parity
 ├─ shell-guards/    # bash/zsh divergence checks that `zsh -n` cannot see
 └─ lib/             # shared helpers sourced by the scripts above (NOT executed)
 ```
@@ -25,7 +25,7 @@ scripts/
 | [`upgrade-sync/`](upgrade-sync/) | `sync.sh` | Propagates the canonical body of each per-chart `upgrade.sh` from a single template under `templates/`. Catches body drift between charts. | On every PR that touches `charts/*/upgrade.sh` or `templates/`. Run via `make sync-check`. |
 | [`check-version/`](check-version/) | `check-version.sh` | Iterates every chart's `upgrade.sh --dry-run --json`, classifies drift (`uptodate` / `drift` / `blocked` / `no-image` / `error`), and (with `--apply`) opens one PR per drifted chart. | Weekly via `.github/workflows/check-versions.yml`, or manual `make version-check` / `make version-apply`. |
 | [`changelog/`](changelog/) | `sync-changelog.sh` | Renders per-chart `CHANGELOG.md` from `Chart.yaml`'s `annotations.artifacthub.io/changes` (Keep a Changelog format). Idempotent. | After `upgrade.sh` resets the annotation; via `make changelog CHART=<name>` or `make changelog-all`. |
-| [`validate/`](validate/) | `check-skips.sh` | Fails `make validate` when kubeconform skips a resource whose schema it could not resolve, unless the kind is declared in `allowed-skips.txt`. `vendor-crd-schema.sh` converts an upstream CRD into a repo-local schema under [`schemas/`](../schemas/) so the kind validates instead of skipping. | `check-skips.sh` on every `make validate` (and thus `make ci`). `vendor-crd-schema.sh` manually, when a new CR kind has no published schema. |
+| [`validate/`](validate/) | `check-skips.sh`, `check-upstream-rbac.sh` | `check-skips.sh` fails `make validate` when kubeconform skips a resource whose schema it could not resolve, unless the kind is declared in `allowed-skips.txt`. `check-upstream-rbac.sh` fails it when a chart's ClusterRoles / Roles differ from its `upstream/` snapshot. `vendor-crd-schema.sh` converts an upstream CRD into a repo-local schema under [`schemas/`](../schemas/) so the kind validates instead of skipping. | Both checks on every `make validate` (and thus `make ci`). `vendor-crd-schema.sh` manually, when a new CR kind has no published schema. |
 | [`shell-guards/`](shell-guards/) | `shell-guards.sh` | Flags the three bash/zsh divergences that parse cleanly under both shells and then behave differently: `read -p`, a bare `local NAME` re-declared inside a loop, and a shell function piped into `head -N`. Each shipped undetected until someone ran the script under zsh. | Last stage of `make shell-lint`, over `scripts/**/*.sh` + `charts/*/upgrade.sh`; on every push via `shell-lint.yml`. |
 
 <br/>
@@ -69,6 +69,7 @@ scripts/
 | `templates/*.sh` | `# === BEGIN/END CANONICAL BODY ===` markers | `scripts/upgrade-sync/sync.sh` | [`upgrade-sync/README.md`](upgrade-sync/README.md) |
 | `charts/<name>/upgrade.sh --dry-run --json` | JSON record (schema `helm-charts.upgrade.dryrun.v1`) | `scripts/check-version/check-version.sh` | [`upgrade-sync/README.md` § Dry-run JSON contract](upgrade-sync/README.md#dry-run-json-contract) |
 | `charts/<name>/upgrade.sh` | `Chart.yaml.annotations."artifacthub.io/changes"` (RESET semantics) | `scripts/changelog/sync-changelog.sh` | [`changelog/README.md`](changelog/README.md) |
+| `charts/<name>/upgrade.sh` (`UPSTREAM_MANIFEST`) | `charts/<name>/upstream/<file>` snapshot | `scripts/validate/check-upstream-rbac.sh` | [`validate/README.md`](validate/README.md#rbac-parity-with-upstream-check-upstream-rbacsh) |
 
 When changing one side of any of these contracts, change the other side in the
 same PR and re-run `make sync-check` + `make version-check` to verify.
@@ -89,7 +90,7 @@ All four sub-systems are exposed through the top-level `Makefile`:
 | `make version-apply` | `scripts/check-version/check-version.sh --apply` |
 | `make changelog CHART=<name>` | `scripts/changelog/sync-changelog.sh charts/<name>` |
 | `make changelog-all` | `scripts/changelog/sync-changelog.sh --all` |
-| `make validate` | `kubeconform` per chart, piped into `scripts/validate/check-skips.sh <chart>`. Schema lookup order: kubeconform default store → local [`schemas/`](../schemas/) → datree CRDs-catalog, cached in `.kubeconform-cache/`. |
+| `make validate` | `kubeconform` per chart, piped into `scripts/validate/check-skips.sh <chart>`, then `scripts/validate/check-upstream-rbac.sh <chart>`. Schema lookup order: kubeconform default store → local [`schemas/`](../schemas/) → datree CRDs-catalog, cached in `.kubeconform-cache/`. |
 | `make shell-lint` | `bash -n` + `zsh -n` on every `scripts/**/*.sh` and `charts/*/upgrade.sh`; `shellcheck --severity=error` (if installed) on `scripts/**/*.sh` only — `charts/*/upgrade.sh` is the sync output of the templates and is checked at the template level. Warning/info-level shellcheck output is shown advisory-only. `STRICT=1 make shell-lint` requires `shellcheck`. |
 
 <br/>
@@ -112,8 +113,10 @@ Additional, per sub-system:
 - `shellcheck` (optional; `make shell-lint` runs it when available, and
   `STRICT=1 make shell-lint` requires it for CI)
 - `yq` v4 (mikefarah/yq) — required by `changelog/sync-changelog.sh` for
-  reading `annotations.artifacthub.io/changes`. The other sub-systems do
-  not depend on it; their YAML touches go through inline `python3`.
+  reading `annotations.artifacthub.io/changes`, and by
+  `validate/check-upstream-rbac.sh` (so `make validate` / `make ci`) for a
+  chart that keeps an `upstream/` snapshot. The other sub-systems' YAML
+  touches go through inline `python3`.
 - `PyYAML` — required only by `validate/vendor-crd-schema.sh`, a manual
   maintainer action. The CI-facing `validate/check-skips.sh` parses kubeconform
   JSON with the stdlib and needs nothing extra.
@@ -138,6 +141,6 @@ Sourced (NOT executed) by every script above. Provides:
 | `log` / `info` / `warn` / `die` | stderr logging with consistent prefixes — keeps stdout reserved for machine-readable output |
 | `init_tmp_cleanup` + `mktemp_tracked` | mktemp variants that auto-clean on `EXIT`, protecting against SIGTERM / `set -e` leaks between mktemp and the success-path mv |
 | `require_command <cmd> [hint]` | abort with a clear message + install hint when a CLI is missing |
-| `require_yq_v4` | yq presence + version 4.x guard (used by `sync-changelog.sh`) |
+| `require_yq_v4` | yq presence + version 4.x guard (used by `sync-changelog.sh` and `check-upstream-rbac.sh`) |
 
 Idempotent — guarded against double-sourcing. Does NOT call `set -euo pipefail` and does NOT install a trap unconditionally; callers decide their own strictness and opt into cleanup via `init_tmp_cleanup`.

@@ -76,7 +76,7 @@ Maintainers and local builders need:
 - Helm 3.16+
 - bash ≥ 4 (Homebrew bash on macOS)
 - python3 (used by `scripts/`)
-- Optional: `chart-testing`, `kubeconform`, `gh` for full `make ci` and auto-bump PRs
+- Optional: `chart-testing`, `kubeconform`, `yq` v4, `gh` for full `make ci` and auto-bump PRs
 
 <br/>
 

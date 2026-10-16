@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-operator
 description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
 type: application
-version: 0.2.6
+version: 0.2.7
 appVersion: "26.8.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -38,5 +38,5 @@ annotations:
   artifacthub.io/operatorCapabilities: Seamless Upgrades
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "Grant keycloakcontroller-cluster-role the configmaps get/list/watch, pods list and pods/log get rules upstream moved there in 26.7.1; with rbac.useClusterBindings=true, operator 26.8.0 failed every reconcile in watched namespaces with a 403"
+    - kind: removed
+      description: "Drop Role/keycloak-operator-role and its RoleBinding, which upstream removed in 26.7.1; the ClusterRoles already grant all of its rules except batch/jobs update, which upstream dropped too. resourceMetadata.role is now ignored but stays in the schema so existing values still install"

@@ -132,7 +132,7 @@ template: ## helm template render smoke test (CHART=name to limit). Picks up cha
 	done
 
 .PHONY: validate
-validate: ## kubeconform validation against k8s + CRD schemas (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
+validate: ## kubeconform validation against k8s + CRD schemas, plus RBAC parity with charts/<name>/upstream/ when present (CHART=name to limit). Picks up charts/<name>/ci/*.yaml if present.
 	@command -v kubeconform >/dev/null 2>&1 || { echo "kubeconform required: brew install kubeconform"; exit 1; }
 	@mkdir -p $(KUBECONFORM_CACHE)
 	@for c in $(TARGET_CHARTS); do \
@@ -146,6 +146,7 @@ validate: ## kubeconform validation against k8s + CRD schemas (CHART=name to lim
 			-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
 			-output json -verbose \
 		| scripts/validate/check-skips.sh $$c; \
+		scripts/validate/check-upstream-rbac.sh $$c; \
 	done
 
 .PHONY: ci

@@ -23,3 +23,6 @@ backup/
 
 # CI fixtures (ct lint, make template/validate in CI and locally); not shipped in the package.
 ci/
+
+# Upstream kubernetes.yml snapshot (written by upgrade.sh, read by scripts/validate/check-upstream-rbac.sh).
+upstream/

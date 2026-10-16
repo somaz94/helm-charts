@@ -9,6 +9,7 @@
 #   - values.yaml `version`
 #   - templates/crd-*.yaml (downloaded from upstream and patched with the
 #     chart's helm gate + labels/annotations block)
+#   - upstream/<UPSTREAM_MANIFEST> snapshot, when that optional value is set
 #   - artifacthub.io/changes annotation
 #
 # The BEGIN/END body is propagated to each chart's upgrade.sh by
@@ -18,6 +19,9 @@
 #   SCRIPT_NAME, COMPONENT_LABEL, GITHUB_REPO, CHANGELOG_URL,
 #   CONTAINER_IMAGE, CHART_DIR, BACKUP_DIR, TIMESTAMP, KEEP_BACKUPS,
 #   CRD_FILES (array of "upstream-name:local-path" entries).
+# Optional: UPSTREAM_MANIFEST — a file under the upstream kubernetes/ dir saved to
+#   upstream/<name> on every bump, so scripts/validate/check-upstream-rbac.sh can
+#   fail `make validate` when templates/rbac.yaml drifts from it. Empty disables.
 # GATE_OPEN / GATE_CLOSE / LABELS_ANN_BLOCK are declared but NOT read: the CRD
 # patcher below hardcodes the keycloak-operator gate and labels block.
 set -euo pipefail
@@ -45,6 +49,8 @@ INNEREOF
 CRD_FILES=(
   "__UPSTREAM_NAME__:__LOCAL_PATH__"
 )
+
+UPSTREAM_MANIFEST="__UPSTREAM_MANIFEST__"
 
 # ============================================================
 
@@ -200,6 +206,11 @@ do_rollback() {
       echo "  Restored $dest"
     fi
   done
+  if [ -n "${UPSTREAM_MANIFEST:-}" ] && [ -f "$selected/upstream/$UPSTREAM_MANIFEST" ]; then
+    mkdir -p "$CHART_DIR/upstream"
+    cp "$selected/upstream/$UPSTREAM_MANIFEST" "$CHART_DIR/upstream/$UPSTREAM_MANIFEST"
+    echo "  Restored upstream/$UPSTREAM_MANIFEST"
+  fi
   echo ""
   echo "Rollback complete. Run 'git diff' to review."
 }
@@ -353,6 +364,20 @@ verify_image_exists() {
     -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
     "$manifest_url" 2>/dev/null) || true
   [ "$http_code" = "200" ]
+}
+
+fetch_upstream_manifest() {
+  local version="$1"
+  local url="https://raw.githubusercontent.com/${GITHUB_REPO}/${version}/kubernetes/${UPSTREAM_MANIFEST}"
+  local tmp
+  tmp=$(mktemp)
+  if ! curl -sSfL -o "$tmp" "$url"; then
+    echo "  ERROR: failed to fetch $url" >&2
+    rm -f "$tmp"
+    return 1
+  fi
+  mkdir -p "$CHART_DIR/upstream"
+  mv "$tmp" "$CHART_DIR/upstream/$UPSTREAM_MANIFEST"
 }
 
 # Download a CRD file from upstream and inject the helm gate + labels/annotations block.
@@ -566,6 +591,9 @@ if $DRY_RUN; then
   for entry in "${CRD_FILES[@]}"; do
     echo "  - ${entry#*:}    (from ${entry%%:*}@${LATEST_VERSION})"
   done
+  if [ -n "${UPSTREAM_MANIFEST:-}" ]; then
+    echo "  - upstream/$UPSTREAM_MANIFEST    (from $UPSTREAM_MANIFEST@${LATEST_VERSION})"
+  fi
   echo "  - values.yaml.version       ($CURRENT_VERSION -> $LATEST_VERSION)"
   echo "  - Chart.yaml.appVersion     ($CURRENT_APP_VERSION -> $LATEST_VERSION)"
   echo ""
@@ -585,6 +613,10 @@ for entry in "${CRD_FILES[@]}"; do
     cp "$CHART_DIR/$local_path" "$BACKUP_DIR/$TIMESTAMP/$local_path"
   fi
 done
+if [ -n "${UPSTREAM_MANIFEST:-}" ] && [ -f "$CHART_DIR/upstream/$UPSTREAM_MANIFEST" ]; then
+  mkdir -p "$BACKUP_DIR/$TIMESTAMP/upstream"
+  cp "$CHART_DIR/upstream/$UPSTREAM_MANIFEST" "$BACKUP_DIR/$TIMESTAMP/upstream/$UPSTREAM_MANIFEST"
+fi
 echo "  Backed up to: backup/$TIMESTAMP/"
 
 echo ""
@@ -595,6 +627,10 @@ for entry in "${CRD_FILES[@]}"; do
   echo "  Fetching $upstream_name @ $LATEST_VERSION -> $local_path"
   fetch_and_patch_crd "$upstream_name" "$CHART_DIR/$local_path" "$LATEST_VERSION"
 done
+if [ -n "${UPSTREAM_MANIFEST:-}" ]; then
+  echo "  Fetching $UPSTREAM_MANIFEST @ $LATEST_VERSION -> upstream/$UPSTREAM_MANIFEST"
+  fetch_upstream_manifest "$LATEST_VERSION"
+fi
 
 update_yaml_value "$CHART_DIR/values.yaml" "version" "$LATEST_VERSION"
 echo "  Updated values.yaml (version: $CURRENT_VERSION -> $LATEST_VERSION)"
@@ -613,9 +649,12 @@ echo ""
 echo " Changelog: $CHANGELOG_URL"
 echo ""
 echo " Next steps:"
-echo "   1. git diff (review Chart.yaml, values.yaml, templates/crd-*.yaml)"
+echo "   1. git diff (review Chart.yaml, values.yaml, templates/crd-*.yaml${UPSTREAM_MANIFEST:+, upstream/$UPSTREAM_MANIFEST})"
 echo "   2. make bump CHART=$(basename "$CHART_DIR") LEVEL=patch"
 echo "   3. make ci CHART=$(basename "$CHART_DIR")"
+if [ -n "${UPSTREAM_MANIFEST:-}" ]; then
+  echo "      (its validate step fails if templates/rbac.yaml drifts from upstream/$UPSTREAM_MANIFEST)"
+fi
 echo "   4. git add $(basename "$CHART_DIR") && git commit"
 echo ""
 echo " To rollback:"

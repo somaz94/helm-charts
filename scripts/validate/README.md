@@ -106,12 +106,46 @@ from upstream) cannot be checked here.
 
 <br/>
 
+## RBAC parity with upstream (`check-upstream-rbac.sh`)
+
+A chart whose `templates/rbac.yaml` is a hand-kept copy of an upstream raw
+manifest has a second blind spot that kubeconform cannot see: when upstream
+moves or adds a rule, the chart still renders valid RBAC, just not the RBAC the
+operator needs. `keycloak-operator` carried exactly that gap from upstream
+26.7.1 until operator 26.8.0, installed with `rbac.useClusterBindings: true`,
+failed every reconcile in its watched namespaces with a 403.
+
+So a chart can keep a snapshot of the upstream manifest under
+`charts/<chart>/upstream/`. Its `upgrade.sh` refreshes the snapshot on every
+bump (`UPSTREAM_MANIFEST` in the config block), and `.helmignore` keeps it out
+of the package. `make validate` then runs `check-upstream-rbac.sh <chart>`,
+which renders the chart with its defaults and compares every ClusterRole and
+Role against the same-named object in the snapshot, as
+`(apiGroup, resource, resourceName, verb)` tuples:
+
+```
+check-upstream-rbac: keycloak-operator RBAC drifts from upstream/ — update templates/rbac.yaml
+  ClusterRole/keycloakcontroller-cluster-role:
+    missing in chart: core pods [list]
+```
+
+A role on one side only fails the same way. A chart with no `upstream/`
+directory is skipped, so the check costs nothing for charts it does not apply
+to. It covers Roles and ClusterRoles only; bindings, the ServiceAccount, the
+Deployment and the Service in the snapshot diff still need a human read.
+
+<br/>
+
 ## Requirements
 
 - `kubeconform` — `brew install kubeconform`
-- `python3` — used by `check-skips.sh` to parse kubeconform JSON (stdlib only)
+- `python3` — used by `check-skips.sh` to parse kubeconform JSON and by
+  `check-upstream-rbac.sh` to compare rules (stdlib only)
+- `helm` and `yq` v4 (`brew install yq`) — `check-upstream-rbac.sh` renders the
+  chart and converts both sides to JSON; GitHub's Ubuntu runners ship `yq` v4
 - `PyYAML` — **only** for `vendor-crd-schema.sh`, which is a maintainer action
   that never runs in CI. `pip install pyyaml`
 
-`check-skips.sh` reads JSON on stdin and touches no network, so the CI path has
-no dependency beyond `python3` itself.
+Neither check touches the network. `check-skips.sh` needs only `python3`;
+`check-upstream-rbac.sh` also needs `helm` and `yq` v4, and only runs for a
+chart that has an `upstream/` snapshot.
