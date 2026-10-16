@@ -23,7 +23,7 @@
 For chart changes (skip rows that don't apply):
 
 - [ ] Bumped `version` in `Chart.yaml` per [SemVer](https://semver.org/)
-- [ ] Added an entry under `artifacthub.io/changes` in `Chart.yaml`
+- [ ] Replaced the `artifacthub.io/changes` entries in `Chart.yaml` with this release's changes (not appended)
 - [ ] Ran `make changelog CHART=<chart>` to update `charts/<chart>/CHANGELOG.md`
 - [ ] Updated `values.schema.json` if `values.yaml` shape changed
 - [ ] Updated the chart's `README.md` if values or behavior changed

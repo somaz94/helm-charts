@@ -186,7 +186,7 @@ bump: ## Bump CHART version. Usage: make bump CHART=<name> LEVEL=patch|minor|maj
 	rm $(CHARTS_DIR)/$(CHART)/Chart.yaml.bak; \
 	echo ""; \
 	echo "NEXT STEPS:"; \
-	echo "  1. Add an entry under 'artifacthub.io/changes' in $(CHARTS_DIR)/$(CHART)/Chart.yaml"; \
+	echo "  1. Replace the 'artifacthub.io/changes' entries in $(CHARTS_DIR)/$(CHART)/Chart.yaml with this release's changes (do not append)"; \
 	echo "  2. Run 'make changelog CHART=$(CHART)' to update CHANGELOG.md"; \
 	echo "  3. Update $(CHARTS_DIR)/$(CHART)/README.md if values/behavior changed"; \
 	echo "  4. git add $(CHARTS_DIR)/$(CHART) && git commit -m 'feat($(CHART)): describe change'"; \

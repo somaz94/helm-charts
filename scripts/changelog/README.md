@@ -69,7 +69,7 @@ The script can also be invoked directly:
 
 `Chart.yaml` `artifacthub.io/changes` **always** wins. Never edit `CHANGELOG.md` directly — your edits will be overwritten or duplicated the next time `make changelog` runs. The flow is:
 
-1. Edit `Chart.yaml` — bump `version`, add new `kind:`/`description:` entries to `artifacthub.io/changes`.
+1. Edit `Chart.yaml` — bump `version`, then replace the `artifacthub.io/changes` entries with the `kind:`/`description:` entries for this release (never append; see the RESET model in [`CONTRIBUTING.md`](../../CONTRIBUTING.md#sync-the-charts-changelogmd)).
 2. Run `make changelog CHART=<name>`.
 3. `git add` both files.
 
