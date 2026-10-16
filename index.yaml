@@ -2154,6 +2154,54 @@ entries:
   - annotations:
       artifacthub.io/category: security
       artifacthub.io/changes: |
+        - kind: removed
+          description: "Drop Role/keycloak-operator-role and its RoleBinding, which upstream removed in 26.7.1; the ClusterRoles already grant all of its rules except batch/jobs update, which upstream dropped too. resourceMetadata.role is now ignored but stays in the schema so existing values still install"
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: Keycloak Operator Documentation
+          url: https://www.keycloak.org/operator/installation
+        - name: Keycloak Operator Resources
+          url: https://github.com/keycloak/keycloak-k8s-resources
+        - name: Keycloak Release Notes
+          url: https://www.keycloak.org/docs/latest/release_notes/index.html
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Seamless Upgrades
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 26.8.0
+    created: "2026-10-16T08:41:44.598241544Z"
+    description: Keycloak Operator install (CRDs + Deployment + RBAC + Service) wrapped
+      from the upstream keycloak-k8s-resources raw YAML. Pin upstream releases via
+      upgrade.sh; operate Keycloak instances with the keycloak-cr chart.
+    digest: dd97b445cf89fddcaf6196b8142a6aa4d07fb9d35930acfcc016f5646ea5f7dc
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - keycloak
+    - keycloak-operator
+    - sso
+    - oidc
+    - oauth2
+    - identity
+    - kubernetes
+    - security
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: keycloak-operator
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources
+    - https://github.com/keycloak/keycloak
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/keycloak-operator-0.2.7/keycloak-operator-0.2.7.tgz
+    version: 0.2.7
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
         - kind: fixed
           description: "Grant keycloakcontroller-cluster-role the configmaps get/list/watch, pods list and pods/log get rules upstream moved there in 26.7.1; with rbac.useClusterBindings=true, operator 26.8.0 failed every reconcile in watched namespaces with a 403"
       artifacthub.io/license: Apache-2.0
@@ -4867,4 +4915,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-10-16T06:01:12.225292414Z"
+generated: "2026-10-16T08:41:44.598470078Z"
