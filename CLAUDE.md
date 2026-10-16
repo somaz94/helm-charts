@@ -28,7 +28,7 @@ charts/<chart-name>/
 ├── values.yaml                     # heavy comments, safe defaults
 ├── values.schema.json              # JSON Schema draft-07, additionalProperties: false at top level
 ├── README.md                       # English only (no Korean, no *-en.md siblings)
-├── .helmignore                     # add `upgrade.sh` and `backup/` if shipping upgrade.sh
+├── .helmignore                     # add `upgrade.sh` and `backup/` if shipping upgrade.sh, plus `upstream/` if it sets `UPSTREAM_MANIFEST`
 └── templates/
     ├── NOTES.txt                   # post-install instructions
     ├── _helpers.tpl                # defines <chart>.labels and <chart>.annotations
@@ -96,7 +96,7 @@ Include a chart-local `upgrade.sh` **only** when the chart wraps a third-party c
 
 `upgrade.sh` must:
 
-- Live at `charts/<chart>/upgrade.sh`, marked executable, gitignored-from-packaging via `.helmignore` (add `upgrade.sh` and `backup/`).
+- Live at `charts/<chart>/upgrade.sh`, marked executable, gitignored-from-packaging via `.helmignore` (add `upgrade.sh` and `backup/`, plus `upstream/` when it sets `UPSTREAM_MANIFEST`).
 - Have a `# upgrade-template: <template-path>` header on line 2 for future aggregator (`check-versions.sh`) discovery. `<template-path>` is the canonical template's path **relative to `scripts/upgrade-sync/templates/`** — e.g. `chart-appversion` for `templates/chart-appversion.sh`, or `helm-charts/external-tracked` for `templates/helm-charts/external-tracked.sh`.
 - Be **file-only**: rewrite `Chart.yaml` `appVersion` and `values.yaml` `version`. **Never** call `kubectl`, `helm`, or `helmfile`.
 - Ship `--dry-run`, `--version <v>`, `--rollback`, `--list-backups`, `--cleanup-backups`, `--yes`.
@@ -105,6 +105,7 @@ Include a chart-local `upgrade.sh` **only** when the chart wraps a third-party c
 - Do not pipe a still-producing function into `head -1`: the reader exits first, the producer takes SIGPIPE, and `pipefail` + `set -e` turn that into a silent exit 141. Capture the output, then slice it (`${all%%$'\n'*}`).
 - `zsh -n` in `make shell-lint` only parses — it catches none of the three above. They need a real run under both shells.
 - Back up to `backup/<timestamp>/` before writing. Keep `KEEP_BACKUPS` (default 5).
+- When `templates/rbac.yaml` re-implements an upstream raw manifest, set `UPSTREAM_MANIFEST` and commit the `upstream/<file>` snapshot it writes; `make validate` then fails on RBAC drift (`scripts/validate/check-upstream-rbac.sh`).
 - Reset `annotations.artifacthub.io/changes` to a single `- kind: changed` `Bump appVersion ...` entry on successful bump (replace, never append).
 - **Not** mirror `appVersion` into `Chart.yaml` `version` — chart SemVer stays under maintainer control via `make bump`.
 

@@ -50,7 +50,7 @@ charts/<name>/
 ├── values.yaml             # heavy comments, safe defaults
 ├── values.schema.json      # JSON Schema draft-07
 ├── README.md               # English only — no Korean, no *-en.md siblings
-├── .helmignore             # must add `upgrade.sh` + `backup/` if shipping upgrade.sh
+├── .helmignore             # must add `upgrade.sh` + `backup/` if shipping upgrade.sh (+ `upstream/` if it sets `UPSTREAM_MANIFEST`)
 └── templates/
     ├── NOTES.txt
     ├── _helpers.tpl        # defines <chart>.labels and <chart>.annotations
@@ -61,7 +61,7 @@ charts/<name>/
 - `values.schema.json` 누락 → 🔴 (CI 의 입력 검증 누락, consumer 가 임의의 키를 silently 통과시킴).
 - `templates/_helpers.tpl` 누락 → 🟡 (chart-wide labels/annotations 재사용 불가).
 - `templates/NOTES.txt` 누락 → 🟢.
-- `.helmignore` 누락 → 🟡; 차트가 `upgrade.sh` 를 가지면서 `.helmignore` 에 `upgrade.sh` 또는 `backup/` 가 없으면 → 🔴 (maintainer 도구가 tarball 에 포함된다).
+- `.helmignore` 누락 → 🟡; 차트가 `upgrade.sh` 를 가지면서 `.helmignore` 에 `upgrade.sh` 또는 `backup/` 가 없으면 → 🔴 (maintainer 도구가 tarball 에 포함된다); `upgrade.sh` 가 `UPSTREAM_MANIFEST` 를 설정하는데 `.helmignore` 에 `upstream/` 이 없으면 → 🔴 (upstream 사본이 tarball 에 포함된다).
 - `charts/<name>/` 아래 `*-en.md` / `*-kr.md` / `*.ko.md` sibling 또는 차트 `README.md` 에 한국어 텍스트가 있으면 → 🔴 (English-only repo, pair file 없음).
 
 <br/>
@@ -152,6 +152,7 @@ annotations:
 - 위치는 `charts/<chart>/upgrade.sh`, 모드 `755`. 실행불가 → 🟡.
 - 2 번째 라인이 canonical template 헤더 선언: `# upgrade-template: chart-appversion` (또는 `scripts/upgrade-sync/templates/` 에 등록된 다른 template 이름). 누락 / malformed → 🔴 (`scripts/upgrade-sync/sync.sh --check` 와 aggregator 가 깨진다).
 - `.helmignore` 에 `upgrade.sh` 와 `backup/` 양쪽이 포함 → 둘 중 하나라도 누락이면 🔴 (maintainer 도구가 tarball 에 포함).
+- `UPSTREAM_MANIFEST` 를 설정했다면 `.helmignore` 에 `upstream/` 가 있고 `charts/<chart>/upstream/<file>` 이 커밋돼 있어야 한다. 둘 중 하나라도 없으면 → 🔴 (사본이 tarball 에 포함되거나, `check-upstream-rbac.sh` 가 사본을 못 찾아 조용히 통과한다). `templates/rbac.yaml` 이 upstream raw manifest 를 옮겨 쓴 차트인데 `UPSTREAM_MANIFEST` 가 없으면 → 🟡 (RBAC drift 를 막는 장치가 없다).
 - **File-only 불변식** — 스크립트는 절대 `kubectl`, `helm`, `helmfile` 을 호출하면 안 된다. 명령으로 사용된 경우 (주석 텍스트 아님) grep. 적중 시 → 🔴.
 - 여섯 가지 플래그 모두 제공: `--dry-run`, `--version <v>`, `--rollback`, `--list-backups`, `--cleanup-backups`, `--yes`. 누락 → 🔴 (canonical-body 계약).
 - 쓰기 전에 `backup/<timestamp>/` 에 백업; `KEEP_BACKUPS` 환경변수 존중 (default 5). backup 단계 누락 → 🔴.

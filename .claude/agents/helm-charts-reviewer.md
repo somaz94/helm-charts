@@ -46,7 +46,7 @@ charts/<name>/
 ├── values.yaml             # heavy comments, safe defaults
 ├── values.schema.json      # JSON Schema draft-07
 ├── README.md               # English only — no Korean, no *-en.md siblings
-├── .helmignore             # must add `upgrade.sh` + `backup/` if shipping upgrade.sh
+├── .helmignore             # must add `upgrade.sh` + `backup/` if shipping upgrade.sh (+ `upstream/` if it sets `UPSTREAM_MANIFEST`)
 └── templates/
     ├── NOTES.txt
     ├── _helpers.tpl        # defines <chart>.labels and <chart>.annotations
@@ -57,7 +57,7 @@ Severity:
 - Missing `values.schema.json` → 🔴 (CI loses input validation; consumers see arbitrary keys silently accepted).
 - Missing `templates/_helpers.tpl` → 🟡 (chart-wide labels/annotations cannot be reused).
 - Missing `templates/NOTES.txt` → 🟢.
-- Missing `.helmignore` → 🟡; if chart ships `upgrade.sh` and `.helmignore` is missing `upgrade.sh` or `backup/` → 🔴 (maintainer tooling ends up in the tarball).
+- Missing `.helmignore` → 🟡; if chart ships `upgrade.sh` and `.helmignore` is missing `upgrade.sh` or `backup/` → 🔴 (maintainer tooling ends up in the tarball); if `upgrade.sh` sets `UPSTREAM_MANIFEST` and `.helmignore` is missing `upstream/` → 🔴 (the upstream snapshot ends up in the tarball).
 - Any `*-en.md` / `*-kr.md` / `*.ko.md` sibling under `charts/<name>/`, or Korean prose in chart `README.md` → 🔴 (English-only repo, no pair files).
 
 <br/>
@@ -148,6 +148,7 @@ When `upgrade.sh` is present, the reviewer must verify:
 - Located at `charts/<chart>/upgrade.sh`, mode `755`. Not executable → 🟡.
 - Line 2 declares the canonical template header: `# upgrade-template: chart-appversion` (or another template name registered under `scripts/upgrade-sync/templates/`). Missing or malformed → 🔴 (breaks `scripts/upgrade-sync/sync.sh --check` and the aggregator).
 - `.helmignore` contains both `upgrade.sh` and `backup/` lines → 🔴 if either missing (maintainer tooling shipped in tarball).
+- `UPSTREAM_MANIFEST` set → `.helmignore` also lists `upstream/` and `charts/<chart>/upstream/<file>` is committed; either missing → 🔴 (the snapshot ships in the tarball, or `check-upstream-rbac.sh` finds no snapshot and passes silently). A chart whose `templates/rbac.yaml` copies an upstream raw manifest without setting `UPSTREAM_MANIFEST` → 🟡 (its RBAC drift is ungated).
 - **File-only invariant** — the script must NOT call `kubectl`, `helm`, or `helmfile`. Grep for these as commands (not as comment text). Any hit → 🔴.
 - Ships all six flags: `--dry-run`, `--version <v>`, `--rollback`, `--list-backups`, `--cleanup-backups`, `--yes`. Missing any → 🔴 (canonical-body contract).
 - Backs up to `backup/<timestamp>/` before writing; honors `KEEP_BACKUPS` env (default 5). Missing backup step → 🔴.
