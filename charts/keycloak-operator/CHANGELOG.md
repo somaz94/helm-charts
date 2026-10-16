@@ -5,6 +5,11 @@ All notable changes to this chart will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.6] - 2026-10-16
+
+### Fixed
+- Grant keycloakcontroller-cluster-role the configmaps get/list/watch, pods list and pods/log get rules upstream moved there in 26.7.1; with rbac.useClusterBindings=true, operator 26.8.0 failed every reconcile in watched namespaces with a 403
+
 ## [v0.2.5] - 2026-10-05
 
 ### Changed

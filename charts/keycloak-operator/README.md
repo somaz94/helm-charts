@@ -226,7 +226,7 @@ What it does on a successful bump:
 What it does **not** do:
 - Touch the cluster (no `kubectl`, `helm`, `helmfile`).
 - Bump the chart's own SemVer (`Chart.yaml` `version`) — run `make bump CHART=keycloak-operator LEVEL=patch` after reviewing the diff.
-- Refresh `templates/deployment.yaml` / `rbac.yaml` / `service.yaml` — those are chart-managed re-implementations of `kubernetes.yml`. Review the upstream `kubernetes.yml` diff manually after a major bump and update the chart templates if upstream changes (e.g. new env var, new RBAC verb).
+- Refresh `templates/deployment.yaml` / `rbac.yaml` / `service.yaml` — those are chart-managed re-implementations of `kubernetes.yml`. Review the upstream `kubernetes.yml` diff manually after **every** bump, patch releases included (26.7.1 moved RBAC rules between objects), and update the chart templates if upstream changes (e.g. new env var, new RBAC rule).
 
 <br/>
 
