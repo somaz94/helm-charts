@@ -1,0 +1,65 @@
+{{- $fullname := include "sqs-consumer.fullname" . -}}
+{{- $sa := include "sqs-consumer.serviceAccountName" . -}}
+{{- $ta := .Values.keda.triggerAuthentication -}}
+sqs-consumer {{ .Chart.Version }} (app {{ .Chart.AppVersion }}) installed.
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Image:     {{ include "sqs-consumer.image" . }}
+Queue:     {{ .Values.consumer.queueUrl }} ({{ .Values.consumer.awsRegion }})
+ServiceAccount: {{ $sa }}
+{{- if .Values.keda.enabled }}
+
+KEDA scaling: {{ .Values.keda.minReplicaCount }}..{{ .Values.keda.maxReplicaCount }} replicas, one per {{ .Values.keda.trigger.queueLength }} messages.
+{{- if eq (int .Values.keda.minReplicaCount) 0 }}
+With an empty queue there are ZERO pods; that is expected, not a failure.
+{{- end }}
+
+  kubectl -n {{ .Release.Namespace }} get scaledobject {{ $fullname }}
+  kubectl -n {{ .Release.Namespace }} get hpa keda-hpa-{{ $fullname }}
+  kubectl -n {{ .Release.Namespace }} get deploy {{ $fullname }} -w
+{{- else }}
+
+KEDA disabled: plain Deployment with {{ .Values.replicaCount }} replica(s).
+
+  kubectl -n {{ .Release.Namespace }} get deploy {{ $fullname }}
+{{- end }}
+
+IAM
+---
+The consumer pod's role (IRSA annotation on ServiceAccount {{ $sa }}, or an
+EKS Pod Identity association for it) needs on the queue:
+  sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes
+{{- if .Values.keda.enabled }}
+{{- if not $ta.create }}
+
+KEDA authenticates through the existing {{ $ta.kind }} "{{ $ta.name }}".
+{{- else if $ta.roleArn }}
+
+KEDA assumes {{ $ta.roleArn }} (podIdentity.roleArn). That role needs
+sqs:GetQueueAttributes, and its trust policy must let KEDA in: either
+AssumeRoleWithWebIdentity for system:serviceaccount:keda:keda-operator, or
+sts:AssumeRole from the KEDA operator's own role.
+{{- else if eq $ta.identityOwner "workload" }}
+
+KEDA (identityOwner: workload) reads the eks.amazonaws.com/role-arn annotation
+on ServiceAccount {{ $sa }} and assumes that role with its OWN token. The
+role's trust policy must therefore ALSO allow, via sts:AssumeRoleWithWebIdentity:
+  "<OIDC_PROVIDER>:sub": "system:serviceaccount:keda:keda-operator"
+  "<OIDC_PROVIDER>:aud": "sts.amazonaws.com"
+Without it the ScaledObject reports AccessDenied and never scales up.
+{{- $saAnn := merge (deepCopy (default (dict) .Values.serviceAccount.annotations)) (deepCopy (default (dict) .Values.resourceMetadata.serviceAccount.annotations)) (deepCopy (default (dict) .Values.commonAnnotations)) }}
+{{- if and .Values.serviceAccount.create (not (hasKey $saAnn "eks.amazonaws.com/role-arn")) }}
+
+WARNING: the ServiceAccount has no eks.amazonaws.com/role-arn annotation. KEDA's
+workload mode only discovers IRSA roles; with EKS Pod Identity use
+identityOwner: keda or roleArn.
+{{- end }}
+{{- else }}
+
+KEDA uses the keda-operator's own IAM role; grant that role
+sqs:GetQueueAttributes on the queue.
+{{- end }}
+{{- end }}
+
+See https://keda.sh/docs/latest/authentication-providers/aws/

@@ -1,0 +1,7 @@
+# keda.enabled=false: plain Deployment with replicaCount, no KEDA resources.
+consumer:
+  queueUrl: https://sqs.ap-northeast-2.amazonaws.com/123456789012/sqs-consumer-demo
+  awsRegion: ap-northeast-2
+keda:
+  enabled: false
+replicaCount: 2

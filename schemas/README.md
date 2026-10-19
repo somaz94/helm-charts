@@ -47,6 +47,8 @@ catalog coverage catches up, and can be contributed upstream as-is.
 | `gateway.nginx.org/clientsettingspolicy_v1alpha1.json` | `ClientSettingsPolicy` (NGINX Gateway Fabric) | [`config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml` @ v2.7.0](https://github.com/nginx/nginx-gateway-fabric/blob/v2.7.0/config/crd/bases/gateway.nginx.org_clientsettingspolicies.yaml) |
 | `external-secrets.io/secretstore_v1.json` | `SecretStore` (External Secrets Operator) | [`config/crds/bases/external-secrets.io_secretstores.yaml` @ v2.12.0](https://github.com/external-secrets/external-secrets/blob/v2.12.0/config/crds/bases/external-secrets.io_secretstores.yaml) |
 | `external-secrets.io/clustersecretstore_v1.json` | `ClusterSecretStore` (External Secrets Operator) | [`config/crds/bases/external-secrets.io_clustersecretstores.yaml` @ v2.12.0](https://github.com/external-secrets/external-secrets/blob/v2.12.0/config/crds/bases/external-secrets.io_clustersecretstores.yaml) |
+| `keda.sh/scaledobject_v1alpha1.json` | `ScaledObject` (KEDA) | [`config/crd/bases/keda.sh_scaledobjects.yaml` @ v2.21.0](https://github.com/kedacore/keda/blob/v2.21.0/config/crd/bases/keda.sh_scaledobjects.yaml) |
+| `keda.sh/triggerauthentication_v1alpha1.json` | `TriggerAuthentication` (KEDA) | [`config/crd/bases/keda.sh_triggerauthentications.yaml` @ v2.21.0](https://github.com/kedacore/keda/blob/v2.21.0/config/crd/bases/keda.sh_triggerauthentications.yaml) |
 
 There are three reasons to vendor, and the table above has an example of each.
 
@@ -89,6 +91,13 @@ skip while the file sits right there. Only the `v1` files are kept; the chart
 renders no `v1beta1`. Drop both once the catalog entry compiles again:
 `make validate CHART=external-secrets-cr` with them moved aside and an empty
 `KUBECONFORM_CACHE` is the check.
+
+`ScaledObject` and `TriggerAuthentication` ARE in the catalog, but STALE: its
+`keda.sh` entries were last refreshed in August 2025 and its
+`TriggerAuthentication` predates `spec.podIdentity.externalID`, while setting
+`additionalProperties: false` on `podIdentity`, so `-strict` rejects a valid
+`roleArn` + `externalID` policy. Both are pinned to the same KEDA release so
+the two kinds `sqs-consumer` renders validate against one upstream version.
 
 Before re-pinning either schema, list its emitters — every chart that renders the
 kind validates against this one file, so a re-pin driven by a single chart can

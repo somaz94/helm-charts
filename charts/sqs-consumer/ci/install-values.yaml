@@ -1,0 +1,24 @@
+# Default mode: KEDA on, identityOwner workload (KEDA assumes the IRSA role on
+# the chart's ServiceAccount). Example account / queue only.
+consumer:
+  queueUrl: https://sqs.ap-northeast-2.amazonaws.com/123456789012/sqs-consumer-demo
+  awsRegion: ap-northeast-2
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/sqs-consumer-demo
+    eks.amazonaws.com/sts-regional-endpoints: "true"
+keda:
+  fallback:
+    failureThreshold: 3
+    replicas: 2
+  trigger:
+    scaleOnDelayed: true
+extraEnv:
+  - name: EXTRA_FLAG
+    value: "on"
+extraVolumes:
+  - name: tmp
+    emptyDir: {}
+extraVolumeMounts:
+  - name: tmp
+    mountPath: /tmp

@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "sqs-consumer values",
+  "description": "Schema for the sqs-consumer Helm chart values.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "commonLabels":      { "type": "object", "additionalProperties": { "type": "string" } },
+    "commonAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+    "resourceMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deployment":            { "$ref": "#/$defs/metadataBlock" },
+        "serviceAccount":        { "$ref": "#/$defs/metadataBlock" },
+        "scaledObject":          { "$ref": "#/$defs/metadataBlock" },
+        "triggerAuthentication": { "$ref": "#/$defs/metadataBlock" }
+      }
+    },
+    "nameOverride":     { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag":        { "type": "string" },
+        "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "imagePullSecrets": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "queueUrl":                 { "type": "string" },
+        "awsRegion":                { "type": "string" },
+        "waitTimeSeconds":          { "type": "integer", "minimum": 0, "maximum": 20 },
+        "maxMessages":              { "type": "integer", "minimum": 1, "maximum": 10 },
+        "visibilityTimeoutSeconds": { "type": "integer", "minimum": 0, "maximum": 43200 },
+        "processDelay":             { "type": "string" },
+        "concurrency":              { "type": "integer", "minimum": 1, "maximum": 10 },
+        "logLevel":                 { "type": "string", "enum": ["debug", "info", "warn", "error"] },
+        "logFormat":                { "type": "string", "enum": ["json", "text"] },
+        "shutdownTimeoutSeconds":   { "type": "integer", "minimum": 1 }
+      }
+    },
+    "extraEnv":                      { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "healthPort":                    { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "terminationGracePeriodSeconds": { "type": "integer", "minimum": 1 },
+    "replicaCount":                  { "type": "integer", "minimum": 0 },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create":                       { "type": "boolean" },
+        "name":                         { "type": "string" },
+        "annotations":                  { "type": "object", "additionalProperties": { "type": "string" } },
+        "automountServiceAccountToken": { "type": "boolean" }
+      }
+    },
+    "keda": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":          { "type": "boolean" },
+        "pollingInterval":  { "type": "integer", "minimum": 1 },
+        "cooldownPeriod":   { "type": "integer", "minimum": 0 },
+        "minReplicaCount":  { "type": "integer", "minimum": 0 },
+        "maxReplicaCount":  { "type": "integer", "minimum": 1 },
+        "idleReplicaCount": { "enum": [0, null] },
+        "fallback": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "failureThreshold": { "type": "integer", "minimum": 0 },
+            "replicas":         { "type": "integer", "minimum": 0 },
+            "behavior":         { "type": "string", "enum": ["static", "currentReplicas", "currentReplicasIfHigher", "currentReplicasIfLower", "scalingModifiers"] }
+          },
+          "anyOf": [
+            { "maxProperties": 0 },
+            { "required": ["failureThreshold", "replicas"] }
+          ]
+        },
+        "horizontalPodAutoscalerConfig": { "type": "object", "additionalProperties": true },
+        "trigger": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "queueLength":           { "type": ["string", "integer"], "pattern": "^[1-9][0-9]*$", "minimum": 1 },
+            "activationQueueLength": { "type": ["string", "integer"], "pattern": "^[0-9]+$" },
+            "scaleOnInFlight":       { "type": "boolean" },
+            "scaleOnDelayed":        { "type": "boolean" },
+            "metadataExtra":         { "type": "object", "additionalProperties": true }
+          }
+        },
+        "triggerAuthentication": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "create":        { "type": "boolean" },
+            "name":          { "type": "string" },
+            "kind":          { "type": "string", "enum": ["TriggerAuthentication", "ClusterTriggerAuthentication"] },
+            "identityOwner": { "type": "string", "enum": ["", "workload", "keda"] },
+            "roleArn":       { "type": "string" },
+            "externalID":    { "type": "string" }
+          }
+        },
+        "scaledObjectExtra": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "resources":                 { "$ref": "#/$defs/resources" },
+    "livenessProbe":             { "type": "object", "additionalProperties": true },
+    "readinessProbe":            { "type": "object", "additionalProperties": true },
+    "podSecurityContext":        { "type": "object", "additionalProperties": true },
+    "securityContext":           { "type": "object", "additionalProperties": true },
+    "podAnnotations":            { "type": "object", "additionalProperties": { "type": "string" } },
+    "podLabels":                 { "type": "object", "additionalProperties": { "type": "string" } },
+    "nodeSelector":              { "type": "object", "additionalProperties": { "type": "string" } },
+    "tolerations":               { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+    "affinity":                  { "type": "object", "additionalProperties": true },
+    "topologySpreadConstraints": { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+    "priorityClassName":         { "type": "string" },
+    "extraVolumes":              { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+    "extraVolumeMounts":         { "type": "array",  "items": { "type": "object", "additionalProperties": true } },
+    "specExtra":                 { "type": "object", "additionalProperties": true },
+    "podTemplateExtra":          { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "metadataBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "labels":      { "type": "object", "additionalProperties": { "type": "string" } },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requests": { "type": "object", "additionalProperties": { "type": ["string", "number"] } },
+        "limits":   { "type": "object", "additionalProperties": { "type": ["string", "number"] } }
+      }
+    }
+  }
+}

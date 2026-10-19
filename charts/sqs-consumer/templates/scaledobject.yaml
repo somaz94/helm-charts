@@ -1,0 +1,57 @@
+{{- if .Values.keda.enabled -}}
+{{- $k := .Values.keda -}}
+{{- $ta := $k.triggerAuthentication -}}
+{{- /* KEDA trigger metadata is map[string]string, so every value is stringified. */}}
+{{- $metadata := dict
+      "queueURL" .Values.consumer.queueUrl
+      "awsRegion" .Values.consumer.awsRegion
+      "queueLength" (toString $k.trigger.queueLength)
+      "activationQueueLength" (toString $k.trigger.activationQueueLength)
+      "scaleOnInFlight" (toString $k.trigger.scaleOnInFlight)
+      "scaleOnDelayed" (toString $k.trigger.scaleOnDelayed) -}}
+{{- range $key, $val := $k.trigger.metadataExtra }}
+{{- $_ := set $metadata $key (toString $val) }}
+{{- end }}
+{{- $authRef := dict "name" (include "sqs-consumer.triggerAuthenticationName" .) -}}
+{{- if not $ta.create }}
+{{- $_ := set $authRef "kind" $ta.kind }}
+{{- end }}
+{{- $spec := dict
+      "scaleTargetRef" (dict "apiVersion" "apps/v1" "kind" "Deployment" "name" (include "sqs-consumer.fullname" .))
+      "pollingInterval" (int $k.pollingInterval)
+      "minReplicaCount" (int $k.minReplicaCount)
+      "maxReplicaCount" (int $k.maxReplicaCount)
+      "triggers" (list (dict "type" "aws-sqs-queue" "authenticationRef" $authRef "metadata" $metadata)) -}}
+{{- $toZero := or (eq (int $k.minReplicaCount) 0) (not (kindIs "invalid" $k.idleReplicaCount)) }}
+{{- if not (kindIs "invalid" $k.idleReplicaCount) }}
+{{- $_ := set $spec "idleReplicaCount" (int $k.idleReplicaCount) }}
+{{- end }}
+{{- /* cooldownPeriod only governs scaling to zero; KEDA warns when it is set without that path. */}}
+{{- if $toZero }}
+{{- $_ := set $spec "cooldownPeriod" (int $k.cooldownPeriod) }}
+{{- end }}
+{{- with $k.fallback }}
+{{- $_ := set $spec "fallback" . }}
+{{- end }}
+{{- with $k.horizontalPodAutoscalerConfig }}
+{{- $_ := set $spec "advanced" (dict "horizontalPodAutoscalerConfig" .) }}
+{{- end }}
+{{- $spec = mergeOverwrite $spec (deepCopy (default (dict) $k.scaledObjectExtra)) }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "sqs-consumer.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sqs-consumer.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.scaledObject.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "sqs-consumer.annotations" (dict "top" . "extra" .Values.resourceMetadata.scaledObject.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  {{- toYaml $spec | nindent 2 }}
+{{- end }}

@@ -1,0 +1,239 @@
+# Default values for sqs-consumer.
+#
+# The chart renders a Deployment running the somaz94/sqs-consumer image, a
+# ServiceAccount for its AWS credentials, and (when keda.enabled) a KEDA
+# ScaledObject + TriggerAuthentication that scale it on SQS queue depth,
+# down to zero pods when the queue is empty.
+#
+# REQUIRED: consumer.queueUrl and consumer.awsRegion. Rendering fails without them.
+
+# ---------------------------------------------------------------------------
+# Resource metadata
+# ---------------------------------------------------------------------------
+commonLabels: {}
+commonAnnotations: {}
+
+# Per-resource labels / annotations, on top of commonLabels / commonAnnotations.
+resourceMetadata:
+  deployment:
+    labels: {}
+    annotations: {}
+  serviceAccount:
+    labels: {}
+    annotations: {}
+  scaledObject:
+    labels: {}
+    # e.g. autoscaling.keda.sh/paused: "true" to freeze scaling.
+    annotations: {}
+  triggerAuthentication:
+    labels: {}
+    annotations: {}
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ---------------------------------------------------------------------------
+# Image
+# ---------------------------------------------------------------------------
+image:
+  repository: ghcr.io/somaz94/sqs-consumer
+  # Empty → .Chart.AppVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# ---------------------------------------------------------------------------
+# Consumer settings (rendered as container env)
+# ---------------------------------------------------------------------------
+consumer:
+  # REQUIRED. Full queue URL, e.g.
+  #   https://sqs.ap-northeast-2.amazonaws.com/123456789012/my-queue
+  # Also used as the KEDA trigger's queueURL.
+  queueUrl: ""
+  # REQUIRED. Region of the queue, e.g. ap-northeast-2. Also the trigger's awsRegion.
+  awsRegion: ""
+  # SQS_WAIT_TIME_SECONDS — long-poll wait (0–20).
+  waitTimeSeconds: 20
+  # SQS_MAX_MESSAGES — messages per ReceiveMessage call (1–10).
+  maxMessages: 10
+  # SQS_VISIBILITY_TIMEOUT — seconds a received message stays hidden. Keep it
+  # above the worst-case processing time, or a message is redelivered mid-work.
+  visibilityTimeoutSeconds: 30
+  # PROCESS_DELAY — simulated work per message (Go duration string).
+  processDelay: "1s"
+  # CONCURRENCY — messages processed in parallel per pod (1–10).
+  concurrency: 1
+  # LOG_LEVEL — debug | info | warn | error.
+  logLevel: info
+  # LOG_FORMAT — json | text.
+  logFormat: json
+  # SHUTDOWN_TIMEOUT — rendered as "<n>s". In-flight messages get this long to
+  # drain after SIGTERM; must be lower than terminationGracePeriodSeconds.
+  shutdownTimeoutSeconds: 25
+
+# Additional container env, appended after the consumer.* variables.
+extraEnv: []
+# extraEnv:
+#   - name: AWS_ENDPOINT_URL_SQS
+#     value: http://localstack:4566
+
+# Serves /healthz and /readyz; rendered as HEALTH_ADDR=":<port>".
+healthPort: 8080
+
+# Must exceed consumer.shutdownTimeoutSeconds so the kubelet does not SIGKILL
+# the pod while it is still draining (rendering fails otherwise).
+terminationGracePeriodSeconds: 40
+
+# Used only when keda.enabled is false; with KEDA the ScaledObject owns replicas.
+replicaCount: 1
+
+# ---------------------------------------------------------------------------
+# ServiceAccount (AWS credentials)
+# ---------------------------------------------------------------------------
+# The app uses the default AWS SDK credential chain, so give the pod an IAM
+# role through IRSA (annotation below) or an EKS Pod Identity association.
+serviceAccount:
+  create: true
+  # Empty → <fullname>. With create=false, the existing SA to use.
+  name: ""
+  annotations: {}
+  # annotations:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/sqs-consumer
+  #   # Regional STS endpoint; KEDA's docs recommend it for most regions.
+  #   eks.amazonaws.com/sts-regional-endpoints: "true"
+  automountServiceAccountToken: true
+
+# ---------------------------------------------------------------------------
+# KEDA
+# ---------------------------------------------------------------------------
+# Requires the KEDA operator and CRDs (keda.sh/v1alpha1) in the cluster.
+# false → plain Deployment with replicaCount, no KEDA resources.
+keda:
+  enabled: true
+
+  # Seconds between GetQueueAttributes calls (KEDA default 30). Each poll is a
+  # billed SQS API call, so stay in the 15–30 range across many ScaledObjects.
+  pollingInterval: 15
+  # Seconds after the last active trigger before scaling 1 → 0 (KEDA default
+  # 300); lowered so an idle queue reaches zero pods within about a minute.
+  cooldownPeriod: 60
+  minReplicaCount: 0
+  maxReplicaCount: 10
+  # Optional. 0 or null. With minReplicaCount > 0, scale to 0 while the queue
+  # is idle (KEDA supports no other value). null → not rendered.
+  idleReplicaCount: null
+
+  # Optional. Replicas to hold when the scaler keeps failing. Empty → not rendered.
+  fallback: {}
+  # fallback:
+  #   failureThreshold: 3
+  #   replicas: 2
+
+  # HPA behavior for 1..N scaling (the 1→0 step is cooldownPeriod). The
+  # Kubernetes default scaleDown window is 300s; 60s keeps the demo responsive
+  # while still smoothing a queue that drains in bursts.
+  horizontalPodAutoscalerConfig:
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 60
+        policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 30
+
+  # aws-sqs-queue trigger metadata. queueURL / awsRegion come from consumer.*.
+  trigger:
+    # Target messages per pod: 30 visible messages / 5 → 6 pods.
+    queueLength: "5"
+    # Messages needed to wake from zero; "0" = any message.
+    activationQueueLength: "0"
+    # Count in-flight (received, not yet deleted) messages. KEDA default: true.
+    scaleOnInFlight: true
+    # Count delayed messages. KEDA default: false.
+    scaleOnDelayed: false
+    # Extra trigger metadata passed through as-is (e.g. awsEndpoint).
+    metadataExtra: {}
+
+  triggerAuthentication:
+    # false → reference an existing (Cluster)TriggerAuthentication by name/kind.
+    create: true
+    # With create=false, the existing object's name (required). With
+    # create=true, empty → <fullname>.
+    name: ""
+    # Used only with create=false.
+    kind: TriggerAuthentication
+    # podIdentity.identityOwner:
+    #   workload — KEDA assumes the IRSA role annotated on this chart's
+    #              ServiceAccount. Its trust policy must also allow
+    #              system:serviceaccount:keda:keda-operator (see README IAM).
+    #   keda     — KEDA uses the operator's own IAM role.
+    #   ""       — omit the field (KEDA default: keda); required for roleArn.
+    identityOwner: workload
+    # podIdentity.roleArn — role KEDA assumes. Mutually exclusive with
+    # identityOwner: set identityOwner to "" when using it.
+    roleArn: ""
+    # podIdentity.externalID — only with roleArn (AssumeRole ExternalId).
+    externalID: ""
+
+  # Merged into the ScaledObject spec last (e.g. initialCooldownPeriod).
+  scaledObjectExtra: {}
+
+# ---------------------------------------------------------------------------
+# Pod / container
+# ---------------------------------------------------------------------------
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: health
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: health
+  initialDelaySeconds: 2
+  periodSeconds: 5
+  failureThreshold: 3
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+
+extraVolumes: []
+extraVolumeMounts: []
+
+# Escape hatches: merged into the Deployment spec / Pod template spec as-is.
+specExtra: {}
+podTemplateExtra: {}

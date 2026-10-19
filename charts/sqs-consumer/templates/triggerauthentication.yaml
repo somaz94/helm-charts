@@ -1,0 +1,30 @@
+{{- if and .Values.keda.enabled .Values.keda.triggerAuthentication.create -}}
+{{- $ta := .Values.keda.triggerAuthentication -}}
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ include "sqs-consumer.triggerAuthenticationName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sqs-consumer.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.triggerAuthentication.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "sqs-consumer.annotations" (dict "top" . "extra" .Values.resourceMetadata.triggerAuthentication.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  podIdentity:
+    provider: aws
+    {{- with $ta.identityOwner }}
+    identityOwner: {{ . }}
+    {{- end }}
+    {{- with $ta.roleArn }}
+    roleArn: {{ . | quote }}
+    {{- end }}
+    {{- with $ta.externalID }}
+    externalID: {{ . | quote }}
+    {{- end }}
+{{- end }}

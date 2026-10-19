@@ -1,0 +1,130 @@
+{{- include "sqs-consumer.validate" . -}}
+{{- $c := .Values.consumer -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sqs-consumer.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sqs-consumer.labels" . | nindent 4 }}
+    {{- with .Values.resourceMetadata.deployment.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- $ann := include "sqs-consumer.annotations" (dict "top" . "extra" .Values.resourceMetadata.deployment.annotations) }}
+  {{- if $ann }}
+  annotations:
+    {{- $ann | nindent 4 }}
+  {{- end }}
+spec:
+  {{- /* With KEDA on, the ScaledObject's HPA owns replicas; a value here would fight it on every upgrade. */}}
+  {{- if not .Values.keda.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "sqs-consumer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sqs-consumer.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "sqs-consumer.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      containers:
+        - name: sqs-consumer
+          image: {{ include "sqs-consumer.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.healthPort }}
+              protocol: TCP
+          env:
+            - name: SQS_QUEUE_URL
+              value: {{ $c.queueUrl | quote }}
+            - name: AWS_REGION
+              value: {{ $c.awsRegion | quote }}
+            - name: SQS_WAIT_TIME_SECONDS
+              value: {{ $c.waitTimeSeconds | quote }}
+            - name: SQS_MAX_MESSAGES
+              value: {{ $c.maxMessages | quote }}
+            - name: SQS_VISIBILITY_TIMEOUT
+              value: {{ $c.visibilityTimeoutSeconds | quote }}
+            - name: PROCESS_DELAY
+              value: {{ $c.processDelay | quote }}
+            - name: CONCURRENCY
+              value: {{ $c.concurrency | quote }}
+            - name: LOG_LEVEL
+              value: {{ $c.logLevel | quote }}
+            - name: LOG_FORMAT
+              value: {{ $c.logFormat | quote }}
+            - name: HEALTH_ADDR
+              value: {{ printf ":%d" (int .Values.healthPort) | quote }}
+            - name: SHUTDOWN_TIMEOUT
+              value: {{ printf "%ds" (int $c.shutdownTimeoutSeconds) | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podTemplateExtra }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+  {{- with .Values.specExtra }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

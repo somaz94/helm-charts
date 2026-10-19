@@ -1,0 +1,13 @@
+# podIdentity.roleArn mode: KEDA assumes an explicit role. identityOwner must be
+# empty — KEDA treats the two as mutually exclusive and the chart fails if both
+# are set. Also exercises idleReplicaCount (needs minReplicaCount > 0).
+consumer:
+  queueUrl: https://sqs.ap-northeast-2.amazonaws.com/123456789012/sqs-consumer-demo
+  awsRegion: ap-northeast-2
+keda:
+  minReplicaCount: 2
+  idleReplicaCount: 0
+  triggerAuthentication:
+    identityOwner: ""
+    roleArn: arn:aws:iam::123456789012:role/keda-sqs-reader
+    externalID: example-external-id

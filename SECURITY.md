@@ -33,6 +33,7 @@ Every directory under [`charts/`](charts/) is in scope, so the table below must 
 | postgresql |
 | prometheus-cr |
 | redis |
+| sqs-consumer |
 | unity-mcp-server |
 
 <br/>
