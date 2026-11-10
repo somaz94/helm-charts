@@ -4454,6 +4454,50 @@ entries:
   - annotations:
       artifacthub.io/category: ai-machine-learning
       artifacthub.io/changes: |
+        - kind: added
+          description: "Add nginxGatewayFabric.proxySettings.timeout (connect/read/send) to the ProxySettingsPolicy, defaulting read/send to 300s. NGINX Gateway Fabric ignores HTTPRoute timeouts, so this is the effective upstream timeout on NGF (2.6+)."
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: unity-mcp (upstream)
+          url: https://github.com/CoplayDev/unity-mcp
+        - name: FastMCP
+          url: https://gofastmcp.com/
+        - name: Model Context Protocol spec
+          url: https://modelcontextprotocol.io/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 10.3.0
+    created: "2026-11-10T08:43:48.266347784Z"
+    description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based
+      server for Unity plugin integrations over the StreamableHTTP transport. Bring
+      your own image built from CoplayDev/unity-mcp.
+    digest: b64a0d813074715f11f2f24a53e34c37eb2d449cc197c24e1739a7bbc6baacac
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - mcp
+    - model-context-protocol
+    - unity
+    - fastmcp
+    - ai
+    - llm
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: unity-mcp-server
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/CoplayDev/unity-mcp
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.2.0/unity-mcp-server-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: ai-machine-learning
+      artifacthub.io/changes: |
         - kind: changed
           description: Bump appVersion from 10.2.0 to 10.3.0
       artifacthub.io/license: Apache-2.0
@@ -4963,4 +5007,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-10-19T05:26:00.638274035Z"
+generated: "2026-11-10T08:43:48.266804019Z"
