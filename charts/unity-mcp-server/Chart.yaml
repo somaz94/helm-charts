@@ -2,7 +2,7 @@ apiVersion: v2
 name: unity-mcp-server
 description: Unity MCP (Model Context Protocol) Server — exposes a FastMCP-based server for Unity plugin integrations over the StreamableHTTP transport. Bring your own image built from CoplayDev/unity-mcp.
 type: application
-version: 0.1.12
+version: 0.2.0
 # appVersion pins the upstream CoplayDev/unity-mcp release the chart was
 # tested against (bumped by upgrade.sh). Users MUST still set
 # image.repository / image.tag — this chart does not ship a default image.
@@ -37,5 +37,5 @@ annotations:
       url: https://modelcontextprotocol.io/
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: Bump appVersion from 10.2.0 to 10.3.0
+    - kind: added
+      description: "Add nginxGatewayFabric.proxySettings.timeout (connect/read/send) to the ProxySettingsPolicy, defaulting read/send to 300s. NGINX Gateway Fabric ignores HTTPRoute timeouts, so this is the effective upstream timeout on NGF (2.6+)."

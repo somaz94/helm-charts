@@ -21,4 +21,8 @@ spec:
       name: {{ include "unity-mcp-server.fullname" . }}
   buffering:
     disable: {{ .Values.nginxGatewayFabric.proxySettings.bufferingDisable }}
+  {{- with .Values.nginxGatewayFabric.proxySettings.timeout }}
+  timeout:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}

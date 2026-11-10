@@ -167,6 +167,8 @@ kubernetesExtra: {}
 # HTTPRoute (Gateway API)
 # ---------------------------------------------------------------------------
 # Long-lived SSE connections — keep request/backendRequest timeouts high.
+# NGINX Gateway Fabric ignores HTTPRoute `timeouts`; on NGF set
+# nginxGatewayFabric.proxySettings.timeout instead.
 httproute:
   enabled: false
   parentRefs: []
@@ -239,3 +241,10 @@ nginxGatewayFabric:
   proxySettings:
     enabled: false
     bufferingDisable: true
+    # Upstream timeouts (NGF 2.6+). NGF ignores the HTTPRoute `timeouts` above, so this is
+    # the effective limit there. read/send bound the gap between two reads/writes, not the
+    # whole request. Keys: connect, read, send. Set `timeout: null` to drop the block and use
+    # the nginx defaults (60s); `{}` does not clear the defaults (Helm merges maps).
+    timeout:
+      read: 300s
+      send: 300s

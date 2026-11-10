@@ -122,7 +122,16 @@
           "additionalProperties": false,
           "properties": {
             "enabled":          { "type": "boolean" },
-            "bufferingDisable": { "type": "boolean" }
+            "bufferingDisable": { "type": "boolean" },
+            "timeout": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "connect": { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" },
+                "read":    { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" },
+                "send":    { "type": "string", "pattern": "^[0-9]{1,4}(ms|s|m|h)?$" }
+              }
+            }
           }
         }
       }

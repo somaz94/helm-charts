@@ -59,7 +59,7 @@ image:
 - Kubernetes **1.25+**
 - An image you built from upstream (see above)
 - For `httproute.enabled`: a Gateway API–compliant controller with a ready `Gateway`
-- For `nginxGatewayFabric.proxySettings.enabled`: NGINX Gateway Fabric specifically
+- For `nginxGatewayFabric.proxySettings.enabled`: NGINX Gateway Fabric specifically; the default `proxySettings.timeout` needs NGF 2.6+ (on older NGF set `nginxGatewayFabric.proxySettings.timeout: null`)
 - For `ingress.enabled`: an Ingress controller
 
 <br/>
@@ -141,13 +141,16 @@ httproute:
             type: PathPrefix
             value: /
       timeouts:
-        request: 300s        # long-lived SSE connections
+        request: 300s        # long-lived SSE connections (ignored by NGF, see below)
         backendRequest: 300s
       backendRefs:
         - {}
 nginxGatewayFabric:
   proxySettings:
     enabled: true            # turn off response buffering for SSE
+    timeout:                 # NGF ignores HTTPRoute timeouts; this is its equivalent
+      read: 300s
+      send: 300s
 ```
 
 <br/>
@@ -227,7 +230,7 @@ Top-level blocks:
 | `resources` | Requests / limits |
 | `livenessProbe` / `readinessProbe` | **tcpSocket by default** — do not switch to `httpGet /mcp` (see Known limitations) |
 | `httproute.*` / `ingress.*` | Two mutually compatible ingress paths |
-| `nginxGatewayFabric.proxySettings.*` | NGF `ProxySettingsPolicy` (`buffering.disable: true`) |
+| `nginxGatewayFabric.proxySettings.*` | NGF `ProxySettingsPolicy`: `buffering.disable: true`, plus upstream `timeout` (`connect` / `read` / `send`, NGF 2.6+). NGF ignores HTTPRoute `timeouts`, so set them here |
 | `serviceAccount.*` | Optional dedicated SA (IRSA / Workload Identity / imagePullSecrets) |
 | `networkPolicy.*` | Optional `NetworkPolicy` (native `ingress`/`egress` rules) |
 | `commonLabels` / `commonAnnotations` / `resourceMetadata.*` | Labels and annotations per resource kind |
