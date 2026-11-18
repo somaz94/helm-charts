@@ -52,6 +52,50 @@ entries:
       artifacthub.io/category: integration-delivery
       artifacthub.io/changes: |
         - kind: changed
+          description: Bump appVersion from v0.34.0 to v0.35.0
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Source
+          url: https://github.com/somaz94/helm-charts
+        - name: BuildKit upstream
+          url: https://github.com/moby/buildkit
+        - name: Buildx kubernetes driver
+          url: https://docs.docker.com/build/builders/drivers/kubernetes/
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: v0.35.0
+    created: "2026-11-18T05:59:31.243717378Z"
+    description: Standalone BuildKit StatefulSet — moby/buildkit pod (rootful, privileged)
+      with optional CA-bundle Secret + optional buildkitd.toml ConfigMap, cache PVC
+      via volumeClaimTemplates, ClusterIP Service on TCP 1234. Suits dev/staging container
+      builds where ephemeral buildx builders fail to verify a self-signed registry's
+      OAuth token endpoint — bake the registry CA into the BuildKit pod's trust store
+      so multi-arch buildx (kubernetes/remote driver) succeeds. NetworkPolicy, ServiceAccount,
+      kubernetesExtra escape hatch.
+    digest: 4ce24935438414171d1046caeac43a154b47be34427158056729c1fc6fef686f
+    home: https://github.com/somaz94/helm-charts
+    keywords:
+    - buildkit
+    - buildx
+    - oci-build
+    - cicd
+    - kubernetes
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - name: somaz94
+      url: https://github.com/somaz94
+    name: buildkit
+    sources:
+    - https://github.com/somaz94/helm-charts
+    - https://github.com/moby/buildkit
+    type: application
+    urls:
+    - https://github.com/somaz94/helm-charts/releases/download/buildkit-0.1.6/buildkit-0.1.6.tgz
+    version: 0.1.6
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/changes: |
+        - kind: changed
           description: Bump appVersion from v0.33.0 to v0.34.0
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
@@ -5007,4 +5051,4 @@ entries:
     urls:
     - https://github.com/somaz94/helm-charts/releases/download/unity-mcp-server-0.1.0/unity-mcp-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-11-10T08:43:48.266804019Z"
+generated: "2026-11-18T05:59:31.243832461Z"
